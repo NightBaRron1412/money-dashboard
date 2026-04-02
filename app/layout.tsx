@@ -16,8 +16,9 @@ export const metadata: Metadata = {
   description: "Track expenses, income, investments & goals — personal finance dashboard by Amir Shetaia",
   robots: { index: false, follow: false },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+    ],
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
