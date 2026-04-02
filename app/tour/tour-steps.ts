@@ -23,11 +23,12 @@ export const demoTourSteps: Tour[] = [
         content:
           "Use the sidebar (desktop) or bottom tab bar (mobile) to access " +
           "all features — income, expenses, stocks, goals, AI chat, and more.",
+        selector: "[data-tour='nav-anchor']",
         side: "bottom",
         showControls: true,
         showSkip: true,
-        pointerPadding: 0,
-        pointerRadius: 16,
+        pointerPadding: 8,
+        pointerRadius: 12,
       },
       {
         icon: "👁️",
@@ -35,11 +36,12 @@ export const demoTourSteps: Tour[] = [
         content:
           "Hide or show all monetary values with the eye icon " +
           "in the sidebar (desktop) or the More menu (mobile).",
+        selector: "[data-tour='privacy-anchor']",
         side: "bottom",
         showControls: true,
         showSkip: true,
-        pointerPadding: 0,
-        pointerRadius: 16,
+        pointerPadding: 8,
+        pointerRadius: 12,
       },
       {
         icon: "🌅",
@@ -97,13 +99,12 @@ export const demoTourSteps: Tour[] = [
         icon: "🎙️",
         title: "Voice Transactions",
         content:
-          "Tap the purple mic button to add transactions by voice — " +
-          "\"Spent $12 on lunch at Chipotle\" gets parsed automatically.",
-        selector: "[data-tour='voice-anchor']",
-        side: "top",
+          "See the purple mic button? Tap it to add transactions by voice — " +
+          "try saying \"Spent $12 on lunch at Chipotle\".",
+        side: "bottom",
         showControls: true,
         showSkip: true,
-        pointerPadding: 8,
+        pointerPadding: 0,
         pointerRadius: 16,
         nextRoute: "/demo/income",
       },

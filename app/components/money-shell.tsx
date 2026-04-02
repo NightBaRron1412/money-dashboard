@@ -80,6 +80,18 @@ function AuthGateInner({
         routeBase={routeBase}
       />
       <main className={cn("min-h-screen transition-all duration-200", sidebarCollapsed ? "md:ml-16" : "md:ml-56")}>
+        {demoMode && (
+          <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 pt-4 sm:px-6 lg:px-8">
+            <div data-tour="nav-anchor" className="flex items-center gap-2 rounded-xl border border-border-subtle bg-bg-secondary/80 px-3 py-1.5 text-xs text-text-secondary">
+              <span className="hidden md:inline">Use the sidebar to navigate</span>
+              <span className="md:hidden">Use the tabs below to navigate</span>
+              <span className="text-accent-purple">→</span>
+            </div>
+            <div data-tour="privacy-anchor" className="flex items-center gap-2 rounded-xl border border-border-subtle bg-bg-secondary/80 px-3 py-1.5 text-xs text-text-secondary">
+              <span>👁 Privacy toggle</span>
+            </div>
+          </div>
+        )}
         <div className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:px-6 lg:px-8 md:pb-6">
           {children}
         </div>

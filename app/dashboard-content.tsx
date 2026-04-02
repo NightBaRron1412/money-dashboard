@@ -1171,12 +1171,7 @@ export function DashboardContent({
         />
       </div>
 
-      {demoMode && (
-        <div data-tour="voice-anchor" className="mt-8 flex items-center justify-end gap-2 text-sm text-text-secondary">
-          <span>Try voice input</span>
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-accent-purple to-accent-pink text-white">🎙️</span>
-        </div>
-      )}
+      
     </>
   );
 }
