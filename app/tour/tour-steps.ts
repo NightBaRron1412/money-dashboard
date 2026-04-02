@@ -234,11 +234,10 @@ export const demoTourSteps: Tour[] = [
         content:
           "Ask questions about your finances in plain English — " +
           "\"How much did I spend on food?\" or \"Am I on track with my goals?\"",
-        selector: "[data-tour='chat-panel']",
-        side: "left",
+        side: "bottom",
         showControls: true,
         showSkip: true,
-        pointerPadding: 8,
+        pointerPadding: 0,
         pointerRadius: 16,
         prevRoute: "/demo/reports",
       },
