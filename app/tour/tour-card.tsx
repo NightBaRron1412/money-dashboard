@@ -19,8 +19,14 @@ export function TourCard({
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      cardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }, 150);
+      const el = cardRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const inView = rect.top >= 0 && rect.bottom <= window.innerHeight;
+      if (!inView) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 250);
     return () => clearTimeout(timer);
   }, [currentStep]);
 

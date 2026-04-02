@@ -47,8 +47,8 @@ export const demoTourSteps: Tour[] = [
         icon: "🌅",
         title: "AI Greeting",
         content:
-          "Every day you get a personalized greeting with an AI-generated insight " +
-          "about your finances, plus a timeline of upcoming events.",
+          "A personalized daily greeting with AI-generated insight " +
+          "about your finances and a timeline of upcoming events.",
         selector: "[data-tour='greeting']",
         side: "bottom",
         showControls: true,
@@ -60,8 +60,8 @@ export const demoTourSteps: Tour[] = [
         icon: "💰",
         title: "Financial Summary",
         content:
-          "Your cash, portfolio value, and net worth at a glance. " +
-          "All amounts are converted to your base currency automatically.",
+          "Cash, portfolio value, and net worth at a glance — " +
+          "all converted to your base currency automatically.",
         selector: "[data-tour='summary-stats']",
         side: "bottom",
         showControls: true,
@@ -73,8 +73,8 @@ export const demoTourSteps: Tour[] = [
         icon: "🤖",
         title: "AI Insights",
         content:
-          "Powered by Google Gemini, the AI analyzes your spending patterns " +
-          "and gives actionable advice tailored to your financial situation.",
+          "Powered by Google Gemini — analyzes your spending patterns " +
+          "and gives actionable advice tailored to your situation.",
         selector: "[data-tour='ai-insights']",
         side: "bottom",
         showControls: true,
@@ -86,10 +86,10 @@ export const demoTourSteps: Tour[] = [
         icon: "📈",
         title: "Charts & Trends",
         content:
-          "Visualize your net worth over time, spending by category, " +
-          "income vs expenses, and goal progress — all interactive.",
+          "Scroll down to see net worth over time, spending by category, " +
+          "income vs expenses, and goal progress charts.",
         selector: "[data-tour='charts']",
-        side: "top",
+        side: "bottom",
         showControls: true,
         showSkip: true,
         pointerPadding: 8,
@@ -100,7 +100,7 @@ export const demoTourSteps: Tour[] = [
         title: "Voice Transactions",
         content:
           "Tap the mic to add transactions by voice — " +
-          "try saying \"Spent $12 on lunch at Chipotle\" and it gets parsed automatically.",
+          "\"Spent $12 on lunch at Chipotle\" gets parsed automatically.",
         selector: "[data-tour='voice-fab']",
         side: "left",
         showControls: true,
@@ -124,19 +124,6 @@ export const demoTourSteps: Tour[] = [
         pointerPadding: 8,
         pointerRadius: 16,
         prevRoute: "/demo",
-      },
-      {
-        icon: "➕",
-        title: "Add Income",
-        content:
-          "Add income entries with category, account, currency, " +
-          "and optional recurrence (weekly, bi-weekly, monthly, yearly).",
-        selector: "[data-tour='income-add']",
-        side: "bottom",
-        showControls: true,
-        showSkip: true,
-        pointerPadding: 4,
-        pointerRadius: 12,
         nextRoute: "/demo/expenses",
       },
 
@@ -146,7 +133,7 @@ export const demoTourSteps: Tour[] = [
         title: "Expense Tracking",
         content:
           "Track expenses across all accounts and credit cards. " +
-          "AI auto-categorizes transactions so you can see where your money goes.",
+          "AI auto-categorizes transactions so you see where your money goes.",
         selector: "[data-tour='expenses-header']",
         side: "bottom",
         showControls: true,
@@ -154,19 +141,23 @@ export const demoTourSteps: Tour[] = [
         pointerPadding: 8,
         pointerRadius: 16,
         prevRoute: "/demo/income",
+        nextRoute: "/demo/credit-cards",
       },
+
+      // ── Credit Cards (/demo/credit-cards) ─────────────────────────
       {
-        icon: "🏷️",
-        title: "Category Breakdown",
+        icon: "💳",
+        title: "Credit Cards",
         content:
-          "See spending grouped by category with visual breakdowns. " +
-          "Categories are fully customizable in Settings.",
-        selector: "[data-tour='category-breakdown']",
-        side: "top",
+          "Manage credit cards, track charges and payments, " +
+          "and monitor cashback rewards — all with multi-currency support.",
+        selector: "[data-tour='credit-cards-header']",
+        side: "bottom",
         showControls: true,
         showSkip: true,
         pointerPadding: 8,
         pointerRadius: 16,
+        prevRoute: "/demo/expenses",
         nextRoute: "/demo/stocks",
       },
 
@@ -175,7 +166,7 @@ export const demoTourSteps: Tour[] = [
         icon: "📊",
         title: "Stock Portfolio",
         content:
-          "Track your stock portfolio with live quotes from Yahoo Finance. " +
+          "Track your stock portfolio with live Yahoo Finance quotes. " +
           "Supports USD and CAD holdings with automatic FX conversion.",
         selector: "[data-tour='stocks-header']",
         side: "bottom",
@@ -183,20 +174,7 @@ export const demoTourSteps: Tour[] = [
         showSkip: true,
         pointerPadding: 8,
         pointerRadius: 16,
-        prevRoute: "/demo/expenses",
-      },
-      {
-        icon: "📋",
-        title: "Holdings Overview",
-        content:
-          "See each holding's market value, gain/loss, cost basis, " +
-          "dividends, and daily change — all in one place.",
-        selector: "[data-tour='stocks-holdings']",
-        side: "top",
-        showControls: true,
-        showSkip: true,
-        pointerPadding: 8,
-        pointerRadius: 16,
+        prevRoute: "/demo/credit-cards",
         nextRoute: "/demo/goals",
       },
 
@@ -206,7 +184,7 @@ export const demoTourSteps: Tour[] = [
         title: "Savings Goals",
         content:
           "Set savings goals with target amounts and dates. " +
-          "Smart allocation automatically distributes savings across your goals.",
+          "Smart allocation distributes savings across your goals automatically.",
         selector: "[data-tour='goals-header']",
         side: "bottom",
         showControls: true,
@@ -214,19 +192,40 @@ export const demoTourSteps: Tour[] = [
         pointerPadding: 8,
         pointerRadius: 16,
         prevRoute: "/demo/stocks",
+        nextRoute: "/demo/subscriptions",
       },
+
+      // ── Subscriptions (/demo/subscriptions) ───────────────────────
       {
-        icon: "📊",
-        title: "Goal Progress",
+        icon: "🔄",
+        title: "Subscriptions",
         content:
-          "Each goal shows progress bars, projected completion dates, " +
-          "and linked accounts. Mark goals as complete when you hit the target.",
-        selector: "[data-tour='goals-cards']",
-        side: "top",
+          "Track recurring subscriptions and memberships. " +
+          "AI detects recurring charges automatically and reminds you before bills are due.",
+        selector: "[data-tour='subscriptions-header']",
+        side: "bottom",
         showControls: true,
         showSkip: true,
         pointerPadding: 8,
         pointerRadius: 16,
+        prevRoute: "/demo/goals",
+        nextRoute: "/demo/reports",
+      },
+
+      // ── Reports (/demo/reports) ───────────────────────────────────
+      {
+        icon: "📋",
+        title: "Reports",
+        content:
+          "Monthly, yearly, and all-time financial reports with " +
+          "charts, category breakdowns, and income vs expense trends.",
+        selector: "[data-tour='reports-header']",
+        side: "bottom",
+        showControls: true,
+        showSkip: true,
+        pointerPadding: 8,
+        pointerRadius: 16,
+        prevRoute: "/demo/subscriptions",
         nextRoute: "/demo/chat",
       },
 
@@ -243,7 +242,7 @@ export const demoTourSteps: Tour[] = [
         showSkip: true,
         pointerPadding: 8,
         pointerRadius: 16,
-        prevRoute: "/demo/goals",
+        prevRoute: "/demo/reports",
       },
 
       // ── Finale ────────────────────────────────────────────────────
@@ -251,9 +250,8 @@ export const demoTourSteps: Tour[] = [
         icon: "🎉",
         title: "You're all set!",
         content:
-          "That covers the highlights. There's more to explore — " +
-          "credit cards, subscriptions, reconciliation, reports, and settings. " +
-          "Enjoy the demo!",
+          "That covers all the features! Explore reconciliation, " +
+          "accounts, and settings on your own. Enjoy the demo!",
         side: "bottom",
         showControls: true,
         showSkip: false,

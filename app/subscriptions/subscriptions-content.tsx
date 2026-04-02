@@ -639,6 +639,7 @@ export function SubscriptionsContent() {
 
   return (
     <>
+      <div data-tour="subscriptions-header">
       <PageHeader
         title="Subscriptions"
         description="Track recurring subscriptions and memberships"
@@ -651,6 +652,7 @@ export function SubscriptionsContent() {
           </button>
         }
       />
+      </div>
 
       {/* Summary stats */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

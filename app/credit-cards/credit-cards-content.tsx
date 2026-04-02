@@ -542,6 +542,7 @@ export function CreditCardsContent() {
 
   return (
     <>
+      <div data-tour="credit-cards-header">
       <PageHeader
         title="Credit Cards"
         description="Manage cards, charges, and payments"
@@ -564,6 +565,7 @@ export function CreditCardsContent() {
           </div>
         }
       />
+      </div>
 
       {/* Stats */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">

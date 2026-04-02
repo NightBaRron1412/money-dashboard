@@ -218,6 +218,7 @@ export function ReportsContent() {
 
   return (
     <>
+      <div data-tour="reports-header">
       <PageHeader
         title="Reports"
         description="Financial reports and trends"
@@ -275,6 +276,7 @@ export function ReportsContent() {
           </div>
         }
       />
+      </div>
 
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
