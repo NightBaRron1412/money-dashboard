@@ -1154,7 +1154,10 @@ export function DashboardContent({
       )}
 
       {/* Charts */}
-      <div data-tour="charts" className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div data-tour="charts" className="mt-8 mb-3 flex items-center gap-2 text-sm font-semibold text-text-primary">
+        <BarChart3 className="h-4 w-4 text-accent-purple" /> Charts &amp; Trends
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
         <NetWorthChart transactions={transactions} accounts={accounts} baseCurrency={baseCurrency} fx={fx} />
         <ExpensesByCategoryChart transactions={transactions} baseCurrency={baseCurrency} fx={fx} />
         <IncomeVsExpensesChart transactions={transactions} baseCurrency={baseCurrency} fx={fx} />
@@ -1167,6 +1170,13 @@ export function DashboardContent({
           baseCurrency={baseCurrency}
         />
       </div>
+
+      {demoMode && (
+        <div data-tour="voice-anchor" className="mt-8 flex items-center justify-end gap-2 text-sm text-text-secondary">
+          <span>Try voice input</span>
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-accent-purple to-accent-pink text-white">🎙️</span>
+        </div>
+      )}
     </>
   );
 }

@@ -86,25 +86,26 @@ export const demoTourSteps: Tour[] = [
         icon: "📈",
         title: "Charts & Trends",
         content:
-          "Scroll down to see net worth over time, spending by category, " +
-          "income vs expenses, and goal progress charts.",
+          "Net worth over time, spending by category, " +
+          "income vs expenses, and goal progress — all interactive.",
+        selector: "[data-tour='charts']",
         side: "bottom",
         showControls: true,
         showSkip: true,
-        pointerPadding: 0,
-        pointerRadius: 16,
+        pointerPadding: 8,
+        pointerRadius: 12,
       },
       {
         icon: "🎙️",
         title: "Voice Transactions",
         content:
-          "See the purple mic button in the bottom-right corner? " +
-          "Tap it to add transactions by voice — " +
+          "Tap the purple mic button to add transactions by voice — " +
           "\"Spent $12 on lunch at Chipotle\" gets parsed automatically.",
-        side: "bottom",
+        selector: "[data-tour='voice-anchor']",
+        side: "top",
         showControls: true,
         showSkip: true,
-        pointerPadding: 0,
+        pointerPadding: 8,
         pointerRadius: 16,
         nextRoute: "/demo/income",
       },
