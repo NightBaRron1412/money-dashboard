@@ -37,7 +37,7 @@ export const demoTourSteps: Tour[] = [
           "Toggle this to hide or show all monetary values. " +
           "Great for when you're sharing your screen.",
         selector: "[data-tour='balance-toggle']",
-        side: "right",
+        side: "right-top",
         showControls: true,
         showSkip: true,
         pointerPadding: 4,
@@ -88,11 +88,10 @@ export const demoTourSteps: Tour[] = [
         content:
           "Scroll down to see net worth over time, spending by category, " +
           "income vs expenses, and goal progress charts.",
-        selector: "[data-tour='charts']",
         side: "bottom",
         showControls: true,
         showSkip: true,
-        pointerPadding: 8,
+        pointerPadding: 0,
         pointerRadius: 16,
       },
       {

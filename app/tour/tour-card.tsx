@@ -18,16 +18,20 @@ export function TourCard({
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const scrollCard = () => {
       const el = cardRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const inView = rect.top >= 0 && rect.bottom <= window.innerHeight;
-      if (!inView) {
+      const pad = 20;
+      const offTop = rect.top < pad;
+      const offBottom = rect.bottom > window.innerHeight - pad;
+      if (offTop || offBottom) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
-    }, 250);
-    return () => clearTimeout(timer);
+    };
+    const t1 = setTimeout(scrollCard, 400);
+    const t2 = setTimeout(scrollCard, 800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [currentStep]);
 
   const progress = totalSteps > 1 ? ((currentStep + 1) / totalSteps) * 100 : 100;
