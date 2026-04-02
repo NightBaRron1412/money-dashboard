@@ -13,12 +13,26 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
 export const metadata: Metadata = {
   title: "Finance Dashboard | Amir Shetaia",
-  description: "Personal finance tracking dashboard",
+  description: "Track expenses, income, investments & goals — personal finance dashboard by Amir Shetaia",
   robots: { index: false, follow: false },
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
     apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "Finance Dashboard | Amir Shetaia",
+    description: "Track expenses, income, investments & goals",
+    url: "https://money.amirshetaia.com",
+    siteName: "Finance Dashboard",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Finance Dashboard Preview" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Finance Dashboard | Amir Shetaia",
+    description: "Track expenses, income, investments & goals",
+    images: ["/og-image.png"],
   },
   appleWebApp: { capable: true, title: "Finance Dashboard" },
 };
