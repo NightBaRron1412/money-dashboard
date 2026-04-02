@@ -1,0 +1,339 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --bg-main: #0b1020;
+  --bg-secondary: #111432;
+  --bg-elevated: rgba(255, 255, 255, 0.04);
+
+  --text-primary: #e6e7ee;
+  --text-secondary: #8a8fa3;
+  --text-on-accent: #ffffff;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  --accent-blue: #31708e;
+  --accent-purple: #6c0c9c;
+  --accent-pink: #b42484;
+
+  --cursor-glow: color-mix(in srgb, var(--accent-pink) 38%, transparent);
+
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-blur: 8px;
+  --panel-bg: var(--bg-elevated);
+  --glow-1: rgba(108, 12, 156, 0.2);
+  --glow-2: rgba(49, 112, 142, 0.18);
+
+  --card-bg: rgba(17, 20, 50, 0.7);
+  --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 4px 24px -4px rgba(0, 0, 0, 0.3);
+}
+
+.light {
+  color-scheme: light;
+  --bg-main: #f5f7fa;
+  --bg-secondary: #fafbfc;
+  --bg-elevated: rgba(0, 0, 0, 0.03);
+
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-on-accent: #ffffff;
+
+  --border-subtle: rgba(0, 0, 0, 0.12);
+
+  --accent-blue: #2563eb;
+  --accent-purple: #7c3aed;
+  --accent-pink: #db2777;
+
+  --cursor-glow: color-mix(in srgb, var(--accent-pink) 18%, transparent);
+
+  --bg-secondary: #ffffff;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-blur: 8px;
+  --panel-bg: rgba(255, 255, 255, 0.95);
+  --glow-1: rgba(124, 58, 237, 0.08);
+  --glow-2: rgba(37, 99, 235, 0.08);
+
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+* {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  background: var(--bg-main);
+  color: var(--text-primary);
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+body {
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+}
+
+body,
+header,
+nav,
+main,
+section,
+footer,
+button,
+a,
+input,
+textarea,
+select,
+.section-card,
+.glass-panel {
+  transition:
+    background-color 280ms ease,
+    color 280ms ease,
+    border-color 280ms ease,
+    box-shadow 280ms ease;
+}
+
+a {
+  color: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-elevated);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 999px;
+}
+
+.animate-noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+}
+
+.section-card {
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-bg);
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 60px -24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+.glass-panel {
+  border: 1px solid var(--border-subtle);
+  background: var(--glass-bg);
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 60px -24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.75));
+}
+
+.home-page-bg {
+  background:
+    radial-gradient(circle at 22% 18%, var(--glow-1), transparent 28%),
+    radial-gradient(circle at 82% 0%, color-mix(in srgb, var(--glow-1) 68%, var(--glow-2) 32%), transparent 30%);
+}
+
+@media (max-width: 767px) {
+  .home-page-bg {
+    background:
+      radial-gradient(circle at 24% 12%, var(--glow-1), transparent 34%),
+      radial-gradient(circle at 86% -10%, color-mix(in srgb, var(--glow-1) 74%, var(--glow-2) 26%), transparent 42%);
+  }
+}
+
+@layer base {
+  h1 {
+    @apply text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-text-primary;
+  }
+
+  h2 {
+    @apply text-2xl sm:text-3xl font-semibold leading-tight text-text-primary;
+  }
+
+  p {
+    @apply leading-relaxed;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-force-motion="true"]) *,
+  html:not([data-force-motion="true"]) *::before,
+  html:not([data-force-motion="true"]) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Custom styled selects / dropdowns */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8fa3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+select:hover {
+  border-color: var(--accent-blue);
+}
+
+select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-blue) 20%, transparent);
+}
+
+select option {
+  background: var(--bg-secondary);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 0.5rem;
+}
+
+/* Edge/Chromium: explicit dark bg for dropdown options */
+select optgroup {
+  background: var(--bg-secondary);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Force dark dropdown rendering in dark mode */
+:root select {
+  color-scheme: dark;
+}
+
+.light select {
+  color-scheme: light;
+}
+
+/* Date input styling */
+input[type="date"] {
+  cursor: pointer;
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* iOS Safari: prevent date inputs from overflowing their container */
+@supports (-webkit-touch-callout: none) {
+  input[type="date"] {
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
+}
+
+/* WebKit date input internals — prevent overflow */
+input[type="date"]::-webkit-datetime-edit {
+  min-width: 0;
+  overflow: hidden;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  min-width: 0;
+  overflow: hidden;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
+
+.light input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
+/* ─── Loading screen ─── */
+.loading-line {
+  animation: loadLineIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes loadLineIn {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+.loading-cursor {
+  display: inline-block;
+  color: var(--accent-blue);
+  opacity: 0.8;
+  animation: cursorBlink 1s steps(2) infinite;
+  font-size: 10px;
+  line-height: 1;
+  vertical-align: baseline;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 0; }
+}
+
+.loading-progress {
+  background: linear-gradient(
+    90deg,
+    var(--accent-blue) 0%,
+    var(--accent-purple) 50%,
+    var(--accent-pink) 100%
+  );
+  box-shadow:
+    0 0 8px color-mix(in srgb, var(--accent-blue) 40%, transparent),
+    0 0 20px color-mix(in srgb, var(--accent-purple) 20%, transparent);
+}
+
+.loading-terminal {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 30px 100px -16px rgba(0, 0, 0, 0.75),
+    0 0 60px -24px rgba(49, 112, 142, 0.2);
+}
+
+/* ─── Interactive terminal cursor ─── */
+.terminal-cursor {
+  animation: terminalBlink 1s steps(1) infinite;
+}
+
+@keyframes terminalBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ─── Spotify marquee scroll ─── */
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 8s linear infinite;
+  animation-delay: 2s;
+}
+
+@keyframes marquee {
+  0%, 15% { transform: translateX(0); }
+  50%, 65% { transform: translateX(calc(-100% + 150px)); }
+  100% { transform: translateX(0); }
+}

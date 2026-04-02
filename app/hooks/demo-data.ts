@@ -1,0 +1,643 @@
+import type {
+  Account,
+  AllocationPlan,
+  CreditCard,
+  CreditCardCharge,
+  CreditCardPayment,
+  Dividend,
+  Goal,
+  GoalAccount,
+  Holding,
+  Settings,
+  Subscription,
+  Transaction,
+} from "@/lib/money/database.types";
+
+export interface DemoMoneyData {
+  accounts: Account[];
+  transactions: Transaction[];
+  goals: Goal[];
+  goalAccounts: GoalAccount[];
+  plans: AllocationPlan[];
+  settings: Settings;
+  holdings: Holding[];
+  subscriptions: Subscription[];
+  dividends: Dividend[];
+  creditCards: CreditCard[];
+  creditCardCharges: CreditCardCharge[];
+  creditCardPayments: CreditCardPayment[];
+}
+
+function dateOffset(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function isoOffset(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString();
+}
+
+const USER_ID = "demo-user";
+
+export function getDemoMoneyData(): DemoMoneyData {
+  const checkingId = "demo-acct-checking";
+  const savingsId = "demo-acct-savings";
+  const investId = "demo-acct-investing";
+  const emergencyGoalId = "demo-goal-emergency";
+  const condoGoalId = "demo-goal-condo";
+  const visaId = "demo-cc-visa";
+  const mastercardId = "demo-cc-mastercard";
+
+  const settings: Settings = {
+    id: "demo-settings",
+    user_id: USER_ID,
+    pin_hash: null,
+    base_currency: "CAD",
+    display_name: "Demo User",
+    greeting_tone: "friendly and encouraging, like a supportive coach",
+    expense_categories: ["Food", "Transport", "Bills", "Rent", "Fun", "Health", "Other"],
+    subscription_categories: ["Streaming", "Software", "Fitness", "Utilities"],
+    rent_amount: 2350,
+    rent_day: 1,
+    rent_reminder_days: 7,
+    bill_reminder_days: 5,
+    monthly_essentials_budget: 3200,
+    paycheck_amount: 4200,
+    paycheck_frequency: "bi-weekly",
+    auto_apply_allocation: true,
+    dismissed_merchants: [],
+    failed_attempts: 0,
+    locked_until: null,
+    created_at: isoOffset(-120),
+  };
+
+  const accounts: Account[] = [
+    {
+      id: checkingId,
+      user_id: USER_ID,
+      name: "Everyday Checking",
+      type: "checking",
+      currency: "CAD",
+      starting_balance: 2800,
+      created_at: isoOffset(-180),
+    },
+    {
+      id: savingsId,
+      user_id: USER_ID,
+      name: "Emergency Savings",
+      type: "checking",
+      currency: "CAD",
+      starting_balance: 9200,
+      created_at: isoOffset(-180),
+    },
+    {
+      id: investId,
+      user_id: USER_ID,
+      name: "Long-Term Investing",
+      type: "investing",
+      currency: "USD",
+      starting_balance: 3000,
+      created_at: isoOffset(-180),
+    },
+  ];
+
+  // Helper to build expense transactions for past months (for AI features)
+  const pastTx = (id: string, daysAgo: number, amount: number, category: string, merchant: string): Transaction => ({
+    id, user_id: USER_ID, type: "expense", date: dateOffset(-daysAgo), amount, currency: "CAD",
+    category, account_id: checkingId, from_account_id: null, to_account_id: null,
+    merchant, notes: null, recurrence: null, is_recurring: false,
+    linked_charge_id: null, idempotency_key: null, received_amount: null, created_at: isoOffset(-daysAgo),
+  });
+  const pastIncome = (id: string, daysAgo: number): Transaction => ({
+    id, user_id: USER_ID, type: "income", date: dateOffset(-daysAgo), amount: 4200, currency: "CAD",
+    category: "Paycheck", account_id: checkingId, from_account_id: null, to_account_id: null,
+    merchant: "Acme Robotics", notes: "Bi-weekly paycheck", recurrence: "bi-weekly", is_recurring: true,
+    linked_charge_id: null, idempotency_key: null, received_amount: null, created_at: isoOffset(-daysAgo),
+  });
+
+  const transactions: Transaction[] = [
+    // Month -3 (90 days ago)
+    pastIncome("demo-tx-h1", 95),    pastIncome("demo-tx-h2", 81),
+    pastTx("demo-tx-h3", 93, 2350, "Rent", "Condo Management"),
+    pastTx("demo-tx-h4", 90, 85, "Food", "Metro"),
+    pastTx("demo-tx-h5", 88, 45, "Transport", "PRESTO"),
+    pastTx("demo-tx-h6", 85, 130, "Bills", "Hydro One"),
+    pastTx("demo-tx-h7", 82, 35, "Fun", "Cineplex"),
+    // Month -2 (60 days ago)
+    pastIncome("demo-tx-h8", 67),    pastIncome("demo-tx-h9", 53),
+    pastTx("demo-tx-h10", 63, 2350, "Rent", "Condo Management"),
+    pastTx("demo-tx-h11", 60, 95, "Food", "Metro"),
+    pastTx("demo-tx-h12", 58, 50, "Transport", "PRESTO"),
+    pastTx("demo-tx-h13", 55, 125, "Bills", "Hydro One"),
+    pastTx("demo-tx-h14", 52, 30, "Fun", "Cineplex"),
+    // Month -1 (30 days ago) - current month starts here
+    pastIncome("demo-tx-h15", 40),   pastIncome("demo-tx-h16", 26),
+    pastTx("demo-tx-h17", 38, 2350, "Rent", "Condo Management"),
+    pastTx("demo-tx-h18", 35, 110, "Food", "Metro"),
+    pastTx("demo-tx-h19", 33, 55, "Transport", "PRESTO"),
+    pastTx("demo-tx-h20", 31, 140, "Bills", "Hydro One"),
+    // Current month transactions below
+    {
+      id: "demo-tx-1",
+      user_id: USER_ID,
+      type: "income",
+      date: dateOffset(-26),
+      amount: 4200,
+      currency: "CAD",
+      category: "Paycheck",
+      account_id: checkingId,
+      from_account_id: null,
+      to_account_id: null,
+      merchant: "Acme Robotics",
+      notes: "Bi-weekly paycheck",
+      recurrence: "bi-weekly",
+      is_recurring: true,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-26),
+    },
+    {
+      id: "demo-tx-2",
+      user_id: USER_ID,
+      type: "expense",
+      date: dateOffset(-24),
+      amount: 2350,
+      currency: "CAD",
+      category: "Rent",
+      account_id: checkingId,
+      from_account_id: null,
+      to_account_id: null,
+      merchant: "Condo Management",
+      notes: "Monthly rent",
+      recurrence: "monthly",
+      is_recurring: true,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-24),
+    },
+    {
+      id: "demo-tx-3",
+      user_id: USER_ID,
+      type: "expense",
+      date: dateOffset(-20),
+      amount: 145,
+      currency: "CAD",
+      category: "Bills",
+      account_id: checkingId,
+      from_account_id: null,
+      to_account_id: null,
+      merchant: "Hydro One",
+      notes: "Electric bill",
+      recurrence: null,
+      is_recurring: false,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-20),
+    },
+    {
+      id: "demo-tx-4",
+      user_id: USER_ID,
+      type: "income",
+      date: dateOffset(-12),
+      amount: 4200,
+      currency: "CAD",
+      category: "Paycheck",
+      account_id: checkingId,
+      from_account_id: null,
+      to_account_id: null,
+      merchant: "Acme Robotics",
+      notes: "Bi-weekly paycheck",
+      recurrence: "bi-weekly",
+      is_recurring: true,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-12),
+    },
+    {
+      id: "demo-tx-5",
+      user_id: USER_ID,
+      type: "expense",
+      date: dateOffset(-9),
+      amount: 92,
+      currency: "CAD",
+      category: "Food",
+      account_id: checkingId,
+      from_account_id: null,
+      to_account_id: null,
+      merchant: "Metro",
+      notes: "Groceries",
+      recurrence: null,
+      is_recurring: false,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-9),
+    },
+    {
+      id: "demo-tx-6",
+      user_id: USER_ID,
+      type: "transfer",
+      date: dateOffset(-8),
+      amount: 750,
+      currency: "CAD",
+      category: null,
+      account_id: null,
+      from_account_id: checkingId,
+      to_account_id: savingsId,
+      merchant: null,
+      notes: "Auto transfer to emergency fund",
+      recurrence: "bi-weekly",
+      is_recurring: true,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-8),
+    },
+    {
+      id: "demo-tx-7",
+      user_id: USER_ID,
+      type: "expense",
+      date: dateOffset(-5),
+      amount: 64,
+      currency: "CAD",
+      category: "Transport",
+      account_id: checkingId,
+      from_account_id: null,
+      to_account_id: null,
+      merchant: "PRESTO",
+      notes: "Transit reload",
+      recurrence: null,
+      is_recurring: false,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-5),
+    },
+    {
+      id: "demo-tx-7b",
+      user_id: USER_ID,
+      type: "expense",
+      date: dateOffset(-3),
+      amount: 85,
+      currency: "CAD",
+      category: "Transport",
+      account_id: checkingId,
+      from_account_id: null,
+      to_account_id: null,
+      merchant: "Uber",
+      notes: "Airport ride",
+      recurrence: null,
+      is_recurring: false,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-3),
+    },
+    {
+      id: "demo-tx-8",
+      user_id: USER_ID,
+      type: "expense",
+      date: dateOffset(-2),
+      amount: 39,
+      currency: "CAD",
+      category: "Fun",
+      account_id: checkingId,
+      from_account_id: null,
+      to_account_id: null,
+      merchant: "Cineplex",
+      notes: "Movie night",
+      recurrence: null,
+      is_recurring: false,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-2),
+    },
+    {
+      id: "demo-tx-9",
+      user_id: USER_ID,
+      type: "income",
+      date: dateOffset(-1),
+      amount: 180,
+      currency: "CAD",
+      category: "Refund",
+      account_id: checkingId,
+      from_account_id: null,
+      to_account_id: null,
+      merchant: "Amazon",
+      notes: "Product return refund",
+      recurrence: null,
+      is_recurring: false,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-1),
+    },
+    {
+      id: "demo-tx-10",
+      user_id: USER_ID,
+      type: "transfer",
+      date: dateOffset(-1),
+      amount: 300,
+      currency: "USD",
+      category: null,
+      account_id: null,
+      from_account_id: checkingId,
+      to_account_id: investId,
+      merchant: null,
+      notes: "Broker top-up",
+      recurrence: null,
+      is_recurring: false,
+      linked_charge_id: null,
+      idempotency_key: null,
+      received_amount: null,
+      created_at: isoOffset(-1),
+    },
+  ];
+
+  const goals: Goal[] = [
+    {
+      id: emergencyGoalId,
+      user_id: USER_ID,
+      name: "Emergency Fund",
+      target_amount: 20000,
+      target_date: dateOffset(280),
+      linked_account_id: savingsId,
+      created_at: isoOffset(-100),
+    },
+    {
+      id: condoGoalId,
+      user_id: USER_ID,
+      name: "Condo Down Payment",
+      target_amount: 80000,
+      target_date: dateOffset(900),
+      linked_account_id: null,
+      created_at: isoOffset(-90),
+    },
+  ];
+
+  const goalAccounts: GoalAccount[] = [
+    {
+      id: "demo-goal-account-1",
+      user_id: USER_ID,
+      goal_id: emergencyGoalId,
+      account_id: savingsId,
+      allocated_amount: 9200,
+      created_at: isoOffset(-90),
+    },
+    {
+      id: "demo-goal-account-2",
+      user_id: USER_ID,
+      goal_id: condoGoalId,
+      account_id: investId,
+      allocated_amount: 3000,
+      created_at: isoOffset(-90),
+    },
+  ];
+
+  const plans: AllocationPlan[] = [
+    {
+      id: "demo-plan-1",
+      user_id: USER_ID,
+      name: "Balanced Paycheck Split",
+      is_active: true,
+      allocations: {
+        [savingsId]: 750,
+        [investId]: 300,
+      },
+      created_at: isoOffset(-80),
+    },
+  ];
+
+  const holdings: Holding[] = [
+    {
+      id: "demo-holding-1",
+      user_id: USER_ID,
+      account_id: investId,
+      symbol: "AAPL",
+      shares: 8,
+      cost_basis: 1300,
+      cost_currency: "USD",
+      created_at: isoOffset(-70),
+    },
+    {
+      id: "demo-holding-2",
+      user_id: USER_ID,
+      account_id: investId,
+      symbol: "VOO",
+      shares: 4,
+      cost_basis: 1450,
+      cost_currency: "USD",
+      created_at: isoOffset(-60),
+    },
+    {
+      id: "demo-holding-3",
+      user_id: USER_ID,
+      account_id: investId,
+      symbol: "CASH",
+      shares: 1200,
+      cost_basis: 1200,
+      cost_currency: "USD",
+      created_at: isoOffset(-50),
+    },
+  ];
+
+  const subscriptions: Subscription[] = [
+    {
+      id: "demo-sub-1",
+      user_id: USER_ID,
+      name: "Netflix",
+      amount: 21.99,
+      currency: "CAD",
+      frequency: "monthly",
+      category: "Streaming",
+      next_billing: dateOffset(3),
+      is_active: true,
+      notes: null,
+      payment_account_id: checkingId,
+      created_at: isoOffset(-120),
+    },
+    {
+      id: "demo-sub-2",
+      user_id: USER_ID,
+      name: "GitHub Copilot",
+      amount: 10,
+      currency: "USD",
+      frequency: "monthly",
+      category: "Software",
+      next_billing: dateOffset(6),
+      is_active: true,
+      notes: null,
+      payment_account_id: "cc:" + visaId,
+      created_at: isoOffset(-120),
+    },
+  ];
+
+  const dividends: Dividend[] = [
+    {
+      id: "demo-div-1",
+      user_id: USER_ID,
+      holding_id: "demo-holding-2",
+      symbol: "VOO",
+      amount: 18.42,
+      currency: "USD",
+      date: dateOffset(-34),
+      notes: null,
+      reinvested: false,
+      created_at: isoOffset(-34),
+    },
+    {
+      id: "demo-div-2",
+      user_id: USER_ID,
+      holding_id: "demo-holding-1",
+      symbol: "AAPL",
+      amount: 7.12,
+      currency: "USD",
+      date: dateOffset(-10),
+      notes: null,
+      reinvested: false,
+      created_at: isoOffset(-10),
+    },
+  ];
+
+  const creditCards: CreditCard[] = [
+    {
+      id: visaId,
+      user_id: USER_ID,
+      name: "Visa Infinite",
+      currency: "CAD",
+      credit_limit: 10000,
+      linked_account_id: checkingId,
+      created_at: isoOffset(-150),
+    },
+    {
+      id: mastercardId,
+      user_id: USER_ID,
+      name: "World Mastercard",
+      currency: "CAD",
+      credit_limit: 5000,
+      linked_account_id: checkingId,
+      created_at: isoOffset(-120),
+    },
+  ];
+
+  const creditCardCharges: CreditCardCharge[] = [
+    {
+      id: "demo-charge-1",
+      user_id: USER_ID,
+      card_id: visaId,
+      date: dateOffset(-22),
+      amount: 85.49,
+      merchant: "Amazon",
+      category: "Other",
+      notes: null,
+      linked_transaction_id: null,
+      created_at: isoOffset(-22),
+    },
+    {
+      id: "demo-charge-2",
+      user_id: USER_ID,
+      card_id: visaId,
+      date: dateOffset(-18),
+      amount: 42.0,
+      merchant: "Uber Eats",
+      category: "Food",
+      notes: null,
+      linked_transaction_id: null,
+      created_at: isoOffset(-18),
+    },
+    {
+      id: "demo-charge-3",
+      user_id: USER_ID,
+      card_id: visaId,
+      date: dateOffset(-11),
+      amount: 120.0,
+      merchant: "Best Buy",
+      category: "Other",
+      notes: "USB-C hub",
+      linked_transaction_id: null,
+      created_at: isoOffset(-11),
+    },
+    {
+      id: "demo-charge-4",
+      user_id: USER_ID,
+      card_id: mastercardId,
+      date: dateOffset(-15),
+      amount: 54.99,
+      merchant: "Shoppers Drug Mart",
+      category: "Health",
+      notes: null,
+      linked_transaction_id: null,
+      created_at: isoOffset(-15),
+    },
+    {
+      id: "demo-charge-5",
+      user_id: USER_ID,
+      card_id: mastercardId,
+      date: dateOffset(-7),
+      amount: 210.0,
+      merchant: "Canadian Tire",
+      category: "Other",
+      notes: "Winter tires",
+      linked_transaction_id: null,
+      created_at: isoOffset(-7),
+    },
+    {
+      id: "demo-charge-6",
+      user_id: USER_ID,
+      card_id: visaId,
+      date: dateOffset(-3),
+      amount: 21.99,
+      merchant: "Netflix",
+      category: "Streaming",
+      notes: "CC: Visa Infinite \u2014 Subscription (monthly)",
+      linked_transaction_id: null,
+      created_at: isoOffset(-3),
+    },
+  ];
+
+  const creditCardPayments: CreditCardPayment[] = [
+    {
+      id: "demo-ccpay-1",
+      user_id: USER_ID,
+      card_id: visaId,
+      account_id: checkingId,
+      date: dateOffset(-10),
+      amount: 127.49,
+      notes: "Partial payment",
+      created_at: isoOffset(-10),
+    },
+    {
+      id: "demo-ccpay-2",
+      user_id: USER_ID,
+      card_id: mastercardId,
+      account_id: checkingId,
+      date: dateOffset(-4),
+      amount: 54.99,
+      notes: "Full balance",
+      created_at: isoOffset(-4),
+    },
+  ];
+
+  return {
+    accounts,
+    transactions,
+    goals,
+    goalAccounts,
+    plans,
+    settings,
+    holdings,
+    subscriptions,
+    dividends,
+    creditCards,
+    creditCardCharges,
+    creditCardPayments,
+  };
+}
