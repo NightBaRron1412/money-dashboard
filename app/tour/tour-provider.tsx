@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { NextStepProvider, NextStep } from "nextstepjs";
-import { useNextAdapter } from "nextstepjs/dist/adapters/next";
+import { useNextAdapter } from "nextstepjs/adapters/next";
 import { demoTourSteps } from "./tour-steps";
 import { TourCard } from "./tour-card";
 
