@@ -98,14 +98,14 @@ export const demoTourSteps: Tour[] = [
         icon: "🎙️",
         title: "Voice Transactions",
         content:
-          "Tap the mic to add transactions by voice — " +
+          "See the purple mic button in the bottom-right corner? " +
+          "Tap it to add transactions by voice — " +
           "\"Spent $12 on lunch at Chipotle\" gets parsed automatically.",
-        selector: "[data-tour='voice-fab']",
-        side: "left",
+        side: "bottom",
         showControls: true,
         showSkip: true,
-        pointerPadding: 8,
-        pointerRadius: 24,
+        pointerPadding: 0,
+        pointerRadius: 16,
         nextRoute: "/demo/income",
       },
 
