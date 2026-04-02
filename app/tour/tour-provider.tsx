@@ -14,14 +14,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const handleStepChange = useCallback((step: number) => {
     const target = allSteps[step];
     if (!target?.selector) return;
+
     const waitForElement = (retries: number) => {
       const el = document.querySelector(target.selector!);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        return;
-      }
-      if (retries > 0) {
+      if (!el && retries > 0) {
         setTimeout(() => waitForElement(retries - 1), 200);
+        return;
       }
     };
     setTimeout(() => waitForElement(15), 300);

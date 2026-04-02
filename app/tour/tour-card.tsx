@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import type { CardComponentProps } from "nextstepjs";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -14,15 +15,25 @@ export function TourCard({
 }: CardComponentProps) {
   const isFirst = currentStep === 0;
   const isLast = currentStep === totalSteps - 1;
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      cardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [currentStep]);
+
+  const progress = totalSteps > 1 ? ((currentStep + 1) / totalSteps) * 100 : 100;
 
   return (
-    <div className="relative w-[340px] max-w-[90vw] rounded-2xl border border-border-subtle bg-bg-secondary shadow-lg">
+    <div ref={cardRef} className="relative w-[340px] max-w-[90vw] rounded-2xl border border-border-subtle bg-bg-secondary shadow-lg">
       {arrow}
       <div className="p-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-text-secondary">
-            {currentStep + 1} of {totalSteps}
+            Step {currentStep + 1} of {totalSteps}
           </span>
           {skipTour && (
             <button
@@ -33,6 +44,14 @@ export function TourCard({
               <X className="h-4 w-4" />
             </button>
           )}
+        </div>
+
+        {/* Progress bar */}
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-border-subtle">
+          <div
+            className="h-full rounded-full bg-accent-purple transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
         </div>
 
         {/* Content */}
@@ -76,22 +95,6 @@ export function TourCard({
               {!isLast && <ChevronRight className="h-3.5 w-3.5" />}
             </button>
           </div>
-        </div>
-
-        {/* Progress dots */}
-        <div className="mt-3 flex justify-center gap-1">
-          {Array.from({ length: totalSteps }, (_, i) => (
-            <span
-              key={i}
-              className={`h-1.5 rounded-full transition-all ${
-                i === currentStep
-                  ? "w-4 bg-accent-purple"
-                  : i < currentStep
-                    ? "w-1.5 bg-accent-purple/40"
-                    : "w-1.5 bg-border-subtle"
-              }`}
-            />
-          ))}
         </div>
       </div>
     </div>
