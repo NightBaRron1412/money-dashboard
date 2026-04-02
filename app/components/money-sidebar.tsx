@@ -100,8 +100,8 @@ export function MoneySidebar({
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const isActive =
-              item.href === routeBase
-                ? pathname === routeBase
+              item.href === "/" || item.href === routeBase
+                ? pathname === item.href
                 : pathname.startsWith(item.href);
             return (
               <Link
@@ -247,8 +247,8 @@ export function MoneySidebar({
           {mappedNavItems.map((item) => {
             const Icon = item.icon;
             const isActive =
-              item.href === routeBase
-                ? pathname === routeBase
+              item.href === "/" || item.href === routeBase
+                ? pathname === item.href
                 : pathname.startsWith(item.href);
             return (
               <Link
