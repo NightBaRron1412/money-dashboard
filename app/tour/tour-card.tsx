@@ -26,12 +26,14 @@ export function TourCard({
       const offTop = rect.top < pad;
       const offBottom = rect.bottom > window.innerHeight - pad;
       if (offTop || offBottom) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        window.scrollTo({
+          top: window.scrollY + rect.top - window.innerHeight / 2 + rect.height / 2,
+          behavior: "smooth",
+        });
       }
     };
-    const t1 = setTimeout(scrollCard, 400);
-    const t2 = setTimeout(scrollCard, 800);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const timers = [300, 600, 1000].map((ms) => setTimeout(scrollCard, ms));
+    return () => timers.forEach(clearTimeout);
   }, [currentStep]);
 
   const progress = totalSteps > 1 ? ((currentStep + 1) / totalSteps) * 100 : 100;
