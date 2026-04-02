@@ -21,27 +21,25 @@ export const demoTourSteps: Tour[] = [
         icon: "📊",
         title: "Navigation",
         content:
-          "The sidebar gives you access to all features — income, expenses, stocks, goals, " +
-          "AI chat, and more. On mobile, use the bottom tab bar.",
-        selector: "[data-tour='sidebar']",
-        side: "right",
+          "Use the sidebar (desktop) or bottom tab bar (mobile) to access " +
+          "all features — income, expenses, stocks, goals, AI chat, and more.",
+        side: "bottom",
         showControls: true,
         showSkip: true,
-        pointerPadding: 4,
+        pointerPadding: 0,
         pointerRadius: 16,
       },
       {
         icon: "👁️",
         title: "Privacy Mode",
         content:
-          "Toggle this to hide or show all monetary values. " +
-          "Great for when you're sharing your screen.",
-        selector: "[data-tour='balance-toggle']",
-        side: "right-top",
+          "Hide or show all monetary values with the eye icon " +
+          "in the sidebar (desktop) or the More menu (mobile).",
+        side: "bottom",
         showControls: true,
         showSkip: true,
-        pointerPadding: 4,
-        pointerRadius: 12,
+        pointerPadding: 0,
+        pointerRadius: 16,
       },
       {
         icon: "🌅",
