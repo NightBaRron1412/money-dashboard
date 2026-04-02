@@ -2,7 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import type { Metadata, Viewport } from "next/types";
 import { ReactNode } from "react";
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { isAnalyticsEnabled, isSpeedInsightsEnabled } from "@/lib/analytics";
 import { Providers } from "./providers";
