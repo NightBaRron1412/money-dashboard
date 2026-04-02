@@ -15,4 +15,4 @@ tmp-*.cjs
 devserver.err
 devserver.log
 
-certificates
+certificatestest-results/
