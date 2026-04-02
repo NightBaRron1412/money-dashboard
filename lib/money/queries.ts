@@ -1146,7 +1146,8 @@ export function computeCreditCardBalance(
   const totalPayments = payments
     .filter((p) => p.card_id === cardId)
     .reduce((s, p) => s + p.amount, 0);
-  return totalCharges - totalPayments;
+  const bal = totalCharges - totalPayments;
+  return Math.abs(bal) < 0.005 ? 0 : Math.round(bal * 100) / 100;
 }
 
 /** Compute pending payments from a specific account (sum of cc payments from that account) */
