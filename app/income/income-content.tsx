@@ -483,11 +483,13 @@ export function IncomeContent() {
 
   return (
     <>
+      <div data-tour="income-header">
       <PageHeader
         title="Income"
         description="Track your paychecks and income"
         action={
           <button
+            data-tour="income-add"
             onClick={handleOpenAdd}
             className="inline-flex items-center gap-2 rounded-xl bg-accent-purple px-4 py-2 text-sm font-medium text-white shadow-glow transition hover:-translate-y-0.5"
           >
@@ -495,6 +497,7 @@ export function IncomeContent() {
           </button>
         }
       />
+      </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard

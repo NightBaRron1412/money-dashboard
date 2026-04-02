@@ -463,7 +463,7 @@ export async function getSettings() {
     .select(SETTINGS_SAFE_COLUMNS)
     .maybeSingle();
   if (error) throw error;
-  return data as Settings | null;
+  return data as Settings | null; // pin_hash, failed_attempts, locked_until are undefined (not selected)
 }
 
 export async function upsertSettings(settings: Partial<Settings>) {

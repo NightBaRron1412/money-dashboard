@@ -222,6 +222,7 @@ export function MoneySidebar({
 
       {/* Desktop sidebar */}
       <aside
+        data-tour="sidebar"
         className={cn(
           "fixed inset-y-0 left-0 z-40 hidden h-screen shrink-0 flex-col border-r border-border-subtle bg-bg-secondary transition-all duration-200 md:flex",
           collapsed ? "w-16" : "w-56"
@@ -284,6 +285,7 @@ export function MoneySidebar({
             {!collapsed && <span>Theme</span>}
           </button>
           <button
+            data-tour="balance-toggle"
             onClick={toggleBalances}
             className={cn(
               "flex w-full items-center gap-3 rounded-xl px-3 py-1.5 text-sm text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary",

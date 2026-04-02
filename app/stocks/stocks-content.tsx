@@ -608,6 +608,7 @@ export function StocksContent() {
 
   return (
     <>
+      <div data-tour="stocks-header">
       <PageHeader
         title="Stocks & Holdings"
         description="Track your investment portfolio"
@@ -656,6 +657,7 @@ export function StocksContent() {
           </div>
         }
       />
+      </div>
 
       {investingAccounts.length === 0 && (
         <div className="mb-6 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-4 py-3 text-xs text-yellow-400">
@@ -670,7 +672,7 @@ export function StocksContent() {
       )}
 
       {/* Summary stats */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div data-tour="stocks-holdings" className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title={`Portfolio Value (${currency})`}
           value={m(totalMarketValue)}

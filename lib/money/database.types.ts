@@ -110,6 +110,7 @@ export interface Settings {
   created_at: string;
 }
 
+
 export interface Holding {
   id: string;
   user_id: string;
@@ -318,9 +319,32 @@ export interface Database {
         Insert: Omit<CreditCardPayment, "id" | "created_at"> & { id?: string; created_at?: string };
         Update: Partial<Omit<CreditCardPayment, "id">>;
       };
+      money_reconciliation_sessions: {
+        Row: ReconciliationSession;
+        Insert: Omit<ReconciliationSession, "id" | "created_at" | "started_at"> & { id?: string; created_at?: string; started_at?: string };
+        Update: Partial<Omit<ReconciliationSession, "id">>;
+      };
+      money_reconciliation_actions: {
+        Row: ReconciliationAction;
+        Insert: Omit<ReconciliationAction, "id" | "created_at"> & { id?: string; created_at?: string };
+        Update: Partial<Omit<ReconciliationAction, "id">>;
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_running_balance: {
+        Args: { p_account_id: string; p_owner_id?: string; p_date_from?: string; p_date_to?: string };
+        Returns: TransactionWithBalance[];
+      };
+      find_duplicate_transactions: {
+        Args: { p_account_id: string; p_owner_id?: string; p_date_from?: string; p_date_to?: string };
+        Returns: DuplicateCandidate[];
+      };
+      money_increment_failed_attempts: {
+        Args: { p_owner_id?: string; p_max_attempts?: number; p_lockout_minutes?: number };
+        Returns: { new_count: number }[];
+      };
+    };
     Enums: Record<string, never>;
   };
 }

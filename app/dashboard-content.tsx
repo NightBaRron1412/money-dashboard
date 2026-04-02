@@ -43,6 +43,7 @@ import {
 import { useBalanceVisibility } from "./balance-visibility-provider";
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import { detectSpendingAnomalies, forecastCashFlow, type CashFlowForecast } from "@/lib/money/forecasting";
+import { TakeTourButton } from "./tour/take-tour-button";
 
 export function DashboardContent({
   demoMode = false,
@@ -596,7 +597,8 @@ export function DashboardContent({
         title="Dashboard"
         description="Your personal finance overview"
         action={
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {demoMode && <TakeTourButton />}
             <Link
               href={`${appBase}/income` as any}
               className="inline-flex items-center gap-2 rounded-xl bg-accent-purple px-4 py-2 text-sm font-medium text-white shadow-glow transition hover:-translate-y-0.5"
@@ -613,7 +615,7 @@ export function DashboardContent({
         }
       />
 
-      <div className={`relative mt-3 mb-6 overflow-hidden rounded-2xl border p-5 sm:p-6 ${greetingTheme.card}`}>
+      <div data-tour="greeting" className={`relative mt-3 mb-6 overflow-hidden rounded-2xl border p-5 sm:p-6 ${greetingTheme.card}`}>
         <div className={`pointer-events-none absolute inset-0 ${greetingTheme.wash}`} />
         <div className={`pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full blur-3xl ${greetingTheme.glowA}`} />
         <div className={`pointer-events-none absolute -left-8 -bottom-12 h-32 w-32 rounded-full blur-3xl ${greetingTheme.glowB}`} />
@@ -687,7 +689,7 @@ export function DashboardContent({
 
       {/* AI Insights card */}
       {(aiInsights || aiInsightsLoading) && (
-        <div className="mb-4 rounded-2xl border border-accent-purple/30 bg-accent-purple/5 p-5 animate-in fade-in duration-500">
+        <div data-tour="ai-insights" className="mb-4 rounded-2xl border border-accent-purple/30 bg-accent-purple/5 p-5 animate-in fade-in duration-500">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-accent-purple" />
@@ -726,7 +728,7 @@ export function DashboardContent({
       )}
 
       {/* Summary cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div data-tour="summary-stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           title="Cash"
           value={m(cashTotalBase)}
@@ -1152,7 +1154,7 @@ export function DashboardContent({
       )}
 
       {/* Charts */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div data-tour="charts" className="mt-8 grid gap-6 lg:grid-cols-2">
         <NetWorthChart transactions={transactions} accounts={accounts} baseCurrency={baseCurrency} fx={fx} />
         <ExpensesByCategoryChart transactions={transactions} baseCurrency={baseCurrency} fx={fx} />
         <IncomeVsExpensesChart transactions={transactions} baseCurrency={baseCurrency} fx={fx} />

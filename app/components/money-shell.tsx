@@ -7,6 +7,7 @@ import { BalanceVisibilityProvider } from "../balance-visibility-provider";
 import { MoneySidebar } from "./money-sidebar";
 import { VoiceTransaction } from "./voice-transaction";
 import { useMoneyData } from "../hooks/use-money-data";
+import { TourProvider } from "../tour/tour-provider";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -89,14 +90,14 @@ function AuthGateInner({
   );
 }
 
-export function MoneyShell({
+function ShellWithoutTour({
   children,
-  demoMode = false,
-  routeBase = "",
+  demoMode,
+  routeBase,
 }: {
   children: ReactNode;
-  demoMode?: boolean;
-  routeBase?: string;
+  demoMode: boolean;
+  routeBase: string;
 }) {
   return (
     <MoneyAuthProvider demoMode={demoMode}>
@@ -107,4 +108,24 @@ export function MoneyShell({
       </BalanceVisibilityProvider>
     </MoneyAuthProvider>
   );
+}
+
+export function MoneyShell({
+  children,
+  demoMode = false,
+  routeBase = "",
+}: {
+  children: ReactNode;
+  demoMode?: boolean;
+  routeBase?: string;
+}) {
+  const shell = (
+    <ShellWithoutTour demoMode={demoMode} routeBase={routeBase}>
+      {children}
+    </ShellWithoutTour>
+  );
+
+  if (!demoMode) return shell;
+
+  return <TourProvider>{shell}</TourProvider>;
 }

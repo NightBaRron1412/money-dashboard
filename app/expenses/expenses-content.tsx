@@ -404,6 +404,7 @@ export function ExpensesContent() {
 
   return (
     <>
+      <div data-tour="expenses-header">
       <PageHeader
         title="Expenses"
         description="Track and categorize your spending"
@@ -416,6 +417,7 @@ export function ExpensesContent() {
           </button>
         }
       />
+      </div>
 
       {/* Stats */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -443,7 +445,7 @@ export function ExpensesContent() {
 
       {/* Category breakdown */}
       {categoryBreakdown.length > 0 && (
-        <div className="mb-6">
+        <div data-tour="category-breakdown" className="mb-6">
           <h3 className="mb-3 text-sm font-semibold text-text-primary">
             Category Breakdown
           </h3>

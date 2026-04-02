@@ -557,6 +557,7 @@ export function GoalsContent() {
 
   return (
     <>
+      <div data-tour="goals-header">
       <PageHeader
         title="Goals"
         description="Track your financial goals"
@@ -569,6 +570,7 @@ export function GoalsContent() {
           </button>
         }
       />
+      </div>
 
       {goals.length === 0 ? (
         <EmptyState
@@ -585,7 +587,7 @@ export function GoalsContent() {
           }
         />
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div data-tour="goals-cards" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {goals.map((goal) => {
             const linkedAccountIds = getGoalAccountIds(goal);
             const linkedAccountIdSet = new Set(linkedAccountIds);

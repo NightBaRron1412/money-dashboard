@@ -100,7 +100,7 @@ export function ChatContent({
         description="Ask questions about your money"
       />
 
-      <div className="flex flex-col rounded-2xl border border-border-subtle bg-bg-secondary" style={{ height: "calc(100dvh - 200px)", minHeight: 400 }}>
+      <div data-tour="chat-panel" className="flex flex-col rounded-2xl border border-border-subtle bg-bg-secondary" style={{ height: "calc(100dvh - 200px)", minHeight: 400 }}>
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && (

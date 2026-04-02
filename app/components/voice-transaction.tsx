@@ -357,7 +357,7 @@ export function VoiceTransaction({ accounts, creditCards, settings, refresh, dem
   return (
     <>
       {/* Floating mic button */}
-      <div className="fixed z-40 right-4 md:right-6 md:!bottom-6 flex flex-col items-center gap-2" style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
+      <div data-tour="voice-fab" className="fixed z-40 right-4 md:right-6 md:!bottom-6 flex flex-col items-center gap-2" style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
         {/* Live waveform + duration when recording */}
         {recorderState === "recording" && (
           <div className="flex items-center gap-2 rounded-2xl bg-accent-purple/90 px-3.5 py-2 shadow-lg backdrop-blur">
