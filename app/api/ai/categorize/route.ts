@@ -8,10 +8,11 @@ export async function POST(request: NextRequest) {
   if (authErr) return authErr;
 
   try {
-    const { merchant, categories } = await request.json();
+    const { merchant, notes, categories } = await request.json();
     if (!merchant || typeof merchant !== "string") {
       return NextResponse.json({ error: "merchant is required" }, { status: 400 });
     }
+    const itemDescription = typeof notes === "string" ? notes.trim() : "";
 
     const supabase = getServerSupabase();
 
@@ -66,8 +67,8 @@ export async function POST(request: NextRequest) {
       : ["Food", "Transport", "Bills", "Rent", "Fun", "Health", "Shopping", "Other"];
 
     const result = await generateJSON<{ category: string }>(
-      `You are a transaction categorizer. Given a merchant name and a list of categories, return the most likely category as JSON: {"category": "..."}. Only use categories from the provided list.`,
-      `Merchant: "${merchant}"\nCategories: ${categoryList.join(", ")}`
+      `You are a transaction categorizer. Given a merchant name, an optional item description, and a list of categories, return the most likely category as JSON: {"category": "..."}. The item description is MORE important than the merchant name for choosing the category. Only use categories from the provided list.`,
+      `Merchant: "${merchant.trim()}"${itemDescription ? `\nItem/Description: "${itemDescription}"` : ""}\nCategories: ${categoryList.join(", ")}`
     );
 
     const suggested = categoryList.includes(result.category) ? result.category : "Other";

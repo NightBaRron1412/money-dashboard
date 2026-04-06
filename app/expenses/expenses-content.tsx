@@ -100,15 +100,15 @@ export function ExpensesContent() {
   const [formError, setFormError] = useState("");
 
   const autoCategorize = useCallback(async (merchantName: string, notesText?: string) => {
-    const text = [merchantName, notesText].filter(Boolean).join(" ").trim();
-    if (!text || text.length < 2) return;
+    if (!merchantName.trim() && !(notesText?.trim())) return;
+    if ((merchantName + (notesText || "")).trim().length < 2) return;
     setAutoCategorizePending(true);
     try {
       const cats = settings?.expense_categories ?? [];
       const res = await fetch("/api/ai/categorize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ merchant: text, categories: cats }),
+        body: JSON.stringify({ merchant: merchantName.trim(), notes: notesText?.trim() || undefined, categories: cats }),
       });
       if (!res.ok) return;
       const data = await res.json();
