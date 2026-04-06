@@ -751,9 +751,9 @@ export function CreditCardsContent() {
                       setShowCCCorrection(true);
                     }}
                     className="rounded-xl border border-border-subtle px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary"
-                    title="Correct balance"
                   >
-                    <Scale className="inline h-3 w-3" />
+                    <Scale className="mr-1 inline h-3 w-3" />
+                    Correct
                   </button>
                 </div>
               </div>
