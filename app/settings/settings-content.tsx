@@ -712,8 +712,8 @@ export function SettingsContent() {
                         </span>
                         <span className="font-bold text-text-primary">
                           {m(
-                            Object.values(alloc).reduce(
-                              (s, v) => s + (v || 0),
+                            Object.entries(alloc).reduce(
+                              (s, [k, v]) => k === "__goals__" ? s : s + (Number(v) || 0),
                               0
                             )
                           )}
