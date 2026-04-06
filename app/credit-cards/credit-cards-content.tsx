@@ -1332,10 +1332,14 @@ export function CreditCardsContent() {
               Merchant
             </label>
             <input
+              id="charge-merchant"
               type="text"
               value={chargeMerchant}
               onChange={(e) => setChargeMerchant(e.target.value)}
-              onBlur={() => autoCategorize(chargeMerchant, chargeNotes)}
+              onBlur={(e) => {
+                const notesEl = document.getElementById("charge-notes") as HTMLInputElement | null;
+                autoCategorize(e.target.value, notesEl?.value);
+              }}
               placeholder="e.g., Amazon"
               className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
             />
@@ -1348,10 +1352,14 @@ export function CreditCardsContent() {
               Notes <span className="text-text-secondary/50">(optional)</span>
             </label>
             <input
+              id="charge-notes"
               type="text"
               value={chargeNotes}
               onChange={(e) => setChargeNotes(e.target.value)}
-              onBlur={() => autoCategorize(chargeMerchant, chargeNotes)}
+              onBlur={(e) => {
+                const merchantEl = document.getElementById("charge-merchant") as HTMLInputElement | null;
+                autoCategorize(merchantEl?.value || "", e.target.value);
+              }}
               placeholder="Add a note..."
               className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
             />

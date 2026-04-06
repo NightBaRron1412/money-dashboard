@@ -863,10 +863,14 @@ export function ExpensesContent() {
               Merchant
             </label>
             <input
+              id="expense-merchant"
               type="text"
               value={merchant}
               onChange={(e) => setMerchant(e.target.value)}
-              onBlur={() => autoCategorize(merchant, expenseNotes)}
+              onBlur={(e) => {
+                const notesEl = document.getElementById("expense-notes") as HTMLInputElement | null;
+                autoCategorize(e.target.value, notesEl?.value);
+              }}
               placeholder="e.g., Trader Joe's"
               className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
             />
@@ -879,10 +883,14 @@ export function ExpensesContent() {
               Notes <span className="text-text-secondary/50">(optional)</span>
             </label>
             <input
+              id="expense-notes"
               type="text"
               value={expenseNotes}
               onChange={(e) => setExpenseNotes(e.target.value)}
-              onBlur={() => autoCategorize(merchant, expenseNotes)}
+              onBlur={(e) => {
+                const merchantEl = document.getElementById("expense-merchant") as HTMLInputElement | null;
+                autoCategorize(merchantEl?.value || "", e.target.value);
+              }}
               placeholder="Add a note..."
               className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
             />
