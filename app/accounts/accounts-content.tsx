@@ -120,10 +120,10 @@ export function AccountsContent() {
 
   // Ledger sorting
   const [ledgerSortKey, setLedgerSortKey] = useState<"date" | "type" | "description" | "amount" | "balance">("date");
-  const [ledgerSortDir, setLedgerSortDir] = useState<"asc" | "desc">("asc");
+  const [ledgerSortDir, setLedgerSortDir] = useState<"asc" | "desc">("desc");
   const toggleLedgerSort = (key: typeof ledgerSortKey) => {
     if (ledgerSortKey === key) setLedgerSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setLedgerSortKey(key); setLedgerSortDir(key === "date" ? "asc" : "desc"); }
+    else { setLedgerSortKey(key); setLedgerSortDir(key === "date" ? "desc" : "asc"); }
   };
   const LedgerSortIcon = ({ col }: { col: typeof ledgerSortKey }) =>
     ledgerSortKey === col ? (ledgerSortDir === "asc" ? <ArrowUp className="ml-1 inline h-3 w-3" /> : <ArrowDown className="ml-1 inline h-3 w-3" />) : null;
@@ -138,6 +138,10 @@ export function AccountsContent() {
         case "description": cmp = (a.merchant || a.category || a.notes || "").localeCompare(b.merchant || b.category || b.notes || ""); break;
         case "amount": cmp = a.signed_amount - b.signed_amount; break;
         case "balance": cmp = a.running_balance - b.running_balance; break;
+      }
+      if (cmp === 0) {
+        cmp = a.date.localeCompare(b.date);
+        if (cmp === 0) cmp = (a.created_at || "").localeCompare(b.created_at || "");
       }
       return ledgerSortDir === "asc" ? cmp : -cmp;
     });
