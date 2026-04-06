@@ -925,11 +925,11 @@ export function ExpensesContent() {
             </button>
             <button
               type="submit"
-              disabled={saving || autoCategorizePending || (accounts.length === 0 && creditCards.length === 0)}
+              disabled={saving || (accounts.length === 0 && creditCards.length === 0)}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-purple px-4 py-2.5 text-sm font-medium text-white shadow-glow transition hover:-translate-y-0.5 disabled:opacity-60"
             >
-              {(saving || autoCategorizePending) && <Loader2 className="h-4 w-4 animate-spin" />}
-              {autoCategorizePending ? "Categorizing…" : "Add Expense"}
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Add Expense
             </button>
           </div>
         </form>
