@@ -14,50 +14,53 @@ export async function POST(request: NextRequest) {
     }
     const itemDescription = typeof notes === "string" ? notes.trim() : "";
 
-    const supabase = getServerSupabase();
+    // When notes/description is provided, skip history lookup and use AI
+    // because the same merchant (e.g. "Amazon") can have very different categories
+    // depending on what was purchased.
+    if (!itemDescription) {
+      const supabase = getServerSupabase();
 
-    // Primary: pattern match from past transactions
-    const { data: pastTxs } = await supabase
-      .from("money_transactions")
-      .select("category")
-      .eq("user_id", OWNER_ID)
-      .eq("type", "expense")
-      .ilike("merchant", `%${merchant.trim()}%`)
-      .not("category", "is", null)
-      .limit(20);
+      const { data: pastTxs } = await supabase
+        .from("money_transactions")
+        .select("category")
+        .eq("user_id", OWNER_ID)
+        .eq("type", "expense")
+        .ilike("merchant", `%${merchant.trim()}%`)
+        .not("category", "is", null)
+        .limit(20);
 
-    if (pastTxs && pastTxs.length > 0) {
-      const freq: Record<string, number> = {};
-      for (const t of pastTxs) {
-        if (t.category) freq[t.category] = (freq[t.category] ?? 0) + 1;
+      if (pastTxs && pastTxs.length > 0) {
+        const freq: Record<string, number> = {};
+        for (const t of pastTxs) {
+          if (t.category) freq[t.category] = (freq[t.category] ?? 0) + 1;
+        }
+        const best = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+        if (best) {
+          return NextResponse.json({ category: best[0], source: "history", confidence: Math.min(100, best[1] * 20) });
+        }
       }
-      const best = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
-      if (best) {
-        return NextResponse.json({ category: best[0], source: "history", confidence: Math.min(100, best[1] * 20) });
+
+      const { data: pastCharges } = await supabase
+        .from("money_credit_card_charges")
+        .select("category")
+        .eq("user_id", OWNER_ID)
+        .ilike("merchant", `%${merchant.trim()}%`)
+        .not("category", "is", null)
+        .limit(20);
+
+      if (pastCharges && pastCharges.length > 0) {
+        const freq: Record<string, number> = {};
+        for (const c of pastCharges) {
+          if (c.category) freq[c.category] = (freq[c.category] ?? 0) + 1;
+        }
+        const best = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+        if (best) {
+          return NextResponse.json({ category: best[0], source: "history", confidence: Math.min(100, best[1] * 20) });
+        }
       }
     }
 
-    // Also check CC charges
-    const { data: pastCharges } = await supabase
-      .from("money_credit_card_charges")
-      .select("category")
-      .eq("user_id", OWNER_ID)
-      .ilike("merchant", `%${merchant.trim()}%`)
-      .not("category", "is", null)
-      .limit(20);
-
-    if (pastCharges && pastCharges.length > 0) {
-      const freq: Record<string, number> = {};
-      for (const c of pastCharges) {
-        if (c.category) freq[c.category] = (freq[c.category] ?? 0) + 1;
-      }
-      const best = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
-      if (best) {
-        return NextResponse.json({ category: best[0], source: "history", confidence: Math.min(100, best[1] * 20) });
-      }
-    }
-
-    // Fallback: Gemini
+    // AI categorization (always used when notes are present)
     if (!isGeminiConfigured()) {
       return NextResponse.json({ category: null, source: "none" });
     }
