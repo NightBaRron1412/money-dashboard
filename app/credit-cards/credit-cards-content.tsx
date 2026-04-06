@@ -27,6 +27,7 @@ import {
   Filter,
   Check,
   X,
+  Scale,
 } from "lucide-react";
 import {
   createCreditCard,
@@ -125,6 +126,11 @@ export function CreditCardsContent() {
   const [editChargeMerchant, setEditChargeMerchant] = useState("");
   const [editChargeCategory, setEditChargeCategory] = useState("Other");
   const [editChargeNotes, setEditChargeNotes] = useState("");
+
+  // CC balance correction
+  const [showCCCorrection, setShowCCCorrection] = useState(false);
+  const [ccCorrectionCardId, setCcCorrectionCardId] = useState("");
+  const [ccCorrectionAmount, setCcCorrectionAmount] = useState("");
 
   // Pay card modal
   const [showPay, setShowPay] = useState(false);
@@ -512,6 +518,33 @@ export function CreditCardsContent() {
     await refresh();
   };
 
+  const handleCCCorrection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const card = creditCards.find((c) => c.id === ccCorrectionCardId);
+    if (!card) return;
+    const target = parseFloat(ccCorrectionAmount);
+    if (isNaN(target) || target < 0) return;
+    const current = cardBalances[card.id] || 0;
+    const diff = Math.round((target - current) * 100) / 100;
+    if (diff === 0) { setShowCCCorrection(false); return; }
+
+    setSaving(true);
+    try {
+      if (diff > 0) {
+        await createLinkedCreditCardCharge(
+          { card_id: card.id, date: todayEST(), amount: Math.abs(diff), merchant: null, category: "Other", notes: "Balance correction" },
+          { currency: card.currency, cardName: card.name }
+        );
+      } else {
+        await createCreditCardPayment({ card_id: card.id, account_id: null, date: todayEST(), amount: Math.abs(diff), notes: "Balance correction" });
+      }
+      await refresh();
+      setShowCCCorrection(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const startEditPayment = (p: { id: string; date: string; amount: number; account_id: string | null }) => {
     setEditingPayId(p.id);
     setEditPayDate(p.date);
@@ -710,6 +743,17 @@ export function CreditCardsContent() {
                   >
                     <ShoppingCart className="mr-1 inline h-3 w-3" />
                     Charge
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCcCorrectionCardId(card.id);
+                      setCcCorrectionAmount(bal.toFixed(2));
+                      setShowCCCorrection(true);
+                    }}
+                    className="rounded-xl border border-border-subtle px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary"
+                    title="Correct balance"
+                  >
+                    <Scale className="inline h-3 w-3" />
                   </button>
                 </div>
               </div>
@@ -1564,6 +1608,47 @@ export function CreditCardsContent() {
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Pay
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* CC Balance Correction Modal */}
+      <Modal open={showCCCorrection} onClose={() => setShowCCCorrection(false)} title="Correct Card Balance">
+        <form onSubmit={handleCCCorrection} className="space-y-4">
+          {(() => {
+            const card = creditCards.find((c) => c.id === ccCorrectionCardId);
+            if (!card) return null;
+            const current = cardBalances[card.id] || 0;
+            const target = parseFloat(ccCorrectionAmount);
+            const diff = !isNaN(target) ? Math.round((target - current) * 100) / 100 : 0;
+            return (
+              <>
+                <div className="rounded-xl border border-border-subtle bg-bg-elevated p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-text-secondary">{card.name}</span>
+                    <span className="text-lg font-bold text-text-primary">{showBalances ? formatMoney(current, card.currency) : HIDDEN_BALANCE}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-text-secondary">Current computed balance</p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-text-secondary">Actual Balance ({card.currency})</label>
+                  <input type="number" step="0.01" min="0" value={ccCorrectionAmount} onChange={(e) => setCcCorrectionAmount(e.target.value)} placeholder={current.toFixed(2)}
+                    className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" />
+                </div>
+                {ccCorrectionAmount && !isNaN(target) && diff !== 0 && (
+                  <div className={`rounded-xl border px-3 py-2 text-xs ${diff > 0 ? "border-red-500/30 bg-red-500/5 text-red-400" : "border-emerald-500/30 bg-emerald-500/5 text-emerald-400"}`}>
+                    Adjustment: {diff > 0 ? "+" : ""}{formatMoney(diff, card.currency)} {diff > 0 ? "(adds charge)" : "(adds credit)"}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={() => setShowCCCorrection(false)} className="flex-1 rounded-xl border border-border-subtle px-4 py-2.5 text-sm text-text-primary transition hover:bg-bg-elevated">Cancel</button>
+            <button type="submit" disabled={saving} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-purple px-4 py-2.5 text-sm font-medium text-white shadow-glow transition hover:-translate-y-0.5 disabled:opacity-60">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Correct
             </button>
           </div>
         </form>
