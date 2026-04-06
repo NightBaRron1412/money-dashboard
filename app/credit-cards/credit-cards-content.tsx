@@ -124,6 +124,7 @@ export function CreditCardsContent() {
   const [editChargeAmount, setEditChargeAmount] = useState("");
   const [editChargeMerchant, setEditChargeMerchant] = useState("");
   const [editChargeCategory, setEditChargeCategory] = useState("Other");
+  const [editChargeNotes, setEditChargeNotes] = useState("");
 
   // Pay card modal
   const [showPay, setShowPay] = useState(false);
@@ -436,6 +437,7 @@ export function CreditCardsContent() {
     setEditChargeAmount(charge.amount.toString());
     setEditChargeMerchant(charge.merchant || "");
     setEditChargeCategory(charge.category || "Other");
+    setEditChargeNotes(charge.notes || "");
   };
 
   const handleSaveEditCharge = async (id: string) => {
@@ -448,6 +450,7 @@ export function CreditCardsContent() {
         amount: amt,
         merchant: editChargeMerchant || null,
         category: editChargeCategory,
+        notes: editChargeNotes || null,
       });
       await refresh();
       setEditingChargeId(null);
@@ -837,8 +840,14 @@ export function CreditCardsContent() {
                       </td>
                       <td className="px-4 py-3 text-text-secondary">
                         {isEditing ? (
-                          <input type="text" value={editChargeMerchant} onChange={(e) => setEditChargeMerchant(e.target.value)}
-                            className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
+                          <div className="space-y-1">
+                            <input type="text" value={editChargeMerchant} onChange={(e) => setEditChargeMerchant(e.target.value)}
+                              placeholder="Merchant"
+                              className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
+                            <input type="text" value={editChargeNotes} onChange={(e) => setEditChargeNotes(e.target.value)}
+                              placeholder="Notes"
+                              className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-[10px] text-text-secondary outline-none focus:border-accent-purple" />
+                          </div>
                         ) : (
                           <span className="block max-w-[180px]">
                             <span className="block truncate" title={charge.merchant || undefined}>{charge.merchant || "—"}</span>
