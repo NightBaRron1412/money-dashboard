@@ -100,14 +100,15 @@ export function CreditCardsContent() {
   const [chargeError, setChargeError] = useState("");
   const [autoCategorizePending, setAutoCategorizePending] = useState(false);
 
-  const autoCategorize = useCallback(async (merchantName: string) => {
-    if (!merchantName.trim() || merchantName.length < 2) return;
+  const autoCategorize = useCallback(async (merchantName: string, notesText?: string) => {
+    if (!merchantName.trim() && !(notesText?.trim())) return;
+    if ((merchantName + (notesText || "")).trim().length < 2) return;
     setAutoCategorizePending(true);
     try {
       const res = await fetch("/api/ai/categorize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ merchant: merchantName, categories: DEFAULT_CATEGORIES }),
+        body: JSON.stringify({ merchant: merchantName.trim(), notes: notesText?.trim() || undefined, categories: DEFAULT_CATEGORIES }),
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -1334,7 +1335,7 @@ export function CreditCardsContent() {
               type="text"
               value={chargeMerchant}
               onChange={(e) => setChargeMerchant(e.target.value)}
-              onBlur={() => autoCategorize(chargeMerchant)}
+              onBlur={() => autoCategorize(chargeMerchant, chargeNotes)}
               placeholder="e.g., Amazon"
               className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
             />
@@ -1350,6 +1351,7 @@ export function CreditCardsContent() {
               type="text"
               value={chargeNotes}
               onChange={(e) => setChargeNotes(e.target.value)}
+              onBlur={() => autoCategorize(chargeMerchant, chargeNotes)}
               placeholder="Add a note..."
               className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
             />
