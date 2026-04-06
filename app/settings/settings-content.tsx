@@ -18,6 +18,7 @@ import {
   createAllocationPlan,
   updateAllocationPlan,
   deleteAllocationPlan,
+  addGoalAccountAllocation,
 } from "@/lib/money/queries";
 import type {
   CurrencyCode,
@@ -67,7 +68,7 @@ const normalizeCategories = (raw: string[]) => {
 };
 
 export function SettingsContent() {
-  const { settings, plans, accounts, loading, refresh } = useMoneyData();
+  const { settings, plans, accounts, goals, loading, refresh } = useMoneyData();
   const { showBalances } = useBalanceVisibility();
   const baseCurrency: CurrencyCode = settings?.base_currency ?? "CAD";
   const m = (v: number) => showBalances ? formatMoney(v, baseCurrency) : HIDDEN_BALANCE;
@@ -99,6 +100,7 @@ export function SettingsContent() {
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [planName, setPlanName] = useState("");
   const [planAllocations, setPlanAllocations] = useState<Record<string, string>>({});
+  const [planGoalLinks, setPlanGoalLinks] = useState<Record<string, string>>({});
   const [planSaving, setPlanSaving] = useState(false);
   const [planError, setPlanError] = useState("");
 
@@ -592,6 +594,7 @@ export function SettingsContent() {
                 setPlanAllocations(
                   Object.fromEntries(accounts.map((a) => [a.id, ""]))
                 );
+                setPlanGoalLinks({});
                 setPlanError("");
                 setShowPlanModal(true);
               }}
@@ -618,6 +621,7 @@ export function SettingsContent() {
           <div className="grid gap-4 sm:grid-cols-2">
             {plans.map((plan) => {
               const alloc = plan.allocations as Record<string, number>;
+              const goalLinks = ((plan.allocations as Record<string, unknown>).__goals__ ?? {}) as Record<string, string>;
               return (
                 <div
                   key={plan.id}
@@ -653,6 +657,8 @@ export function SettingsContent() {
                             existing[a.id] = (alloc[a.id] ?? 0).toString();
                           }
                           setPlanAllocations(existing);
+                          const existingGoalLinks = (plan.allocations as Record<string, unknown>).__goals__ as Record<string, string> | undefined;
+                          setPlanGoalLinks(existingGoalLinks ?? {});
                           setPlanError("");
                           setShowPlanModal(true);
                         }}
@@ -688,7 +694,11 @@ export function SettingsContent() {
                           className="flex items-center justify-between text-xs"
                         >
                           <span className="text-text-secondary">
-                            {a.name} ({a.type})
+                            {a.name}
+                            {goalLinks[a.id] && (() => {
+                              const g = goals.find((gl) => gl.id === goalLinks[a.id]);
+                              return g ? <span className="ml-1 text-accent-purple">→ {g.name}</span> : null;
+                            })()}
                           </span>
                           <span className="font-medium text-text-primary">
                             {m(alloc[a.id] ?? 0)}
@@ -754,10 +764,10 @@ export function SettingsContent() {
                     {accounts.map((a) => (
                       <div
                         key={a.id}
-                        className="flex items-center gap-3"
+                        className="flex items-center gap-2"
                       >
-                        <span className="min-w-[120px] text-xs text-text-secondary">
-                          {a.name} ({a.type})
+                        <span className="min-w-[100px] shrink-0 text-xs text-text-secondary">
+                          {a.name}
                         </span>
                         <input
                           type="number"
@@ -771,8 +781,25 @@ export function SettingsContent() {
                             }))
                           }
                           placeholder="0.00"
-                          className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2 text-sm text-text-primary outline-none focus:border-accent-purple"
+                          className="w-24 shrink-0 rounded-xl border border-border-subtle bg-bg-elevated px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-purple"
                         />
+                        <select
+                          value={planGoalLinks[a.id] ?? ""}
+                          onChange={(e) =>
+                            setPlanGoalLinks((prev) => {
+                              const next = { ...prev };
+                              if (e.target.value) next[a.id] = e.target.value;
+                              else delete next[a.id];
+                              return next;
+                            })
+                          }
+                          className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-2 py-2 text-xs text-text-secondary outline-none focus:border-accent-purple"
+                        >
+                          <option value="">No goal</option>
+                          {goals.map((g) => (
+                            <option key={g.id} value={g.id}>{g.name}</option>
+                          ))}
+                        </select>
                       </div>
                     ))}
                   </div>
@@ -824,20 +851,34 @@ export function SettingsContent() {
                       return;
                     }
 
+                    const allocWithGoals: Record<string, unknown> = { ...allocObj };
+                    if (Object.keys(planGoalLinks).length > 0) {
+                      allocWithGoals.__goals__ = planGoalLinks;
+                    }
+
                     setPlanSaving(true);
                     try {
                       if (editingPlanId) {
                         await updateAllocationPlan(editingPlanId, {
                           name: planName.trim(),
-                          allocations: allocObj,
+                          allocations: allocWithGoals as Record<string, number>,
                         });
                       } else {
                         await createAllocationPlan({
                           name: planName.trim(),
                           is_active: false,
-                          allocations: allocObj,
+                          allocations: allocWithGoals as Record<string, number>,
                         });
                       }
+
+                      for (const [accountId, goalId] of Object.entries(planGoalLinks)) {
+                        if (goalId && allocObj[accountId]) {
+                          try {
+                            await addGoalAccountAllocation(goalId, accountId, allocObj[accountId]);
+                          } catch { /* link may already exist */ }
+                        }
+                      }
+
                       await refresh();
                       setShowPlanModal(false);
                     } catch (err: unknown) {
