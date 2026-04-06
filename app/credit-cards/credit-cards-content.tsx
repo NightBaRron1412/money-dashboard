@@ -34,6 +34,7 @@ import {
   updateCreditCard,
   deleteCreditCard,
   createLinkedCreditCardCharge,
+  createCreditCardCharge,
   deleteCreditCardCharge,
   updateCreditCardCharge,
   createCreditCardPayment,
@@ -131,6 +132,7 @@ export function CreditCardsContent() {
   const [showCCCorrection, setShowCCCorrection] = useState(false);
   const [ccCorrectionCardId, setCcCorrectionCardId] = useState("");
   const [ccCorrectionAmount, setCcCorrectionAmount] = useState("");
+  const [ccCorrectionShowInExpenses, setCcCorrectionShowInExpenses] = useState(false);
 
   // Pay card modal
   const [showPay, setShowPay] = useState(false);
@@ -531,10 +533,14 @@ export function CreditCardsContent() {
     setSaving(true);
     try {
       if (diff > 0) {
-        await createLinkedCreditCardCharge(
-          { card_id: card.id, date: todayEST(), amount: Math.abs(diff), merchant: null, category: "Other", notes: "Balance correction" },
-          { currency: card.currency, cardName: card.name }
-        );
+        if (ccCorrectionShowInExpenses) {
+          await createLinkedCreditCardCharge(
+            { card_id: card.id, date: todayEST(), amount: Math.abs(diff), merchant: null, category: "Other", notes: "Balance correction" },
+            { currency: card.currency, cardName: card.name }
+          );
+        } else {
+          await createCreditCardCharge({ card_id: card.id, date: todayEST(), amount: Math.abs(diff), merchant: null, category: null, notes: "Balance correction", linked_transaction_id: null });
+        }
       } else {
         await createCreditCardPayment({ card_id: card.id, account_id: null, date: todayEST(), amount: Math.abs(diff), notes: "Balance correction" });
       }
@@ -748,6 +754,7 @@ export function CreditCardsContent() {
                     onClick={() => {
                       setCcCorrectionCardId(card.id);
                       setCcCorrectionAmount(bal.toFixed(2));
+                      setCcCorrectionShowInExpenses(false);
                       setShowCCCorrection(true);
                     }}
                     className="rounded-xl border border-border-subtle px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary"
@@ -1637,9 +1644,17 @@ export function CreditCardsContent() {
                     className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" />
                 </div>
                 {ccCorrectionAmount && !isNaN(target) && diff !== 0 && (
-                  <div className={`rounded-xl border px-3 py-2 text-xs ${diff > 0 ? "border-red-500/30 bg-red-500/5 text-red-400" : "border-emerald-500/30 bg-emerald-500/5 text-emerald-400"}`}>
-                    Adjustment: {diff > 0 ? "+" : ""}{formatMoney(diff, card.currency)} {diff > 0 ? "(adds charge)" : "(adds credit)"}
-                  </div>
+                  <>
+                    <div className={`rounded-xl border px-3 py-2 text-xs ${diff > 0 ? "border-red-500/30 bg-red-500/5 text-red-400" : "border-emerald-500/30 bg-emerald-500/5 text-emerald-400"}`}>
+                      Adjustment: {diff > 0 ? "+" : ""}{formatMoney(diff, card.currency)} {diff > 0 ? "(adds charge)" : "(adds credit)"}
+                    </div>
+                    {diff > 0 && (
+                      <label className="flex items-center gap-2 text-xs text-text-secondary">
+                        <input type="checkbox" checked={ccCorrectionShowInExpenses} onChange={(e) => setCcCorrectionShowInExpenses(e.target.checked)} className="rounded border-border-subtle accent-accent-purple" />
+                        Show in expenses
+                      </label>
+                    )}
+                  </>
                 )}
               </>
             );
