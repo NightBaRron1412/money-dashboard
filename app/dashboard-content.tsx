@@ -485,7 +485,13 @@ export function DashboardContent({
   );
   const isRentDueSoon = daysUntilRent <= rentReminderDays && !rentPaidThisMonth;
   const budgetAmount = settings?.monthly_essentials_budget ?? 0;
-  const isOverBudget = budgetAmount > 0 && monthExpensesBase > budgetAmount;
+  // Separate rent from budget tracking so the bar reflects day-to-day spending
+  const monthRentBase = monthTxs
+    .filter((t) => t.type === "expense" && t.category?.toLowerCase() === "rent")
+    .reduce((s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx), 0);
+  const monthExpensesExRent = monthExpensesBase - monthRentBase;
+  const budgetExRent = Math.max(0, budgetAmount - rentAmount);
+  const isOverBudget = budgetExRent > 0 && monthExpensesExRent > budgetExRent;
 
   const hasBillsDueSoon = isRentDueSoon || dueSoonBillsCount > 0;
   const greetingMode = isOverBudget ? "over_budget" : hasBillsDueSoon ? "bills_due" : "stable";
@@ -792,14 +798,14 @@ export function DashboardContent({
         </div>
       )}
 
-      {/* Budget vs Actual */}
+      {/* Budget vs Actual (excluding rent) */}
       {(() => {
         if (budgetAmount <= 0) return null;
-        const budgetPct = budgetAmount > 0 ? (monthExpensesBase / budgetAmount) * 100 : 0;
+        const budgetPct = budgetExRent > 0 ? (monthExpensesExRent / budgetExRent) * 100 : 0;
         const isNearBudget = budgetPct >= 80 && !isOverBudget;
-        // Category breakdown for this month's expenses
+        // Category breakdown for this month's expenses (excluding rent)
         const catMap: Record<string, number> = {};
-        for (const tx of monthTxs.filter((t) => t.type === "expense")) {
+        for (const tx of monthTxs.filter((t) => t.type === "expense" && t.category?.toLowerCase() !== "rent")) {
           const cat = tx.category || "Other";
           catMap[cat] = (catMap[cat] || 0) + convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
         }
@@ -808,7 +814,7 @@ export function DashboardContent({
           .map(([name, amount]) => ({ name, amount }));
         const BUDGET_CAT_COLORS: Record<string, string> = {
           Food: "bg-orange-500", Transport: "bg-blue-500", Bills: "bg-purple-500",
-          Rent: "bg-red-500", Fun: "bg-pink-500", Health: "bg-emerald-500", "Personal Care": "bg-fuchsia-500", Other: "bg-gray-500",
+          Fun: "bg-pink-500", Health: "bg-emerald-500", "Personal Care": "bg-fuchsia-500", Other: "bg-gray-500",
         };
         return (
           <div className="mt-8 rounded-2xl border border-border-subtle bg-bg-secondary p-5">
@@ -818,28 +824,42 @@ export function DashboardContent({
                 <h2 className="text-lg font-semibold text-text-primary">Monthly Budget</h2>
               </div>
               <span className="text-xs text-text-secondary">
-                {showBalances ? `${formatMoney(monthExpensesBase, baseCurrency)} / ${formatMoney(budgetAmount, baseCurrency)}` : HIDDEN_BALANCE}
+                {showBalances ? `${formatMoney(monthExpensesExRent, baseCurrency)} / ${formatMoney(budgetExRent, baseCurrency)}` : HIDDEN_BALANCE}
               </span>
             </div>
+            <p className="text-[10px] text-text-secondary mb-2">Excluding rent</p>
             <ProgressBar
-              value={monthExpensesBase}
-              max={budgetAmount}
+              value={monthExpensesExRent}
+              max={budgetExRent}
               color={isOverBudget ? "bg-red-500" : isNearBudget ? "bg-yellow-500" : "bg-emerald-500"}
             />
             {isOverBudget && (
               <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-400">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                Over budget by {m(monthExpensesBase - budgetAmount)}
+                Over budget by {m(monthExpensesExRent - budgetExRent)}
               </p>
             )}
             {isNearBudget && (
               <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                {m(budgetAmount - monthExpensesBase)} remaining — approaching limit
+                {m(budgetExRent - monthExpensesExRent)} remaining — approaching limit
               </p>
             )}
+            {/* Rent status line */}
+            <div className="mt-3 flex items-center gap-2 rounded-lg border border-border-subtle bg-bg-elevated px-3 py-1.5">
+              <div className="h-2 w-2 rounded-full bg-red-500" />
+              <span className="text-[10px] text-text-secondary">Rent</span>
+              <span className="text-[10px] font-semibold text-text-primary">{showBalances ? m(rentAmount) : HIDDEN_BALANCE}</span>
+              {rentPaidThisMonth ? (
+                <span className="ml-auto text-[10px] font-medium text-emerald-500">Paid</span>
+              ) : (
+                <span className="ml-auto text-[10px] font-medium text-text-secondary">
+                  Due {nextRentDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+              )}
+            </div>
             {catBreakdown.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {catBreakdown.map(({ name, amount }) => (
                   <div key={name} className="flex items-center gap-1.5 rounded-lg border border-border-subtle bg-bg-elevated px-2.5 py-1">
                     <div className={`h-2 w-2 rounded-full ${BUDGET_CAT_COLORS[name] || "bg-gray-500"}`} />
