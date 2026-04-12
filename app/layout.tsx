@@ -6,10 +6,11 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { isAnalyticsEnabled, isSpeedInsightsEnabled } from "@/lib/analytics";
 import { Providers } from "./providers";
+import { SwRegister } from "./sw-register";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0b1020" };
 
 export const metadata: Metadata = {
   title: "Finance Dashboard | Amir Shetaia",
@@ -37,7 +38,8 @@ export const metadata: Metadata = {
     description: "Track expenses, income, investments & goals",
     images: ["/og-image.png"],
   },
-  appleWebApp: { capable: true, title: "Finance Dashboard" },
+  manifest: "/manifest.json",
+  appleWebApp: { capable: true, title: "Finance Dashboard", statusBarStyle: "black-translucent" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -45,6 +47,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased text-sm sm:text-base`} suppressHydrationWarning>
         <Providers>{children}</Providers>
+        <SwRegister />
         {isAnalyticsEnabled ? <Analytics /> : null}
         {isSpeedInsightsEnabled ? <SpeedInsights /> : null}
       </body>

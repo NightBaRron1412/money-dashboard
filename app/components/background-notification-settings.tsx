@@ -44,7 +44,7 @@ export function BackgroundNotificationSettings() {
     }
 
     try {
-      const reg = await navigator.serviceWorker.register("/money-push-sw.js", {
+      const reg = await navigator.serviceWorker.register("/sw.js", {
         updateViaCache: "none",
       });
       await reg.update();
@@ -82,7 +82,7 @@ export function BackgroundNotificationSettings() {
         return;
       }
 
-      const reg = await navigator.serviceWorker.register("/money-push-sw.js", {
+      const reg = await navigator.serviceWorker.register("/sw.js", {
         updateViaCache: "none",
       });
       await reg.update();
@@ -127,7 +127,7 @@ export function BackgroundNotificationSettings() {
     if (!supported) return;
     setBusy(true);
     try {
-      const reg = await navigator.serviceWorker.register("/money-push-sw.js", {
+      const reg = await navigator.serviceWorker.register("/sw.js", {
         updateViaCache: "none",
       });
       await reg.update();
