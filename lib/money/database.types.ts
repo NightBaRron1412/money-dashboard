@@ -48,6 +48,7 @@ export interface Transaction {
   notes: string | null;
   recurrence: RecurrenceFrequency | null;
   is_recurring: boolean;
+  exclude_from_monthly: boolean;
   linked_charge_id: string | null;
   idempotency_key: string | null;
   received_amount: number | null;

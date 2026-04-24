@@ -425,7 +425,7 @@ export function DashboardContent({
     .filter((t) => t.type === "income")
     .reduce((s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx), 0);
   const monthExpensesBase = monthTxs
-    .filter((t) => t.type === "expense")
+    .filter((t) => t.type === "expense" && !t.exclude_from_monthly)
     .reduce((s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx), 0);
   const monthSavingsBase = monthIncomeBase - monthExpensesBase;
   const monthSavingsRate = savingsRate(monthIncomeBase, monthExpensesBase);
@@ -436,7 +436,7 @@ export function DashboardContent({
     .filter((t) => t.type === "income")
     .reduce((s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx), 0);
   const previousMonthExpensesBase = previousMonthTxs
-    .filter((t) => t.type === "expense")
+    .filter((t) => t.type === "expense" && !t.exclude_from_monthly)
     .reduce((s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx), 0);
   const previousMonthSavingsRate = savingsRate(previousMonthIncomeBase, previousMonthExpensesBase);
   const savingsRateDelta =
@@ -805,7 +805,7 @@ export function DashboardContent({
         const isNearBudget = budgetPct >= 80 && !isOverBudget;
         // Category breakdown for this month's expenses (excluding rent)
         const catMap: Record<string, number> = {};
-        for (const tx of monthTxs.filter((t) => t.type === "expense" && t.category?.toLowerCase() !== "rent")) {
+        for (const tx of monthTxs.filter((t) => t.type === "expense" && t.category?.toLowerCase() !== "rent" && !t.exclude_from_monthly)) {
           const cat = tx.category || "Other";
           catMap[cat] = (catMap[cat] || 0) + convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
         }

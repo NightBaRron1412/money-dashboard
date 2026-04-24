@@ -114,7 +114,7 @@ export function ReportsContent() {
         if (!map[day]) map[day] = { income: 0, expenses: 0 };
         const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
         if (tx.type === "income") map[day].income += amt;
-        if (tx.type === "expense") map[day].expenses += amt;
+        if (tx.type === "expense" && !tx.exclude_from_monthly) map[day].expenses += amt;
       }
     } else if (view === "year") {
       // Monthly breakdown for selected year
@@ -127,7 +127,7 @@ export function ReportsContent() {
         if (!map[monthIdx]) map[monthIdx] = { income: 0, expenses: 0 };
         const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
         if (tx.type === "income") map[monthIdx].income += amt;
-        if (tx.type === "expense") map[monthIdx].expenses += amt;
+        if (tx.type === "expense" && !tx.exclude_from_monthly) map[monthIdx].expenses += amt;
       }
     } else {
       // Year-by-year for all time
@@ -136,7 +136,7 @@ export function ReportsContent() {
         if (!map[yr]) map[yr] = { income: 0, expenses: 0 };
         const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
         if (tx.type === "income") map[yr].income += amt;
-        if (tx.type === "expense") map[yr].expenses += amt;
+        if (tx.type === "expense" && !tx.exclude_from_monthly) map[yr].expenses += amt;
       }
     }
 

@@ -97,6 +97,8 @@ export function ExpensesContent() {
   const [accountId, setAccountId] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrence, setRecurrence] = useState<RecurrenceFrequency>("monthly");
+  const [excludeFromMonthly, setExcludeFromMonthly] = useState(false);
+  const [editExcludeFromMonthly, setEditExcludeFromMonthly] = useState(false);
   const [formError, setFormError] = useState("");
 
   const autoCategorize = useCallback(async (merchantName: string, notesText?: string) => {
@@ -288,6 +290,7 @@ export function ExpensesContent() {
           notes: expenseNotes || null,
           is_recurring: isRecurring,
           recurrence: isRecurring ? recurrence : null,
+          exclude_from_monthly: excludeFromMonthly,
         });
       }
       await refresh();
@@ -297,6 +300,7 @@ export function ExpensesContent() {
       setExpenseNotes("");
       setExpenseCurrency("");
       setIsRecurring(false);
+      setExcludeFromMonthly(false);
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : "Failed to save");
     } finally {
@@ -310,7 +314,7 @@ export function ExpensesContent() {
     await refresh();
   };
 
-  const handleDuplicate = async (tx: { date: string; amount: number; currency: CurrencyCode; category: string | null; account_id: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; linked_charge_id: string | null }) => {
+  const handleDuplicate = async (tx: { date: string; amount: number; currency: CurrencyCode; category: string | null; account_id: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; linked_charge_id: string | null; exclude_from_monthly: boolean }) => {
     setSaving(true);
     try {
       const isCC = !!tx.linked_charge_id;
@@ -350,6 +354,7 @@ export function ExpensesContent() {
           notes: null,
           is_recurring: tx.is_recurring,
           recurrence: tx.recurrence,
+          exclude_from_monthly: tx.exclude_from_monthly,
         });
       }
       await refresh();
@@ -358,7 +363,7 @@ export function ExpensesContent() {
     }
   };
 
-  const startEdit = (tx: { id: string; date: string; amount: number; category: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; account_id: string | null }) => {
+  const startEdit = (tx: { id: string; date: string; amount: number; category: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; account_id: string | null; exclude_from_monthly: boolean }) => {
     setEditingId(tx.id);
     setEditDate(tx.date);
     setEditAmount(tx.amount.toString());
@@ -366,6 +371,7 @@ export function ExpensesContent() {
     setEditMerchant(tx.merchant || "");
     setEditIsRecurring(tx.is_recurring);
     setEditRecurrence(tx.recurrence || "monthly");
+    setEditExcludeFromMonthly(tx.exclude_from_monthly);
     setEditAccountId(tx.account_id || "");
   };
 
@@ -382,6 +388,7 @@ export function ExpensesContent() {
         merchant: editMerchant || null,
         is_recurring: editIsRecurring,
         recurrence: editIsRecurring ? editRecurrence : null,
+        exclude_from_monthly: editExcludeFromMonthly,
       };
       if (!tx?.linked_charge_id) {
         updates.account_id = editAccountId || null;
@@ -667,6 +674,16 @@ export function ExpensesContent() {
                               <option value="yearly">Yearly</option>
                             </select>
                           )}
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditExcludeFromMonthly(!editExcludeFromMonthly)}
+                              className={`relative h-5 w-9 shrink-0 rounded-full transition ${editExcludeFromMonthly ? "bg-accent-purple" : "bg-bg-elevated border border-border-subtle"}`}
+                            >
+                              <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${editExcludeFromMonthly ? "translate-x-4" : ""}`} />
+                            </button>
+                            <span className="text-[10px] text-text-secondary">Exclude monthly</span>
+                          </div>
                         </div>
                       ) : (
                         <div className="max-w-[200px]">
@@ -677,6 +694,11 @@ export function ExpensesContent() {
                           {tx.is_recurring && (
                             <span className="mt-0.5 inline-flex items-center gap-0.5 rounded bg-accent-purple/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent-purple brightness-125" title={tx.recurrence || "recurring"}>
                               <Repeat className="h-2.5 w-2.5" /> {tx.recurrence}
+                            </span>
+                          )}
+                          {tx.exclude_from_monthly && (
+                            <span className="mt-0.5 inline-flex items-center gap-0.5 rounded bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400" title="Excluded from monthly totals">
+                              Excluded
                             </span>
                           )}
                         </div>
@@ -918,6 +940,16 @@ export function ExpensesContent() {
               </select>
             </div>
           )}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setExcludeFromMonthly(!excludeFromMonthly)}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition ${excludeFromMonthly ? "bg-accent-purple" : "bg-bg-elevated"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${excludeFromMonthly ? "translate-x-5" : ""}`} />
+            </button>
+            <span className="text-sm text-text-primary">Exclude from monthly totals</span>
+          </div>
           {formError && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">
               {formError}

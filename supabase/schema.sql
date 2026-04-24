@@ -46,6 +46,7 @@ create table if not exists money_transactions (
   merchant        text,
   notes           text,
   is_recurring    boolean not null default false,
+  exclude_from_monthly boolean not null default false,
   recurrence      text check (recurrence in ('weekly','bi-weekly','monthly','yearly')),
   linked_charge_id uuid,  -- FK added after cc_charges table
   idempotency_key text,

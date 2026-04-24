@@ -138,9 +138,10 @@ export async function getTransactions(filters?: {
 }
 
 export async function createTransaction(
-  tx: Omit<Transaction, "id" | "created_at" | "user_id" | "linked_charge_id" | "idempotency_key" | "received_amount"> & {
+  tx: Omit<Transaction, "id" | "created_at" | "user_id" | "linked_charge_id" | "idempotency_key" | "received_amount" | "exclude_from_monthly"> & {
     linked_charge_id?: string | null;
     idempotency_key?: string | null;
+    exclude_from_monthly?: boolean;
     received_amount?: number | null;
   }
 ) {
@@ -152,6 +153,7 @@ export async function createTransaction(
       linked_charge_id: tx.linked_charge_id ?? null,
       idempotency_key: tx.idempotency_key ?? null,
       received_amount: tx.received_amount ?? null,
+      exclude_from_monthly: tx.exclude_from_monthly ?? false,
       user_id: OWNER_ID,
     })
     .select()

@@ -44,7 +44,7 @@ export function forecastCashFlow(
   let totalExpenses = 0;
   for (const t of recent) {
     if (t.type === "income") totalIncome += t.amount;
-    else if (t.type === "expense") totalExpenses += t.amount;
+    else if (t.type === "expense" && !t.exclude_from_monthly) totalExpenses += t.amount;
   }
 
   const months = Math.max(
@@ -133,7 +133,7 @@ export function predictGoalCompletion(
   let totalExpenses = 0;
   for (const t of recent) {
     if (t.type === "income") totalIncome += t.amount;
-    else if (t.type === "expense") totalExpenses += t.amount;
+    else if (t.type === "expense" && !t.exclude_from_monthly) totalExpenses += t.amount;
   }
 
   const months = Math.max(
@@ -208,7 +208,7 @@ export function detectSpendingAnomalies(
   const now = new Date();
   const currentMonth = now.toISOString().slice(0, 7);
 
-  const expenses = transactions.filter((t) => t.type === "expense" && t.category);
+  const expenses = transactions.filter((t) => t.type === "expense" && t.category && !t.exclude_from_monthly);
 
   const currentMonthExpenses = expenses.filter(
     (t) => t.date.slice(0, 7) === currentMonth
