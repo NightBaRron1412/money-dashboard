@@ -65,6 +65,7 @@ create table if not exists money_goals (
   target_amount     numeric(12,2),
   target_date       date,
   linked_account_id uuid references money_accounts(id) on delete set null,
+  completed_at      timestamptz,
   created_at        timestamptz not null default now()
 );
 

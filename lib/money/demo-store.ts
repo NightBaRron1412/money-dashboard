@@ -153,6 +153,7 @@ export function demoCreateGoal(goal: Partial<Goal>, linkedAccounts?: string[]): 
     target_amount: 0,
     linked_account_id: linkedAccounts?.[0] ?? null,
     target_date: null,
+    completed_at: null,
     created_at: now(),
     ...goal,
   };

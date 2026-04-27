@@ -392,6 +392,7 @@ export function getDemoMoneyData(): DemoMoneyData {
       target_amount: 20000,
       target_date: dateOffset(280),
       linked_account_id: savingsId,
+      completed_at: null,
       created_at: isoOffset(-100),
     },
     {
@@ -401,6 +402,7 @@ export function getDemoMoneyData(): DemoMoneyData {
       target_amount: 80000,
       target_date: dateOffset(900),
       linked_account_id: null,
+      completed_at: null,
       created_at: isoOffset(-90),
     },
   ];

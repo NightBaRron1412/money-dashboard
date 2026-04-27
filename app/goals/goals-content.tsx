@@ -16,6 +16,8 @@ import {
   Loader2,
   Plus,
   PartyPopper,
+  CheckCircle2,
+  Circle,
   ArrowRight,
   Pencil,
   Trash2,
@@ -276,6 +278,11 @@ export function GoalsContent() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleToggleComplete = async (goal: Goal) => {
+    await updateGoal(goal.id, { completed_at: goal.completed_at ? null : new Date().toISOString() });
+    await refresh();
   };
 
   const handleDeleteGoal = async (goal: Goal) => {
@@ -601,7 +608,8 @@ export function GoalsContent() {
             const linkedAccountIdSet = new Set(linkedAccountIds);
             const current = getGoalCurrentBalance(goal);
             const target = goal.target_amount;
-            const isComplete = target !== null && current >= target;
+            const isComplete = goal.completed_at !== null || (target !== null && current >= target);
+            const isManuallyComplete = goal.completed_at !== null;
 
             return (
               <div
@@ -624,6 +632,13 @@ export function GoalsContent() {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleToggleComplete(goal)}
+                      className={`rounded-lg p-1 hover:bg-emerald-500/10 ${isManuallyComplete ? "text-emerald-500" : "text-text-secondary hover:text-emerald-500"}`}
+                      title={isManuallyComplete ? "Mark as not complete" : "Mark as complete"}
+                    >
+                      {isManuallyComplete ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                    </button>
                     <button
                       onClick={() => openEdit(goal)}
                       className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"

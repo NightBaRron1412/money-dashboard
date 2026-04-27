@@ -68,6 +68,7 @@ export interface Goal {
   target_amount: number | null;
   target_date: string | null;
   linked_account_id: string | null;
+  completed_at: string | null;
   created_at: string;
 }
 

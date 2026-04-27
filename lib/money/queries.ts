@@ -291,7 +291,7 @@ async function setGoalAccounts(goalId: string, linksOrIds: Array<string | GoalAc
 }
 
 export async function createGoal(
-  goal: Omit<Goal, "id" | "created_at" | "user_id">,
+  goal: Omit<Goal, "id" | "created_at" | "user_id" | "completed_at"> & { completed_at?: string | null },
   linkedAccounts?: Array<string | GoalAccountLinkInput>
 ) {
   if (isDemoModeRoute()) {
