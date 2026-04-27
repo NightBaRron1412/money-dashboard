@@ -47,6 +47,7 @@ create table if not exists money_transactions (
   notes           text,
   is_recurring    boolean not null default false,
   exclude_from_monthly boolean not null default false,
+  goal_id         uuid,  -- FK added after money_goals table
   recurrence      text check (recurrence in ('weekly','bi-weekly','monthly','yearly')),
   linked_charge_id uuid,  -- FK added after cc_charges table
   idempotency_key text,
@@ -229,6 +230,11 @@ create table if not exists money_credit_card_charges (
 alter table money_transactions
   add constraint fk_transactions_linked_charge
   foreign key (linked_charge_id) references money_credit_card_charges(id) on delete set null;
+
+-- Link transactions to goals (added after money_goals table exists)
+alter table money_transactions
+  add constraint fk_transactions_goal
+  foreign key (goal_id) references money_goals(id) on delete set null;
 
 -- ---------------------------------------------------------------
 -- Credit Card Payments (nullable account_id for cashback/credits)

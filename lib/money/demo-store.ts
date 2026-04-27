@@ -112,6 +112,7 @@ export function demoCreateTransaction(tx: Partial<Transaction>): Transaction {
     notes: null,
     is_recurring: false,
     exclude_from_monthly: false,
+    goal_id: null,
     recurrence: null,
     linked_charge_id: null,
     idempotency_key: null,

@@ -65,7 +65,7 @@ const createdAtMs = (value: string) => {
 };
 
 export function ExpensesContent() {
-  const { accounts, creditCards, creditCardCharges, transactions, settings, loading, refresh } = useMoneyData();
+  const { accounts, creditCards, creditCardCharges, transactions, settings, goals, loading, refresh } = useMoneyData();
   const { fx, ready: fxReady } = useMoneyFx();
   const { showBalances } = useBalanceVisibility();
   const baseCurrency: CurrencyCode = settings?.base_currency ?? "CAD";
@@ -99,6 +99,8 @@ export function ExpensesContent() {
   const [recurrence, setRecurrence] = useState<RecurrenceFrequency>("monthly");
   const [excludeFromMonthly, setExcludeFromMonthly] = useState(false);
   const [editExcludeFromMonthly, setEditExcludeFromMonthly] = useState(false);
+  const [goalId, setGoalId] = useState<string>("");
+  const [editGoalId, setEditGoalId] = useState<string>("");
   const [formError, setFormError] = useState("");
 
   const autoCategorize = useCallback(async (merchantName: string, notesText?: string) => {
@@ -291,6 +293,7 @@ export function ExpensesContent() {
           is_recurring: isRecurring,
           recurrence: isRecurring ? recurrence : null,
           exclude_from_monthly: excludeFromMonthly,
+          goal_id: goalId || null,
         });
       }
       await refresh();
@@ -301,6 +304,7 @@ export function ExpensesContent() {
       setExpenseCurrency("");
       setIsRecurring(false);
       setExcludeFromMonthly(false);
+      setGoalId("");
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : "Failed to save");
     } finally {
@@ -314,7 +318,7 @@ export function ExpensesContent() {
     await refresh();
   };
 
-  const handleDuplicate = async (tx: { date: string; amount: number; currency: CurrencyCode; category: string | null; account_id: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; linked_charge_id: string | null; exclude_from_monthly: boolean }) => {
+  const handleDuplicate = async (tx: { date: string; amount: number; currency: CurrencyCode; category: string | null; account_id: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; linked_charge_id: string | null; exclude_from_monthly: boolean; goal_id: string | null }) => {
     setSaving(true);
     try {
       const isCC = !!tx.linked_charge_id;
@@ -355,6 +359,7 @@ export function ExpensesContent() {
           is_recurring: tx.is_recurring,
           recurrence: tx.recurrence,
           exclude_from_monthly: tx.exclude_from_monthly,
+          goal_id: tx.goal_id,
         });
       }
       await refresh();
@@ -363,7 +368,7 @@ export function ExpensesContent() {
     }
   };
 
-  const startEdit = (tx: { id: string; date: string; amount: number; category: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; account_id: string | null; exclude_from_monthly: boolean }) => {
+  const startEdit = (tx: { id: string; date: string; amount: number; category: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; account_id: string | null; exclude_from_monthly: boolean; goal_id: string | null }) => {
     setEditingId(tx.id);
     setEditDate(tx.date);
     setEditAmount(tx.amount.toString());
@@ -372,6 +377,7 @@ export function ExpensesContent() {
     setEditIsRecurring(tx.is_recurring);
     setEditRecurrence(tx.recurrence || "monthly");
     setEditExcludeFromMonthly(tx.exclude_from_monthly);
+    setEditGoalId(tx.goal_id || "");
     setEditAccountId(tx.account_id || "");
   };
 
@@ -389,6 +395,7 @@ export function ExpensesContent() {
         is_recurring: editIsRecurring,
         recurrence: editIsRecurring ? editRecurrence : null,
         exclude_from_monthly: editExcludeFromMonthly,
+        goal_id: editGoalId || null,
       };
       if (!tx?.linked_charge_id) {
         updates.account_id = editAccountId || null;
@@ -684,6 +691,19 @@ export function ExpensesContent() {
                             </button>
                             <span className="text-[10px] text-text-secondary">Exclude monthly</span>
                           </div>
+                          {goals.length > 0 && (
+                            <select
+                              value={editGoalId}
+                              onChange={(e) => setEditGoalId(e.target.value)}
+                              className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple"
+                              title="Link to goal"
+                            >
+                              <option value="">No goal</option>
+                              {goals.map((g) => (
+                                <option key={g.id} value={g.id}>↳ {g.name}</option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                       ) : (
                         <div className="max-w-[200px]">
@@ -701,6 +721,14 @@ export function ExpensesContent() {
                               Excluded
                             </span>
                           )}
+                          {tx.goal_id && (() => {
+                            const g = goals.find((g) => g.id === tx.goal_id);
+                            return g ? (
+                              <span className="mt-0.5 inline-flex items-center gap-0.5 rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400" title={`Counted against goal: ${g.name}`}>
+                                ↳ {g.name}
+                              </span>
+                            ) : null;
+                          })()}
                         </div>
                       )}
                     </td>
@@ -950,6 +978,21 @@ export function ExpensesContent() {
             </button>
             <span className="text-sm text-text-primary">Exclude from monthly totals</span>
           </div>
+          {goals.length > 0 && (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-text-secondary">Link to goal (optional)</label>
+              <select
+                value={goalId}
+                onChange={(e) => setGoalId(e.target.value)}
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              >
+                <option value="">None</option>
+                {goals.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           {formError && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">
               {formError}

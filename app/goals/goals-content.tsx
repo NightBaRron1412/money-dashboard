@@ -64,6 +64,14 @@ export function GoalsContent() {
 
   const goalProgress = computeGoalProgress(goals, goalAccounts, balances);
 
+  // Sum expense amounts linked to each goal (raw, no FX — assumes single base currency)
+  const spentByGoal: Record<string, number> = {};
+  for (const tx of transactions) {
+    if (tx.type === "expense" && tx.goal_id) {
+      spentByGoal[tx.goal_id] = (spentByGoal[tx.goal_id] || 0) + tx.amount;
+    }
+  }
+
   const getGoalAccountLinks = (goal: Goal): GoalAccountLinkInput[] => {
     const linked = goalAccounts
       .filter((link) => link.goal_id === goal.id)
@@ -663,6 +671,24 @@ export function GoalsContent() {
                     <p className="mt-2 text-xs text-text-secondary">
                       No cap — keep investing!
                     </p>
+                  )}
+
+                  {/* Spent against goal (linked expenses) */}
+                  {(spentByGoal[goal.id] ?? 0) > 0 && (
+                    <div className="mt-3 flex items-center justify-between rounded-lg border border-border-subtle bg-bg-elevated px-3 py-2 text-xs">
+                      <div className="flex items-center gap-3">
+                        <span className="text-text-secondary">Spent</span>
+                        <span className="font-semibold text-text-primary">{m(spentByGoal[goal.id])}</span>
+                      </div>
+                      {target && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-text-secondary">Remaining</span>
+                          <span className={`font-semibold ${target - spentByGoal[goal.id] <= 0 ? "text-red-400" : "text-emerald-500"}`}>
+                            {m(Math.max(0, target - spentByGoal[goal.id]))}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* Timeline / projected completion */}

@@ -49,6 +49,7 @@ export interface Transaction {
   recurrence: RecurrenceFrequency | null;
   is_recurring: boolean;
   exclude_from_monthly: boolean;
+  goal_id: string | null;
   linked_charge_id: string | null;
   idempotency_key: string | null;
   received_amount: number | null;
