@@ -140,7 +140,7 @@ export function DashboardContent({
   const appBase = routeBase;
   const baseCurrency: CurrencyCode = settings?.base_currency ?? "CAD";
   const m = (v: number) => showBalances ? formatMoney(v, baseCurrency) : HIDDEN_BALANCE;
-  const goalProgress = computeGoalProgress(goals, goalAccounts, balances);
+  const goalProgress = computeGoalProgress(goals, goalAccounts, balances, accounts, baseCurrency, fx);
   const getGoalCurrentInBase = (goalId: string) =>
     Object.entries(goalProgress.goalAccountCurrentByGoalId[goalId] ?? {}).reduce(
       (sum, [accountId, amount]) => {

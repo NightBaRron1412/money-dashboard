@@ -1,4 +1,5 @@
-import type { Goal, GoalAccount } from "./database.types";
+import type { Account, CurrencyCode, Goal, GoalAccount } from "./database.types";
+import { convertCurrency, type FxRates } from "./fx";
 
 interface NormalizedGoalAccountLink {
   goal_id: string;
@@ -59,8 +60,18 @@ function normalizeGoalAccountLinks(goals: Goal[], goalAccounts: GoalAccount[]): 
 export function computeGoalProgress(
   goals: Goal[],
   goalAccounts: GoalAccount[],
-  balances: Record<string, number>
+  balances: Record<string, number>,
+  accounts?: Account[],
+  baseCurrency?: CurrencyCode,
+  fx?: FxRates
 ): GoalProgressResult {
+  const accountById = new Map((accounts ?? []).map((a) => [a.id, a]));
+  const toBase = (amount: number, accountId: string): number => {
+    if (!baseCurrency || !fx) return amount;
+    const acct = accountById.get(accountId);
+    if (!acct) return amount;
+    return convertCurrency(amount, acct.currency, baseCurrency, fx);
+  };
   const normalizedLinks = normalizeGoalAccountLinks(goals, goalAccounts);
   const goalCurrentById: Record<string, number> = {};
   const goalAccountIdsByGoalId: Record<string, string[]> = {};
@@ -109,13 +120,13 @@ export function computeGoalProgress(
     for (const link of explicitLinks) {
       const allocated = (link.allocated_amount ?? 0) * scale;
       allocatedExplicitTotal += allocated;
-      addContribution(link.goal_id, accountId, allocated);
+      addContribution(link.goal_id, accountId, toBase(allocated, accountId));
     }
 
     const remaining = Math.max(0, accountBalance - allocatedExplicitTotal);
     const implicitShare = implicitLinks.length > 0 ? remaining / implicitLinks.length : 0;
     for (const link of implicitLinks) {
-      addContribution(link.goal_id, accountId, implicitShare);
+      addContribution(link.goal_id, accountId, toBase(implicitShare, accountId));
     }
   }
 

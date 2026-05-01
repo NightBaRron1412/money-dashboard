@@ -114,11 +114,12 @@ export async function GET() {
     }, 0);
 
     // Goal progress
-    const goalProgress = computeGoalProgress(goals, goalAccounts, balances);
+    const goalProgress = computeGoalProgress(goals, goalAccounts, balances, accounts, base, fx);
     const goalSummary = goals.map((g) => {
       const cur = goalProgress.goalCurrentById[g.id] ?? 0;
       const pct = g.target_amount ? ((cur / g.target_amount) * 100).toFixed(0) : "N/A";
-      return `${g.name}: ${cur.toFixed(0)}${g.target_amount ? `/${g.target_amount} (${pct}%)` : ""}`;
+      const completed = g.completed_at ? " ✓ COMPLETE (do not suggest finishing this goal)" : "";
+      return `${g.name}: ${cur.toFixed(0)}${g.target_amount ? `/${g.target_amount} (${pct}%)` : ""}${completed}`;
     }).join(", ");
 
     // Dividend income

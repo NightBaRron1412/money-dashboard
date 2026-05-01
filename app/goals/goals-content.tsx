@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useMoneyData } from "../hooks/use-money-data";
+import { useMoneyFx } from "../hooks/use-money-fx";
 import {
   PageHeader,
   Modal,
@@ -40,6 +41,7 @@ import { predictGoalCompletion } from "@/lib/money/forecasting";
 export function GoalsContent() {
   const { accounts, goals, goalAccounts, plans, balances, transactions, settings, loading, refresh } =
     useMoneyData();
+  const { fx } = useMoneyFx();
   const { showBalances } = useBalanceVisibility();
   const baseCurrency: CurrencyCode = settings?.base_currency ?? "CAD";
   const m = (v: number) => showBalances ? formatMoney(v, baseCurrency) : HIDDEN_BALANCE;
@@ -64,7 +66,7 @@ export function GoalsContent() {
   const [goalTargetDate, setGoalTargetDate] = useState("");
   const [formError, setFormError] = useState("");
 
-  const goalProgress = computeGoalProgress(goals, goalAccounts, balances);
+  const goalProgress = computeGoalProgress(goals, goalAccounts, balances, accounts, baseCurrency, fx);
 
   // Sum expense amounts linked to each goal (raw, no FX — assumes single base currency)
   const spentByGoal: Record<string, number> = {};

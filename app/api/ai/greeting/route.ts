@@ -97,9 +97,9 @@ export async function GET() {
     const totalNetWorth = cashNetWorth + portfolioValue;
 
     // Goal progress
-    const goalProgress = computeGoalProgress(goals, goalAccounts, balances);
+    const goalProgress = computeGoalProgress(goals, goalAccounts, balances, accounts, base, fx);
     const closestGoal = goals
-      .filter((g) => g.target_amount && g.target_amount > 0)
+      .filter((g) => g.target_amount && g.target_amount > 0 && !g.completed_at)
       .map((g) => ({
         name: g.name,
         pct: ((goalProgress.goalCurrentById[g.id] ?? 0) / g.target_amount!) * 100,

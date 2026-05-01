@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    const goalProgress = computeGoalProgress(goals, goalAccounts, balances);
+    const goalProgress = computeGoalProgress(goals, goalAccounts, balances, accounts, base, fx);
 
     const totalDividends6m = dividends.reduce(
       (s, d) => s + toBase(d.amount, d.currency),
@@ -197,7 +197,8 @@ ${goals.length > 0 ? goals.map((g) => {
   const current = goalProgress.goalCurrentById[g.id] ?? 0;
   const target = g.target_amount;
   const pct = target ? ((current / target) * 100).toFixed(0) : "N/A";
-  return `${g.name}: ${current.toFixed(0)}${target ? ` / ${target.toFixed(0)} (${pct}%)` : " (no target)"}${g.target_date ? `, deadline ${g.target_date}` : ""}`;
+  const completed = g.completed_at ? " ✓ COMPLETE (do not suggest finishing this goal)" : "";
+  return `${g.name}: ${current.toFixed(0)}${target ? ` / ${target.toFixed(0)} (${pct}%)` : " (no target)"}${g.target_date ? `, deadline ${g.target_date}` : ""}${completed}`;
 }).join("\n") : "No goals"}
 
 === SUBSCRIPTIONS (amounts shown as monthly equivalent) ===
