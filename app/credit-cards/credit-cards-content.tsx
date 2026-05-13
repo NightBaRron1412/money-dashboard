@@ -246,12 +246,16 @@ export function CreditCardsContent() {
     return Array.from(set).sort().reverse();
   }, [creditCardPayments]);
 
-  // Categories from charges
+  // Filter categories: settings list + any legacy categories still present in charges
   const chargeCategories = useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(categories);
     for (const c of creditCardCharges) if (c.category) set.add(c.category);
-    return Array.from(set).sort();
-  }, [creditCardCharges]);
+    return Array.from(set).sort((a, b) => {
+      if (a === "Other") return 1;
+      if (b === "Other") return -1;
+      return a.localeCompare(b);
+    });
+  }, [creditCardCharges, categories]);
 
   const filteredCharges = useMemo(() => {
     let list = creditCardCharges;
