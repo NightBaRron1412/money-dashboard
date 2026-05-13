@@ -398,11 +398,18 @@ export function ExpensesContent() {
         goal_id: editGoalId || null,
       };
       if (!tx?.linked_charge_id) {
+        if (editAccountId.startsWith("cc:")) {
+          // Can't switch a regular expense to a CC charge via inline edit —
+          // delete and re-add it from the New Expense form instead.
+          throw new Error("To pay this with a credit card, delete and re-create it from the New Expense form.");
+        }
         updates.account_id = editAccountId || null;
       }
       await updateTransaction(id, updates);
       await refresh();
       setEditingId(null);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to save changes");
     } finally {
       setSaving(false);
     }
@@ -734,20 +741,16 @@ export function ExpensesContent() {
                     </td>
                     <td className="px-4 py-3 text-text-secondary">
                       {isEditing ? (
-                        <select value={editAccountId} onChange={(e) => setEditAccountId(e.target.value)}
-                          className="rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple">
-                          <option value="">Select…</option>
-                          {accounts.length > 0 && (
-                            <optgroup label="Accounts">
-                              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                            </optgroup>
-                          )}
-                          {creditCards.length > 0 && (
-                            <optgroup label="Credit Cards">
-                              {creditCards.map((cc) => <option key={cc.id} value={`cc:${cc.id}`}>💳 {cc.name}</option>)}
-                            </optgroup>
-                          )}
-                        </select>
+                        tx.linked_charge_id ? (
+                          // CC-linked transactions: show card name; can't reassign account here
+                          <span className="block max-w-[140px] truncate text-xs" title={accountDisplay}>{accountDisplay}</span>
+                        ) : (
+                          <select value={editAccountId} onChange={(e) => setEditAccountId(e.target.value)}
+                            className="rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple">
+                            <option value="">Select…</option>
+                            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                          </select>
+                        )
                       ) : (
                         <span className="block max-w-[140px] truncate" title={accountDisplay}>{accountDisplay}</span>
                       )}
