@@ -58,6 +58,20 @@ const DEFAULT_CATEGORIES = [
   "Other",
 ];
 
+const normalizeCategories = (raw: string[]) => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const entry of raw) {
+    const value = entry.trim();
+    if (!value) continue;
+    const key = value.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(value);
+  }
+  return out;
+};
+
 export function CreditCardsContent() {
   const {
     accounts,
@@ -74,6 +88,16 @@ export function CreditCardsContent() {
   const baseCurrency: CurrencyCode = settings?.base_currency ?? "CAD";
   const m = (v: number) =>
     showBalances ? formatMoney(v, baseCurrency) : HIDDEN_BALANCE;
+
+  const categories = useMemo(() => {
+    const loaded = normalizeCategories(settings?.expense_categories ?? []);
+    const list = loaded.length > 0 ? loaded : DEFAULT_CATEGORIES;
+    return [...list].sort((a, b) => {
+      if (a === "Other") return 1;
+      if (b === "Other") return -1;
+      return a.localeCompare(b);
+    });
+  }, [settings?.expense_categories]);
 
   // Add card modal
   const [showAddCard, setShowAddCard] = useState(false);
@@ -110,7 +134,7 @@ export function CreditCardsContent() {
       const res = await fetch("/api/ai/categorize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ merchant: merchantName.trim(), notes: notesText?.trim() || undefined, categories: DEFAULT_CATEGORIES }),
+        body: JSON.stringify({ merchant: merchantName.trim(), notes: notesText?.trim() || undefined, categories }),
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -910,7 +934,7 @@ export function CreditCardsContent() {
                         {isEditing ? (
                           <select value={editChargeCategory} onChange={(e) => setEditChargeCategory(e.target.value)}
                             className="rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple">
-                            {DEFAULT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
                           </select>
                         ) : (
                           charge.category || "—"
@@ -1379,7 +1403,7 @@ export function CreditCardsContent() {
                 onChange={(e) => setChargeCategory(e.target.value)}
                 className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
               >
-                {DEFAULT_CATEGORIES.map((c) => (
+                {categories.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
