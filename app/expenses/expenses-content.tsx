@@ -368,7 +368,7 @@ export function ExpensesContent() {
     }
   };
 
-  const startEdit = (tx: { id: string; date: string; amount: number; category: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; account_id: string | null; exclude_from_monthly: boolean; goal_id: string | null }) => {
+  const startEdit = (tx: { id: string; date: string; amount: number; category: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; account_id: string | null; exclude_from_monthly: boolean; goal_id: string | null; linked_charge_id: string | null }) => {
     setEditingId(tx.id);
     setEditDate(tx.date);
     setEditAmount(tx.amount.toString());
@@ -378,7 +378,13 @@ export function ExpensesContent() {
     setEditRecurrence(tx.recurrence || "monthly");
     setEditExcludeFromMonthly(tx.exclude_from_monthly);
     setEditGoalId(tx.goal_id || "");
-    setEditAccountId(tx.account_id || "");
+    // Pre-select the source: real account or `cc:<cardId>` if it's a linked CC charge
+    if (tx.linked_charge_id) {
+      const charge = creditCardCharges.find((c) => c.id === tx.linked_charge_id);
+      setEditAccountId(charge ? `cc:${charge.card_id}` : "");
+    } else {
+      setEditAccountId(tx.account_id || "");
+    }
   };
 
   const handleSaveEdit = async (id: string) => {
@@ -387,25 +393,79 @@ export function ExpensesContent() {
       const amt = parseFloat(editAmount);
       if (isNaN(amt) || amt <= 0) return;
       const tx = transactions.find((t) => t.id === id);
-      const updates: Record<string, unknown> = {
-        date: editDate,
-        amount: amt,
-        category: editCategory,
-        merchant: editMerchant || null,
-        is_recurring: editIsRecurring,
-        recurrence: editIsRecurring ? editRecurrence : null,
-        exclude_from_monthly: editExcludeFromMonthly,
-        goal_id: editGoalId || null,
-      };
-      if (!tx?.linked_charge_id) {
-        if (editAccountId.startsWith("cc:")) {
-          // Can't switch a regular expense to a CC charge via inline edit —
-          // delete and re-add it from the New Expense form instead.
-          throw new Error("To pay this with a credit card, delete and re-create it from the New Expense form.");
+      if (!tx) return;
+
+      // Detect whether the chosen source matches the current source
+      const isCCNow = editAccountId.startsWith("cc:");
+      const newCardId = isCCNow ? editAccountId.slice(3) : null;
+      const currentCharge = tx.linked_charge_id
+        ? creditCardCharges.find((c) => c.id === tx.linked_charge_id)
+        : null;
+      const currentCardId = currentCharge?.card_id ?? null;
+      const sameSource = isCCNow
+        ? currentCardId === newCardId
+        : !tx.linked_charge_id && (tx.account_id ?? "") === (editAccountId || "");
+
+      // Account changed enough to require deleting + recreating (e.g., regular ↔ CC, or CC → different CC)
+      if (!sameSource) {
+        await deleteTransaction(id);
+        if (isCCNow && newCardId) {
+          const card = creditCards.find((c) => c.id === newCardId);
+          const cardCurrency: CurrencyCode = card?.currency || baseCurrency;
+          await createLinkedCreditCardCharge(
+            {
+              card_id: newCardId,
+              date: editDate,
+              amount: amt,
+              merchant: editMerchant || null,
+              category: editCategory,
+              notes: null,
+            },
+            {
+              currency: cardCurrency,
+              cardName: card?.name ?? "Credit Card",
+              is_recurring: editIsRecurring,
+              recurrence: editIsRecurring ? editRecurrence : null,
+            }
+          );
+        } else {
+          const acct = accounts.find((a) => a.id === editAccountId);
+          const txCurrency: CurrencyCode = acct?.currency || baseCurrency;
+          await createTransaction({
+            type: "expense",
+            date: editDate,
+            amount: amt,
+            currency: txCurrency,
+            category: editCategory,
+            account_id: editAccountId || null,
+            from_account_id: null,
+            to_account_id: null,
+            merchant: editMerchant || null,
+            notes: null,
+            is_recurring: editIsRecurring,
+            recurrence: editIsRecurring ? editRecurrence : null,
+            exclude_from_monthly: editExcludeFromMonthly,
+            goal_id: editGoalId || null,
+          });
         }
-        updates.account_id = editAccountId || null;
+      } else {
+        // Source unchanged: regular field-only update (also syncs to linked CC charge inside updateTransaction)
+        const updates: Record<string, unknown> = {
+          date: editDate,
+          amount: amt,
+          category: editCategory,
+          merchant: editMerchant || null,
+          is_recurring: editIsRecurring,
+          recurrence: editIsRecurring ? editRecurrence : null,
+          exclude_from_monthly: editExcludeFromMonthly,
+          goal_id: editGoalId || null,
+        };
+        if (!tx.linked_charge_id) {
+          updates.account_id = editAccountId || null;
+        }
+        await updateTransaction(id, updates);
       }
-      await updateTransaction(id, updates);
+
       await refresh();
       setEditingId(null);
     } catch (err: unknown) {
@@ -741,16 +801,20 @@ export function ExpensesContent() {
                     </td>
                     <td className="px-4 py-3 text-text-secondary">
                       {isEditing ? (
-                        tx.linked_charge_id ? (
-                          // CC-linked transactions: show card name; can't reassign account here
-                          <span className="block max-w-[140px] truncate text-xs" title={accountDisplay}>{accountDisplay}</span>
-                        ) : (
-                          <select value={editAccountId} onChange={(e) => setEditAccountId(e.target.value)}
-                            className="rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple">
-                            <option value="">Select…</option>
-                            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                          </select>
-                        )
+                        <select value={editAccountId} onChange={(e) => setEditAccountId(e.target.value)}
+                          className="rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple">
+                          <option value="">Select…</option>
+                          {accounts.length > 0 && (
+                            <optgroup label="Accounts">
+                              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                            </optgroup>
+                          )}
+                          {creditCards.length > 0 && (
+                            <optgroup label="Credit Cards">
+                              {creditCards.map((cc) => <option key={cc.id} value={`cc:${cc.id}`}>💳 {cc.name}</option>)}
+                            </optgroup>
+                          )}
+                        </select>
                       ) : (
                         <span className="block max-w-[140px] truncate" title={accountDisplay}>{accountDisplay}</span>
                       )}
