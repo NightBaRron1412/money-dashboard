@@ -1194,7 +1194,7 @@ export function DashboardContent({
         <BarChart3 className="h-4 w-4 text-accent-purple" /> Charts &amp; Trends
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
-        <NetWorthChart transactions={transactions} accounts={accounts} baseCurrency={baseCurrency} fx={fx} balances={balances} holdings={holdings} dividends={dividends} stockQuotes={stockQuotes} netWorthSnapshots={netWorthSnapshots} />
+        <NetWorthChart baseCurrency={baseCurrency} netWorthSnapshots={netWorthSnapshots} />
         <ExpensesByCategoryChart transactions={transactions} baseCurrency={baseCurrency} fx={fx} />
         <IncomeVsExpensesChart transactions={transactions} baseCurrency={baseCurrency} fx={fx} />
         <GoalProgressChart
