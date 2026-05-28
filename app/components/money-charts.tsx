@@ -16,7 +16,7 @@ import {
   Line,
   Legend,
 } from "recharts";
-import type { Transaction, Account, CurrencyCode } from "@/lib/money/database.types";
+import type { Transaction, Account, CurrencyCode, Holding, Dividend } from "@/lib/money/database.types";
 import { computeAccountBalance } from "@/lib/money/queries";
 import type { FxRates } from "@/lib/money/fx";
 import { getCategoryColorHex } from "./money-ui";
@@ -56,17 +56,30 @@ const CHART_TOOLTIP_TEXT = "var(--text-primary)";
 const CHART_TOOLTIP_LABEL = "var(--text-secondary)";
 const CHART_CURSOR = "var(--bg-elevated)";
 
+interface StockQuote {
+  price: number;
+  currency: string;
+}
+
 interface ChartsProps {
   transactions: Transaction[];
   accounts: Account[];
   baseCurrency: CurrencyCode;
   fx: FxRates;
+  /** Today's actual per-account balances (already adjusted for CC payments, corrections, etc.). */
+  balances: Record<string, number>;
+  /** Current holdings — used to approximate per-month portfolio value (current price × shares held at that date, based on created_at). */
+  holdings?: Holding[];
+  /** Cash dividends received (filtered by date for historical inclusion). */
+  dividends?: Dividend[];
+  /** Current stock quotes, keyed by uppercase symbol. */
+  stockQuotes?: Record<string, StockQuote>;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Net Worth Over Time                                               */
 /* ------------------------------------------------------------------ */
-export function NetWorthChart({ transactions, accounts, baseCurrency, fx }: ChartsProps) {
+export function NetWorthChart({ transactions, accounts, baseCurrency, fx, balances, holdings, dividends, stockQuotes }: ChartsProps) {
   const { showBalances } = useBalanceVisibility();
   const data = useMemo(() => {
     if (accounts.length === 0) return [];
@@ -82,17 +95,60 @@ export function NetWorthChart({ transactions, accounts, baseCurrency, fx }: Char
         : minWindowStart;
     const months = eachMonthOfInterval({ start, end });
 
+    // Walk backward from today's actual balance: at each cutoff, undo the
+    // net effect of transactions that happened after that month. Anchoring
+    // to `balances` keeps today's chart point consistent with the dashboard
+    // widget (which correctly accounts for CC payments, corrections, etc.).
     return months.map((month) => {
-      const cutoff = format(month, "yyyy-MM-dd");
-      // Only count transactions up to the end of this month
       const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
       const cutoffEnd = format(endOfMonth, "yyyy-MM-dd");
-      const txsUpTo = transactions.filter((t) => t.date <= cutoffEnd);
 
       let total = 0;
       for (const acct of accounts) {
-        const bal = computeAccountBalance(acct.id, txsUpTo, acct.starting_balance ?? 0);
-        total += convertCurrency(bal, acct.currency, baseCurrency, fx);
+        const currentBal = balances[acct.id] ?? 0;
+        let netChangeAfterCutoff = 0;
+        for (const tx of transactions) {
+          if (tx.date <= cutoffEnd) continue;
+          if (tx.type === "income" && tx.account_id === acct.id) {
+            netChangeAfterCutoff += tx.amount;
+          } else if (tx.type === "expense" && tx.account_id === acct.id) {
+            netChangeAfterCutoff -= tx.amount;
+          } else if (tx.type === "transfer") {
+            if (tx.from_account_id === acct.id) netChangeAfterCutoff -= tx.amount;
+            if (tx.to_account_id === acct.id) netChangeAfterCutoff += (tx.received_amount ?? tx.amount);
+          } else if (tx.type === "correction") {
+            if (tx.to_account_id === acct.id) netChangeAfterCutoff += tx.amount;
+            if (tx.from_account_id === acct.id) netChangeAfterCutoff -= tx.amount;
+          }
+        }
+        const historicalBal = currentBal - netChangeAfterCutoff;
+        total += convertCurrency(historicalBal, acct.currency, baseCurrency, fx);
+      }
+
+      // Holdings: include positions whose row existed on or before the cutoff
+      // (created_at is the best proxy we have for "when this position started").
+      // Uses current per-share price for all months, so the curve reflects
+      // accumulated positions priced consistently rather than fake historical prices.
+      if (holdings && stockQuotes) {
+        for (const h of holdings) {
+          if (h.created_at.slice(0, 10) > cutoffEnd) continue;
+          const sym = h.symbol.toUpperCase();
+          const quote = stockQuotes[sym];
+          const rawCur = sym === "CASH" ? "USD" : sym === "CASHCAD" ? "CAD" : (quote?.currency ?? "USD");
+          const quoteCurrency: CurrencyCode =
+            rawCur === "CAD" || rawCur === "USD" || rawCur === "EGP" ? rawCur : "USD";
+          const price = sym === "CASH" || sym === "CASHCAD" ? 1 : (quote?.price ?? 0);
+          total += h.shares * convertCurrency(price, quoteCurrency, baseCurrency, fx);
+        }
+      }
+
+      // Cash dividends actually received by the cutoff date
+      if (dividends) {
+        for (const d of dividends) {
+          if (d.reinvested) continue;
+          if (d.date > cutoffEnd) continue;
+          total += convertCurrency(d.amount, d.currency, baseCurrency, fx);
+        }
       }
 
       return {
@@ -100,7 +156,7 @@ export function NetWorthChart({ transactions, accounts, baseCurrency, fx }: Char
         netWorth: Math.round(total),
       };
     });
-  }, [transactions, accounts, baseCurrency, fx]);
+  }, [transactions, accounts, baseCurrency, fx, balances, holdings, dividends, stockQuotes]);
 
   if (data.length === 0) return <EmptyChart label="No data yet" />;
 
