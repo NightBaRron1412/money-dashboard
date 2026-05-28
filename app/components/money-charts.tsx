@@ -94,12 +94,14 @@ export function NetWorthChart({ transactions, accounts, baseCurrency, fx, balanc
         ? firstTxMonth
         : minWindowStart;
     const months = eachMonthOfInterval({ start, end });
+    const lastMonthIdx = months.length - 1;
 
     // Walk backward from today's actual balance: at each cutoff, undo the
     // net effect of transactions that happened after that month. Anchoring
     // to `balances` keeps today's chart point consistent with the dashboard
     // widget (which correctly accounts for CC payments, corrections, etc.).
-    return months.map((month) => {
+    return months.map((month, monthIdx) => {
+      const isToday = monthIdx === lastMonthIdx;
       const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
       const cutoffEnd = format(endOfMonth, "yyyy-MM-dd");
 
@@ -129,19 +131,25 @@ export function NetWorthChart({ transactions, accounts, baseCurrency, fx, balanc
       }
 
       // Holdings: include positions whose row existed on or before the cutoff
-      // (created_at is the best proxy we have for "when this position started").
-      // Uses current per-share price for all months, so the curve reflects
-      // accumulated positions priced consistently rather than fake historical prices.
-      if (holdings && stockQuotes) {
+      // (created_at is the best proxy we have for "when this position started",
+      // since the schema doesn't track individual purchase lots).
+      // For historical points we use cost_basis (money actually put in); for
+      // today's point we use current market value, so the step between
+      // yesterday and today equals the current unrealized gain/loss.
+      if (holdings) {
         for (const h of holdings) {
           if (h.created_at.slice(0, 10) > cutoffEnd) continue;
-          const sym = h.symbol.toUpperCase();
-          const quote = stockQuotes[sym];
-          const rawCur = sym === "CASH" ? "USD" : sym === "CASHCAD" ? "CAD" : (quote?.currency ?? "USD");
-          const quoteCurrency: CurrencyCode =
-            rawCur === "CAD" || rawCur === "USD" || rawCur === "EGP" ? rawCur : "USD";
-          const price = sym === "CASH" || sym === "CASHCAD" ? 1 : (quote?.price ?? 0);
-          total += h.shares * convertCurrency(price, quoteCurrency, baseCurrency, fx);
+          if (isToday && stockQuotes) {
+            const sym = h.symbol.toUpperCase();
+            const quote = stockQuotes[sym];
+            const rawCur = sym === "CASH" ? "USD" : sym === "CASHCAD" ? "CAD" : (quote?.currency ?? "USD");
+            const quoteCurrency: CurrencyCode =
+              rawCur === "CAD" || rawCur === "USD" || rawCur === "EGP" ? rawCur : "USD";
+            const price = sym === "CASH" || sym === "CASHCAD" ? 1 : (quote?.price ?? 0);
+            total += h.shares * convertCurrency(price, quoteCurrency, baseCurrency, fx);
+          } else {
+            total += convertCurrency(h.cost_basis, h.cost_currency, baseCurrency, fx);
+          }
         }
       }
 
