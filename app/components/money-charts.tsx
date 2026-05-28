@@ -106,10 +106,11 @@ export function NetWorthChart({ transactions, accounts, baseCurrency, fx, balanc
       const cutoffEnd = format(endOfMonth, "yyyy-MM-dd");
 
       let total = 0;
-      // Cash component: checking accounts only (matches the dashboard's net-worth
-      // formula, which counts investing-account cash via holdings, not as cash).
+      // Cash component: all accounts (checking + investing). For historical
+      // months this includes brokerage cash balance at that time, which is the
+      // best proxy we have for the invested portion (we can't reconstruct stock
+      // market value without per-lot history).
       for (const acct of accounts) {
-        if (acct.type !== "checking") continue;
         const currentBal = balances[acct.id] ?? 0;
         let netChangeAfterCutoff = 0;
         for (const tx of transactions) {
@@ -130,26 +131,19 @@ export function NetWorthChart({ transactions, accounts, baseCurrency, fx, balanc
         total += convertCurrency(historicalBal, acct.currency, baseCurrency, fx);
       }
 
-      // Holdings: include positions whose row existed on or before the cutoff
-      // (created_at is the best proxy we have for "when this position started",
-      // since the schema doesn't track individual purchase lots).
-      // For historical points we use cost_basis (money actually put in); for
-      // today's point we use current market value, so the step between
-      // yesterday and today equals the current unrealized gain/loss.
-      if (holdings) {
+      // Holdings: only include at TODAY's point (full market value, so today's
+      // chart matches the dashboard's net worth). Historical points rely on the
+      // investing-account cash walk-back above as a proxy for portfolio value,
+      // since the schema doesn't track per-lot purchase history.
+      if (isToday && holdings && stockQuotes) {
         for (const h of holdings) {
-          if (h.created_at.slice(0, 10) > cutoffEnd) continue;
-          if (isToday && stockQuotes) {
-            const sym = h.symbol.toUpperCase();
-            const quote = stockQuotes[sym];
-            const rawCur = sym === "CASH" ? "USD" : sym === "CASHCAD" ? "CAD" : (quote?.currency ?? "USD");
-            const quoteCurrency: CurrencyCode =
-              rawCur === "CAD" || rawCur === "USD" || rawCur === "EGP" ? rawCur : "USD";
-            const price = sym === "CASH" || sym === "CASHCAD" ? 1 : (quote?.price ?? 0);
-            total += h.shares * convertCurrency(price, quoteCurrency, baseCurrency, fx);
-          } else {
-            total += convertCurrency(h.cost_basis, h.cost_currency, baseCurrency, fx);
-          }
+          const sym = h.symbol.toUpperCase();
+          const quote = stockQuotes[sym];
+          const rawCur = sym === "CASH" ? "USD" : sym === "CASHCAD" ? "CAD" : (quote?.currency ?? "USD");
+          const quoteCurrency: CurrencyCode =
+            rawCur === "CAD" || rawCur === "USD" || rawCur === "EGP" ? rawCur : "USD";
+          const price = sym === "CASH" || sym === "CASHCAD" ? 1 : (quote?.price ?? 0);
+          total += h.shares * convertCurrency(price, quoteCurrency, baseCurrency, fx);
         }
       }
 
