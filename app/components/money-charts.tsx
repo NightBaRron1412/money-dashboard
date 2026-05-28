@@ -120,11 +120,16 @@ export function NetWorthChart({ transactions, accounts, baseCurrency, fx, balanc
       const cutoffEnd = format(endOfMonth, "yyyy-MM-dd");
 
       let total = 0;
-      // Cash component: all accounts (checking + investing). For historical
-      // months this includes brokerage cash balance at that time, which is the
-      // best proxy we have for the invested portion (we can't reconstruct stock
-      // market value without per-lot history).
+      // Cash component matches the dashboard's net worth formula:
+      //   today  -> checking accounts only (holdings supply the investment value)
+      //   past   -> checking + investing accounts (investing cash is the only
+      //             proxy we have for the invested portion, since per-lot stock
+      //             history isn't stored)
+      // Including investing cash AND holdings at today would double-count any
+      // brokerage cash that's mirrored as a CASH-symbol holding.
       for (const acct of accounts) {
+        if (isToday && acct.type !== "checking") continue;
+        if (!isToday && acct.type !== "checking" && acct.type !== "investing") continue;
         const currentBal = balances[acct.id] ?? 0;
         let netChangeAfterCutoff = 0;
         for (const tx of transactions) {
