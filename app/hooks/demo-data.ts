@@ -82,6 +82,9 @@ export function getDemoMoneyData(): DemoMoneyData {
       type: "checking",
       currency: "CAD",
       starting_balance: 2800,
+      position: 0,
+      color: null,
+      archived: false,
       created_at: isoOffset(-180),
     },
     {
@@ -91,6 +94,9 @@ export function getDemoMoneyData(): DemoMoneyData {
       type: "checking",
       currency: "CAD",
       starting_balance: 9200,
+      position: 1,
+      color: null,
+      archived: false,
       created_at: isoOffset(-180),
     },
     {
@@ -100,6 +106,9 @@ export function getDemoMoneyData(): DemoMoneyData {
       type: "investing",
       currency: "USD",
       starting_balance: 3000,
+      position: 2,
+      color: null,
+      archived: false,
       created_at: isoOffset(-180),
     },
   ];
@@ -539,6 +548,9 @@ export function getDemoMoneyData(): DemoMoneyData {
       currency: "CAD",
       credit_limit: 10000,
       linked_account_id: checkingId,
+      position: 0,
+      color: null,
+      archived: false,
       created_at: isoOffset(-150),
     },
     {
@@ -548,6 +560,9 @@ export function getDemoMoneyData(): DemoMoneyData {
       currency: "CAD",
       credit_limit: 5000,
       linked_account_id: checkingId,
+      position: 1,
+      color: null,
+      archived: false,
       created_at: isoOffset(-120),
     },
   ];

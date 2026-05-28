@@ -51,7 +51,9 @@ export async function getAccounts() {
   const { data, error } = await supabase
     .from("money_accounts")
     .select("*")
-    .order("created_at");
+    .order("archived", { ascending: true })
+    .order("position", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true });
   if (error) throw error;
   return data as Account[];
 }
@@ -85,6 +87,9 @@ export async function updateAccount(
     type?: Account["type"];
     currency?: Account["currency"];
     starting_balance?: number;
+    color?: string | null;
+    archived?: boolean;
+    position?: number;
   }
 ) {
   if (isDemoModeRoute()) return demoUpdateAccount(id, updates);
@@ -905,21 +910,52 @@ export async function getCreditCards() {
   const { data, error } = await supabase
     .from("money_credit_cards")
     .select("*")
-    .order("created_at");
+    .order("archived", { ascending: true })
+    .order("position", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true });
   if (error) {
-    
     return [] as CreditCard[];
   }
   return data as CreditCard[];
 }
 
+export async function reorderAccounts(ids: string[]) {
+  if (ids.length === 0) return;
+  if (isDemoModeRoute()) return;
+  const rows = ids.map((id, i) => ({ id, position: i }));
+  const { error } = await supabase
+    .from("money_accounts")
+    .upsert(rows, { onConflict: "id" });
+  if (error) throw error;
+}
+
+export async function reorderCreditCards(ids: string[]) {
+  if (ids.length === 0) return;
+  if (isDemoModeRoute()) return;
+  const rows = ids.map((id, i) => ({ id, position: i }));
+  const { error } = await supabase
+    .from("money_credit_cards")
+    .upsert(rows, { onConflict: "id" });
+  if (error) throw error;
+}
+
 export async function createCreditCard(
-  card: Omit<CreditCard, "id" | "created_at" | "user_id">
+  card: Omit<CreditCard, "id" | "created_at" | "user_id" | "position" | "color" | "archived"> & {
+    position?: number | null;
+    color?: string | null;
+    archived?: boolean;
+  }
 ) {
-  if (isDemoModeRoute()) return demoCreateCreditCard(card);
+  const normalized = {
+    ...card,
+    position: card.position ?? null,
+    color: card.color ?? null,
+    archived: card.archived ?? false,
+  };
+  if (isDemoModeRoute()) return demoCreateCreditCard(normalized);
   const { data, error } = await supabase
     .from("money_credit_cards")
-    .insert({ ...card, user_id: OWNER_ID })
+    .insert({ ...normalized, user_id: OWNER_ID })
     .select()
     .single();
   if (error) throw error;

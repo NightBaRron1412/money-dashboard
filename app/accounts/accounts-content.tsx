@@ -35,14 +35,53 @@ import {
   updateTransaction,
   deleteTransaction,
   computeCreditCardBalance,
+  reorderAccounts,
 } from "@/lib/money/queries";
 import type { AccountType, Account, CurrencyCode, TransactionWithBalance } from "@/lib/money/database.types";
 import { convertCurrency } from "@/lib/money/fx";
 import { format } from "date-fns";
 import { useBalanceVisibility } from "../balance-visibility-provider";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
+import { SortableCard } from "../components/sortable-card";
+import { CARD_COLORS, cardColorClasses } from "../components/card-colors";
 
 export function AccountsContent() {
   const { accounts, transactions, balances, creditCards, creditCardCharges, creditCardPayments, settings, loading, refresh } = useMoneyData();
+  // Mirror server-provided order locally so drag-end can update optimistically.
+  useEffect(() => { setOrderedAccounts(accounts); }, [accounts]);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = orderedAccounts.findIndex((a) => a.id === active.id);
+    const newIdx = orderedAccounts.findIndex((a) => a.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    // Only allow reorder within the same archived group (active or archived)
+    if (orderedAccounts[oldIdx].archived !== orderedAccounts[newIdx].archived) return;
+    const next = arrayMove(orderedAccounts, oldIdx, newIdx);
+    setOrderedAccounts(next);
+    try {
+      // Persist positions for each archive group independently so the seeded
+      // positions stay contiguous when items are added/archived later.
+      const activeIds = next.filter((a) => !a.archived).map((a) => a.id);
+      const archivedIds = next.filter((a) => a.archived).map((a) => a.id);
+      await Promise.all([
+        reorderAccounts(activeIds),
+        reorderAccounts(archivedIds),
+      ]);
+    } catch {
+      await refresh();
+    }
+  };
   const { fx, ready: fxReady } = useMoneyFx();
   const { showBalances } = useBalanceVisibility();
   const baseCurrency: CurrencyCode = settings?.base_currency ?? "CAD";
@@ -61,7 +100,10 @@ export function AccountsContent() {
   const [editType, setEditType] = useState<AccountType>("checking");
   const [editCurrency, setEditCurrency] = useState<CurrencyCode>("CAD");
   const [editStarting, setEditStarting] = useState("");
+  const [editColor, setEditColor] = useState<string | null>(null);
+  const [editArchived, setEditArchived] = useState(false);
   const [editError, setEditError] = useState("");
+  const [orderedAccounts, setOrderedAccounts] = useState<Account[]>([]);
 
   // Transfer state
   const [showTransfer, setShowTransfer] = useState(false);
@@ -223,6 +265,8 @@ export function AccountsContent() {
     setEditType(acct.type);
     setEditCurrency(acct.currency);
     setEditStarting((acct.starting_balance ?? 0).toString());
+    setEditColor(acct.color ?? null);
+    setEditArchived(acct.archived ?? false);
     setEditError("");
   };
 
@@ -378,6 +422,8 @@ export function AccountsContent() {
         type: editType,
         currency: editCurrency,
         starting_balance: parseFloat(editStarting) || 0,
+        color: editColor,
+        archived: editArchived,
       });
       await refresh();
       setEditing(null);
@@ -465,8 +511,10 @@ export function AccountsContent() {
           description="Create your first account to start tracking."
         />
       ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orderedAccounts.map((a) => a.id)} strategy={rectSortingStrategy}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {accounts.map((acct) => {
+          {orderedAccounts.map((acct) => {
             const bal = balances[acct.id] || 0;
             const txCount = transactions.filter(
               (t) =>
@@ -474,20 +522,19 @@ export function AccountsContent() {
                 t.from_account_id === acct.id ||
                 t.to_account_id === acct.id
             ).length;
+            const fallbackClasses = acct.type === "investing"
+              ? { icon: "bg-emerald-500/10 text-emerald-400", bar: "bg-emerald-500" }
+              : { icon: "bg-accent-blue/10 text-accent-blue", bar: "bg-accent-blue" };
+            const colorClasses = cardColorClasses(acct.color, fallbackClasses);
             return (
+              <SortableCard key={acct.id} id={acct.id}>
+                {({ Handle }) => (
               <div
-                key={acct.id}
-                className="rounded-2xl border border-border-subtle bg-bg-secondary p-5 transition hover:border-accent-blue/30"
+                className={`rounded-2xl border border-border-subtle bg-bg-secondary p-5 transition hover:border-accent-blue/30 ${acct.archived ? "opacity-60" : ""}`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                        acct.type === "investing"
-                          ? "bg-emerald-500/10 text-emerald-400"
-                          : "bg-accent-blue/10 text-accent-blue"
-                      }`}
-                    >
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${colorClasses.icon}`}>
                       {acct.type === "investing" ? (
                         <TrendingUp className="h-5 w-5" />
                       ) : (
@@ -497,6 +544,9 @@ export function AccountsContent() {
                     <div>
                       <h3 className="text-sm font-semibold text-text-primary">
                         {acct.name}
+                        {acct.archived && (
+                          <span className="ml-2 rounded bg-bg-elevated px-1.5 py-0.5 text-[10px] font-medium text-text-secondary">Archived</span>
+                        )}
                       </h3>
                       <p className="text-xs text-text-secondary capitalize">
                         {acct.type} • {acct.currency}
@@ -504,6 +554,7 @@ export function AccountsContent() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
+                    <Handle />
                     <button
                       onClick={() => openEdit(acct)}
                       className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"
@@ -566,9 +617,13 @@ export function AccountsContent() {
                   </div>
                 </div>
               </div>
+                )}
+              </SortableCard>
             );
           })}
         </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Transfer History */}
@@ -926,6 +981,40 @@ export function AccountsContent() {
               />
             </div>
           </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-text-secondary">
+              Color
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setEditColor(null)}
+                aria-label="Default color"
+                className={`h-7 w-7 rounded-full border border-border-subtle bg-bg-elevated text-[10px] text-text-secondary transition hover:border-accent-purple ${editColor === null ? "ring-2 ring-accent-purple ring-offset-2 ring-offset-bg-secondary" : ""}`}
+              >
+                –
+              </button>
+              {CARD_COLORS.map((c) => (
+                <button
+                  key={c.slug}
+                  type="button"
+                  onClick={() => setEditColor(c.slug)}
+                  aria-label={c.slug}
+                  className={`h-7 w-7 rounded-full ${c.swatch} transition hover:scale-110 ${editColor === c.slug ? "ring-2 ring-accent-purple ring-offset-2 ring-offset-bg-secondary" : ""}`}
+                />
+              ))}
+            </div>
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <button
+              type="button"
+              onClick={() => setEditArchived(!editArchived)}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition ${editArchived ? "bg-accent-purple" : "bg-bg-elevated"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${editArchived ? "translate-x-5" : ""}`} />
+            </button>
+            <span className="text-sm text-text-primary">Archive (sort to bottom)</span>
+          </label>
           {editError && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">
               {editError}

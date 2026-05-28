@@ -28,6 +28,9 @@ export interface Account {
   type: AccountType;
   currency: CurrencyCode;
   starting_balance: number;
+  position: number | null;
+  color: string | null;
+  archived: boolean;
   created_at: string;
 }
 
@@ -185,6 +188,9 @@ export interface CreditCard {
   currency: CurrencyCode;
   credit_limit: number;
   linked_account_id: string | null;
+  position: number | null;
+  color: string | null;
+  archived: boolean;
   created_at: string;
 }
 

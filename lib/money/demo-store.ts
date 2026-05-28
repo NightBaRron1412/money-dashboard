@@ -72,6 +72,9 @@ export function demoCreateAccount(account: Partial<Account>): Account {
     type: "checking",
     currency: "CAD",
     starting_balance: 0,
+    position: null,
+    color: null,
+    archived: false,
     created_at: now(),
     ...account,
   };
@@ -383,6 +386,9 @@ export function demoCreateCreditCard(card: Partial<CreditCard>): CreditCard {
     credit_limit: 0,
     currency: "CAD",
     linked_account_id: null,
+    position: null,
+    color: null,
+    archived: false,
     created_at: now(),
     ...card,
   };

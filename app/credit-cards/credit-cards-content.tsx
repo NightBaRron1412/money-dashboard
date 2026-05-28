@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useMoneyData } from "../hooks/use-money-data";
 import { useMoneyFx } from "../hooks/use-money-fx";
 import {
@@ -41,11 +41,23 @@ import {
   updateCreditCardPayment,
   deleteCreditCardPayment,
   computeCreditCardBalance,
+  reorderCreditCards,
 } from "@/lib/money/queries";
 import type { CurrencyCode, CreditCard, CreditCardCharge } from "@/lib/money/database.types";
 import { convertCurrency } from "@/lib/money/fx";
 import { format } from "date-fns";
 import { useBalanceVisibility } from "../balance-visibility-provider";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
+import { SortableCard } from "../components/sortable-card";
+import { CARD_COLORS, cardColorClasses } from "../components/card-colors";
 
 const DEFAULT_CATEGORIES = [
   "Bills",
@@ -113,7 +125,32 @@ export function CreditCardsContent() {
   const [editCardCurrency, setEditCardCurrency] = useState<CurrencyCode>("CAD");
   const [editCardLimit, setEditCardLimit] = useState("");
   const [editCardLinkedAccount, setEditCardLinkedAccount] = useState("");
+  const [editCardColor, setEditCardColor] = useState<string | null>(null);
+  const [editCardArchived, setEditCardArchived] = useState(false);
   const [editCardError, setEditCardError] = useState("");
+  const [orderedCards, setOrderedCards] = useState<CreditCard[]>([]);
+  useEffect(() => { setOrderedCards(creditCards); }, [creditCards]);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = orderedCards.findIndex((c) => c.id === active.id);
+    const newIdx = orderedCards.findIndex((c) => c.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    if (orderedCards[oldIdx].archived !== orderedCards[newIdx].archived) return;
+    const next = arrayMove(orderedCards, oldIdx, newIdx);
+    setOrderedCards(next);
+    try {
+      const activeIds = next.filter((c) => !c.archived).map((c) => c.id);
+      const archivedIds = next.filter((c) => c.archived).map((c) => c.id);
+      await Promise.all([
+        reorderCreditCards(activeIds),
+        reorderCreditCards(archivedIds),
+      ]);
+    } catch {
+      await refresh();
+    }
+  };
 
   // Add charge modal
   const [showAddCharge, setShowAddCharge] = useState(false);
@@ -382,6 +419,8 @@ export function CreditCardsContent() {
     setEditCardCurrency(card.currency);
     setEditCardLimit(card.credit_limit.toString());
     setEditCardLinkedAccount(card.linked_account_id || "");
+    setEditCardColor(card.color ?? null);
+    setEditCardArchived(card.archived ?? false);
     setEditCardError("");
   };
 
@@ -400,6 +439,8 @@ export function CreditCardsContent() {
         currency: editCardCurrency,
         credit_limit: parseFloat(editCardLimit) || 0,
         linked_account_id: editCardLinkedAccount || null,
+        color: editCardColor,
+        archived: editCardArchived,
       });
       await refresh();
       setEditCard(null);
@@ -673,8 +714,10 @@ export function CreditCardsContent() {
           }
         />
       ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orderedCards.map((c) => c.id)} strategy={rectSortingStrategy}>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {creditCards.map((card) => {
+          {orderedCards.map((card) => {
             const bal = cardBalances[card.id] || 0;
             const linkedAcct = accounts.find(
               (a) => a.id === card.linked_account_id
@@ -682,19 +725,27 @@ export function CreditCardsContent() {
             const utilization =
               card.credit_limit > 0 ? (bal / card.credit_limit) * 100 : 0;
             const isHighUtil = utilization > 75;
+            const colorClasses = cardColorClasses(card.color, {
+              icon: "bg-accent-purple/10 text-accent-purple",
+              bar: "bg-accent-purple",
+            });
             return (
+              <SortableCard key={card.id} id={card.id}>
+                {({ Handle }) => (
               <div
-                key={card.id}
-                className="rounded-2xl border border-border-subtle bg-bg-secondary p-5 transition hover:border-accent-blue/30"
+                className={`rounded-2xl border border-border-subtle bg-bg-secondary p-5 transition hover:border-accent-blue/30 ${card.archived ? "opacity-60" : ""}`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-purple/10 text-accent-purple">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${colorClasses.icon}`}>
                       <CreditCardIcon className="h-5 w-5" />
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-text-primary">
                         {card.name}
+                        {card.archived && (
+                          <span className="ml-2 rounded bg-bg-elevated px-1.5 py-0.5 text-[10px] font-medium text-text-secondary">Archived</span>
+                        )}
                       </h3>
                       <p className="text-xs text-text-secondary">
                         {card.currency}
@@ -705,6 +756,7 @@ export function CreditCardsContent() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
+                    <Handle />
                     <button
                       onClick={() => openEditCard(card)}
                       className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"
@@ -738,7 +790,7 @@ export function CreditCardsContent() {
                       <div className="h-1.5 w-full rounded-full bg-bg-elevated">
                         <div
                           className={`h-1.5 rounded-full transition-all ${
-                            isHighUtil ? "bg-red-500" : "bg-accent-purple"
+                            isHighUtil ? "bg-red-500" : colorClasses.bar
                           }`}
                           style={{
                             width: `${Math.min(utilization, 100)}%`,
@@ -792,9 +844,13 @@ export function CreditCardsContent() {
                   </button>
                 </div>
               </div>
+                )}
+              </SortableCard>
             );
           })}
         </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Recent charges table */}
@@ -1322,6 +1378,40 @@ export function CreditCardsContent() {
               ))}
             </select>
           </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-text-secondary">
+              Color
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setEditCardColor(null)}
+                aria-label="Default color"
+                className={`h-7 w-7 rounded-full border border-border-subtle bg-bg-elevated text-[10px] text-text-secondary transition hover:border-accent-purple ${editCardColor === null ? "ring-2 ring-accent-purple ring-offset-2 ring-offset-bg-secondary" : ""}`}
+              >
+                –
+              </button>
+              {CARD_COLORS.map((c) => (
+                <button
+                  key={c.slug}
+                  type="button"
+                  onClick={() => setEditCardColor(c.slug)}
+                  aria-label={c.slug}
+                  className={`h-7 w-7 rounded-full ${c.swatch} transition hover:scale-110 ${editCardColor === c.slug ? "ring-2 ring-accent-purple ring-offset-2 ring-offset-bg-secondary" : ""}`}
+                />
+              ))}
+            </div>
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <button
+              type="button"
+              onClick={() => setEditCardArchived(!editCardArchived)}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition ${editCardArchived ? "bg-accent-purple" : "bg-bg-elevated"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${editCardArchived ? "translate-x-5" : ""}`} />
+            </button>
+            <span className="text-sm text-text-primary">Archive (sort to bottom)</span>
+          </label>
           {editCardError && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">
               {editCardError}

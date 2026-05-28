@@ -26,6 +26,9 @@ create table if not exists money_accounts (
   type             text not null check (type in ('checking', 'investing')),
   currency         text not null default 'CAD' check (currency in ('CAD','USD','EGP')),
   starting_balance numeric(12,2) not null default 0,
+  position         integer,
+  color            text,
+  archived         boolean not null default false,
   created_at       timestamptz not null default now()
 );
 
@@ -208,6 +211,9 @@ create table if not exists money_credit_cards (
   currency         text not null default 'CAD' check (currency in ('CAD','USD','EGP')),
   credit_limit     numeric(12,2) not null default 0,
   linked_account_id uuid references money_accounts(id) on delete set null,
+  position         integer,
+  color            text,
+  archived         boolean not null default false,
   created_at       timestamptz not null default now()
 );
 
