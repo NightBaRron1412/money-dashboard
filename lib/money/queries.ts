@@ -922,21 +922,27 @@ export async function getCreditCards() {
 export async function reorderAccounts(ids: string[]) {
   if (ids.length === 0) return;
   if (isDemoModeRoute()) return;
-  const rows = ids.map((id, i) => ({ id, position: i }));
-  const { error } = await supabase
-    .from("money_accounts")
-    .upsert(rows, { onConflict: "id" });
-  if (error) throw error;
+  // Per-row UPDATE keeps RLS happy (upsert can trip the INSERT path which
+  // expects user_id and other NOT NULL fields the reorder payload omits).
+  const results = await Promise.all(
+    ids.map((id, i) =>
+      supabase.from("money_accounts").update({ position: i }).eq("id", id)
+    )
+  );
+  const failure = results.find((r) => r.error);
+  if (failure?.error) throw failure.error;
 }
 
 export async function reorderCreditCards(ids: string[]) {
   if (ids.length === 0) return;
   if (isDemoModeRoute()) return;
-  const rows = ids.map((id, i) => ({ id, position: i }));
-  const { error } = await supabase
-    .from("money_credit_cards")
-    .upsert(rows, { onConflict: "id" });
-  if (error) throw error;
+  const results = await Promise.all(
+    ids.map((id, i) =>
+      supabase.from("money_credit_cards").update({ position: i }).eq("id", id)
+    )
+  );
+  const failure = results.find((r) => r.error);
+  if (failure?.error) throw failure.error;
 }
 
 export async function createCreditCard(
