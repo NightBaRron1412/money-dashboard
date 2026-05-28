@@ -104,7 +104,10 @@ export function NetWorthChart({ transactions, accounts, baseCurrency, fx, balanc
       const cutoffEnd = format(endOfMonth, "yyyy-MM-dd");
 
       let total = 0;
+      // Cash component: checking accounts only (matches the dashboard's net-worth
+      // formula, which counts investing-account cash via holdings, not as cash).
       for (const acct of accounts) {
+        if (acct.type !== "checking") continue;
         const currentBal = balances[acct.id] ?? 0;
         let netChangeAfterCutoff = 0;
         for (const tx of transactions) {
