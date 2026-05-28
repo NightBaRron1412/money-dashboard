@@ -238,6 +238,25 @@ alter table money_transactions
   foreign key (goal_id) references money_goals(id) on delete set null;
 
 -- ---------------------------------------------------------------
+-- Net Worth Snapshots (one row per user per day; captured server-side)
+-- ---------------------------------------------------------------
+create table if not exists money_net_worth_snapshots (
+  id              uuid primary key default uuid_generate_v4(),
+  user_id         uuid not null default '00000000-0000-0000-0000-000000000001'::uuid,
+  date            date not null,
+  cash_base       numeric(14,2) not null,
+  holdings_base   numeric(14,2) not null,
+  dividends_base  numeric(14,2) not null,
+  total_base      numeric(14,2) not null,
+  base_currency   text not null,
+  created_at      timestamptz not null default now(),
+  unique (user_id, date)
+);
+
+create index if not exists idx_net_worth_snapshots_user_date
+  on money_net_worth_snapshots(user_id, date);
+
+-- ---------------------------------------------------------------
 -- Credit Card Payments (nullable account_id for cashback/credits)
 -- ---------------------------------------------------------------
 create table if not exists money_credit_card_payments (
@@ -299,6 +318,7 @@ grant all on money_credit_card_charges to anon, authenticated;
 grant all on money_credit_card_payments to anon, authenticated;
 grant all on money_reconciliation_sessions to anon, authenticated;
 grant all on money_reconciliation_actions to anon, authenticated;
+grant all on money_net_worth_snapshots to anon, authenticated;
 
 -- ---------------------------------------------------------------
 -- RLS Policies: owner-scoped access on all tables
@@ -310,7 +330,8 @@ DO $$ DECLARE t text; BEGIN
     'money_accounts', 'money_transactions', 'money_goals',
     'money_goal_accounts', 'money_allocation_plans', 'money_settings',
     'money_holdings', 'money_subscriptions', 'money_dividends',
-    'money_credit_cards', 'money_credit_card_charges', 'money_credit_card_payments'
+    'money_credit_cards', 'money_credit_card_charges', 'money_credit_card_payments',
+    'money_net_worth_snapshots'
   ] LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('DROP POLICY IF EXISTS %I_owner ON %I', t, t);

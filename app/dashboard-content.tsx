@@ -52,7 +52,7 @@ export function DashboardContent({
   demoMode?: boolean;
   routeBase?: string;
 }) {
-  const { accounts, transactions, goals, goalAccounts, holdings, dividends, subscriptions, creditCards, creditCardCharges, balances, settings, loading, error, refresh } =
+  const { accounts, transactions, goals, goalAccounts, holdings, dividends, subscriptions, creditCards, creditCardCharges, balances, settings, netWorthSnapshots, loading, error, refresh } =
     useMoneyData({ demoMode });
   const { fx, ready: fxReady } = useMoneyFx();
   const { showBalances } = useBalanceVisibility();
@@ -175,6 +175,20 @@ export function DashboardContent({
   useEffect(() => {
     fetchQuotes();
   }, [fetchQuotes]);
+
+  // Capture today's net worth snapshot once per day (fire-and-forget, gated by
+  // localStorage so it runs at most once per browser/day). Cron handles the
+  // server-side schedule; this covers active users on days the cron might miss.
+  useEffect(() => {
+    if (loading || !fxReady) return;
+    if (typeof window === "undefined") return;
+    const today = nowEST().toISOString().slice(0, 10);
+    const key = "money-snapshot-captured";
+    if (window.localStorage.getItem(key) === today) return;
+    fetch("/api/snapshots/capture", { method: "POST" })
+      .then((res) => { if (res.ok) window.localStorage.setItem(key, today); })
+      .catch(() => { /* silent — cron will catch up */ });
+  }, [loading, fxReady]);
 
   useEffect(() => {
     if (loading || error) return;
@@ -1180,7 +1194,7 @@ export function DashboardContent({
         <BarChart3 className="h-4 w-4 text-accent-purple" /> Charts &amp; Trends
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
-        <NetWorthChart transactions={transactions} accounts={accounts} baseCurrency={baseCurrency} fx={fx} balances={balances} holdings={holdings} dividends={dividends} stockQuotes={stockQuotes} />
+        <NetWorthChart transactions={transactions} accounts={accounts} baseCurrency={baseCurrency} fx={fx} balances={balances} holdings={holdings} dividends={dividends} stockQuotes={stockQuotes} netWorthSnapshots={netWorthSnapshots} />
         <ExpensesByCategoryChart transactions={transactions} baseCurrency={baseCurrency} fx={fx} />
         <IncomeVsExpensesChart transactions={transactions} baseCurrency={baseCurrency} fx={fx} />
         <GoalProgressChart

@@ -15,6 +15,7 @@ import type {
   CreditCard,
   CreditCardCharge,
   CreditCardPayment,
+  NetWorthSnapshot,
 } from "@/lib/money/database.types";
 import {
   getAccounts,
@@ -26,6 +27,7 @@ import {
   getHoldings,
   getSubscriptions,
   getDividends,
+  getNetWorthSnapshots,
   getCreditCards,
   getCreditCardCharges,
   getCreditCardPayments,
@@ -46,6 +48,7 @@ export interface MoneyData {
   creditCards: CreditCard[];
   creditCardCharges: CreditCardCharge[];
   creditCardPayments: CreditCardPayment[];
+  netWorthSnapshots: NetWorthSnapshot[];
   balances: Record<string, number>;
   loading: boolean;
   error: string | null;
@@ -64,6 +67,7 @@ export function useMoneyData(options?: { demoMode?: boolean }): MoneyData {
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [dividends, setDividends] = useState<Dividend[]>([]);
+  const [netWorthSnapshots, setNetWorthSnapshots] = useState<NetWorthSnapshot[]>([]);
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [creditCardCharges, setCreditCardCharges] = useState<CreditCardCharge[]>([]);
   const [creditCardPayments, setCreditCardPayments] = useState<CreditCardPayment[]>([]);
@@ -88,10 +92,11 @@ export function useMoneyData(options?: { demoMode?: boolean }): MoneyData {
         setCreditCards([...demo.creditCards]);
         setCreditCardCharges([...demo.creditCardCharges]);
         setCreditCardPayments([...demo.creditCardPayments]);
+        setNetWorthSnapshots([]);
         return;
       }
 
-      const [a, t, g, ga, p, s, h, sub, div, cc, ccCharges, ccPayments] = await Promise.all([
+      const [a, t, g, ga, p, s, h, sub, div, cc, ccCharges, ccPayments, snapshots] = await Promise.all([
         getAccounts(),
         getTransactions(),
         getGoals(),
@@ -104,6 +109,7 @@ export function useMoneyData(options?: { demoMode?: boolean }): MoneyData {
         getCreditCards(),
         getCreditCardCharges(),
         getCreditCardPayments(),
+        getNetWorthSnapshots(),
       ]);
       setAccounts(a);
       setTransactions(t);
@@ -117,6 +123,7 @@ export function useMoneyData(options?: { demoMode?: boolean }): MoneyData {
       setCreditCards(cc);
       setCreditCardCharges(ccCharges);
       setCreditCardPayments(ccPayments);
+      setNetWorthSnapshots(snapshots);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
@@ -147,6 +154,7 @@ export function useMoneyData(options?: { demoMode?: boolean }): MoneyData {
     creditCards,
     creditCardCharges,
     creditCardPayments,
+    netWorthSnapshots,
     balances,
     loading,
     error,

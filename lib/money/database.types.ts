@@ -154,6 +154,18 @@ export interface Dividend {
   created_at: string;
 }
 
+export interface NetWorthSnapshot {
+  id: string;
+  user_id: string;
+  date: string;
+  cash_base: number;
+  holdings_base: number;
+  dividends_base: number;
+  total_base: number;
+  base_currency: CurrencyCode;
+  created_at: string;
+}
+
 export interface PushSubscriptionRecord {
   id: string;
   user_id: string;
@@ -301,6 +313,11 @@ export interface Database {
         Row: PushSubscriptionRecord;
         Insert: Omit<PushSubscriptionRecord, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Omit<PushSubscriptionRecord, "id">>;
+      };
+      money_net_worth_snapshots: {
+        Row: NetWorthSnapshot;
+        Insert: Omit<NetWorthSnapshot, "id" | "created_at"> & { id?: string; created_at?: string };
+        Update: Partial<Omit<NetWorthSnapshot, "id">>;
       };
       money_notification_logs: {
         Row: NotificationLog;

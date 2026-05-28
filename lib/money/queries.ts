@@ -13,6 +13,7 @@ import type {
   CreditCardCharge,
   CreditCardPayment,
   CurrencyCode,
+  NetWorthSnapshot,
 } from "./database.types";
 import { OWNER_ID } from "./constants";
 
@@ -1170,4 +1171,17 @@ export function computePendingCreditCardPayments(
     }
   }
   return pending;
+}
+
+/* ================================================================== */
+/*  Net Worth Snapshots                                               */
+/* ================================================================== */
+
+export async function getNetWorthSnapshots(): Promise<NetWorthSnapshot[]> {
+  const { data, error } = await supabase
+    .from("money_net_worth_snapshots")
+    .select("*")
+    .order("date", { ascending: true });
+  if (error) return [] as NetWorthSnapshot[];
+  return data as NetWorthSnapshot[];
 }

@@ -16,7 +16,7 @@ import {
   Line,
   Legend,
 } from "recharts";
-import type { Transaction, Account, CurrencyCode, Holding, Dividend } from "@/lib/money/database.types";
+import type { Transaction, Account, CurrencyCode, Holding, Dividend, NetWorthSnapshot } from "@/lib/money/database.types";
 import { computeAccountBalance } from "@/lib/money/queries";
 import type { FxRates } from "@/lib/money/fx";
 import { getCategoryColorHex } from "./money-ui";
@@ -74,14 +74,28 @@ interface ChartsProps {
   dividends?: Dividend[];
   /** Current stock quotes, keyed by uppercase symbol. */
   stockQuotes?: Record<string, StockQuote>;
+  /** Server-captured daily snapshots. When present, the chart plots these
+   *  directly instead of the walk-back reconstruction. */
+  netWorthSnapshots?: NetWorthSnapshot[];
 }
 
 /* ------------------------------------------------------------------ */
 /*  Net Worth Over Time                                               */
 /* ------------------------------------------------------------------ */
-export function NetWorthChart({ transactions, accounts, baseCurrency, fx, balances, holdings, dividends, stockQuotes }: ChartsProps) {
+export function NetWorthChart({ transactions, accounts, baseCurrency, fx, balances, holdings, dividends, stockQuotes, netWorthSnapshots }: ChartsProps) {
   const { showBalances } = useBalanceVisibility();
   const data = useMemo(() => {
+    // Prefer server-captured snapshots when we have at least a few — they're
+    // the source of truth (computed daily from the same formula as the
+    // dashboard widget). One label per day for a clean timeline.
+    if (netWorthSnapshots && netWorthSnapshots.length >= 2) {
+      const sorted = [...netWorthSnapshots].sort((a, b) => a.date.localeCompare(b.date));
+      return sorted.map((s) => ({
+        month: format(parseISO(s.date), "MMM d"),
+        netWorth: Math.round(s.total_base),
+      }));
+    }
+
     if (accounts.length === 0) return [];
 
     const end = startOfMonth(nowEST());
@@ -161,7 +175,7 @@ export function NetWorthChart({ transactions, accounts, baseCurrency, fx, balanc
         netWorth: Math.round(total),
       };
     });
-  }, [transactions, accounts, baseCurrency, fx, balances, holdings, dividends, stockQuotes]);
+  }, [transactions, accounts, baseCurrency, fx, balances, holdings, dividends, stockQuotes, netWorthSnapshots]);
 
   if (data.length === 0) return <EmptyChart label="No data yet" />;
 
