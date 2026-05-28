@@ -373,9 +373,9 @@ export function DashboardContent({
     if (!settings || transactions.length === 0) return null;
     const cashTotal = accounts
       .filter((a) => a.type === "checking")
-      .reduce((sum, a) => sum + (balances[a.id] || 0), 0);
+      .reduce((sum, a) => sum + convertCurrency(balances[a.id] || 0, a.currency, baseCurrency, fx), 0);
     return { transactions, subscriptions, settings, cashTotal };
-  }, [transactions, subscriptions, settings, accounts, balances]);
+  }, [transactions, subscriptions, settings, accounts, balances, baseCurrency, fx]);
 
   const cashForecast = useMemo<CashFlowForecast | null>(() => {
     if (!cashForecastInput) return null;
@@ -384,9 +384,11 @@ export function DashboardContent({
       cashForecastInput.subscriptions,
       cashForecastInput.settings,
       cashForecastInput.cashTotal,
-      90
+      90,
+      fx,
+      baseCurrency
     );
-  }, [cashForecastInput]);
+  }, [cashForecastInput, fx, baseCurrency]);
 
   if (loading || !fxReady) {
     return (

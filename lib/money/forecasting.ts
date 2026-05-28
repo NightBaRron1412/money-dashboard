@@ -5,7 +5,9 @@ import type {
   Goal,
   GoalAccount,
   Account,
+  CurrencyCode,
 } from "./database.types";
+import { convertCurrency, type FxRates } from "./fx";
 
 /* ------------------------------------------------------------------ */
 /*  Cash Flow Forecasting                                              */
@@ -29,8 +31,15 @@ export function forecastCashFlow(
   subscriptions: Subscription[],
   settings: Settings,
   currentCashBalance: number,
-  daysAhead = 90
+  daysAhead = 90,
+  fx?: FxRates,
+  baseCurrency?: CurrencyCode
 ): CashFlowForecast {
+  const toBase = (amount: number, currency: CurrencyCode): number => {
+    if (!fx || !baseCurrency) return amount;
+    return convertCurrency(amount, currency, baseCurrency, fx);
+  };
+
   const now = new Date();
   const threeMonthsAgo = new Date(now);
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
@@ -43,8 +52,9 @@ export function forecastCashFlow(
   let totalIncome = 0;
   let totalExpenses = 0;
   for (const t of recent) {
-    if (t.type === "income") totalIncome += t.amount;
-    else if (t.type === "expense" && !t.exclude_from_monthly) totalExpenses += t.amount;
+    const amt = toBase(t.amount, t.currency);
+    if (t.type === "income") totalIncome += amt;
+    else if (t.type === "expense" && !t.exclude_from_monthly) totalExpenses += amt;
   }
 
   const months = Math.max(
@@ -57,18 +67,19 @@ export function forecastCashFlow(
   const activeSubs = subscriptions.filter((s) => s.is_active);
   let monthlySubCost = 0;
   for (const s of activeSubs) {
+    const amtBase = toBase(s.amount, s.currency);
     switch (s.frequency) {
       case "weekly":
-        monthlySubCost += s.amount * 4.33;
+        monthlySubCost += amtBase * 4.33;
         break;
       case "bi-weekly":
-        monthlySubCost += s.amount * 2.17;
+        monthlySubCost += amtBase * 2.17;
         break;
       case "monthly":
-        monthlySubCost += s.amount;
+        monthlySubCost += amtBase;
         break;
       case "yearly":
-        monthlySubCost += s.amount / 12;
+        monthlySubCost += amtBase / 12;
         break;
     }
   }
@@ -119,8 +130,22 @@ export function predictGoalCompletion(
   goalAccounts: GoalAccount[],
   accounts: Account[],
   transactions: Transaction[],
-  balances: Record<string, number>
+  balances: Record<string, number>,
+  fx?: FxRates,
+  baseCurrency?: CurrencyCode
 ): GoalPrediction[] {
+  const accountById = new Map(accounts.map((a) => [a.id, a]));
+  const toBase = (amount: number, currency: CurrencyCode): number => {
+    if (!fx || !baseCurrency) return amount;
+    return convertCurrency(amount, currency, baseCurrency, fx);
+  };
+  const accountToBase = (amount: number, accountId: string | null | undefined): number => {
+    if (!accountId) return amount;
+    const acct = accountById.get(accountId);
+    if (!acct) return amount;
+    return toBase(amount, acct.currency);
+  };
+
   const now = new Date();
   const threeMonthsAgo = new Date(now);
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
@@ -132,8 +157,9 @@ export function predictGoalCompletion(
   let totalIncome = 0;
   let totalExpenses = 0;
   for (const t of recent) {
-    if (t.type === "income") totalIncome += t.amount;
-    else if (t.type === "expense" && !t.exclude_from_monthly) totalExpenses += t.amount;
+    const amt = toBase(t.amount, t.currency);
+    if (t.type === "income") totalIncome += amt;
+    else if (t.type === "expense" && !t.exclude_from_monthly) totalExpenses += amt;
   }
 
   const months = Math.max(
@@ -147,10 +173,10 @@ export function predictGoalCompletion(
     let currentAmount = 0;
 
     if (goal.linked_account_id) {
-      currentAmount = balances[goal.linked_account_id] ?? 0;
+      currentAmount = accountToBase(balances[goal.linked_account_id] ?? 0, goal.linked_account_id);
     } else {
       for (const ga of linkedGAs) {
-        currentAmount += ga.allocated_amount ?? 0;
+        currentAmount += accountToBase(ga.allocated_amount ?? 0, ga.account_id);
       }
     }
 

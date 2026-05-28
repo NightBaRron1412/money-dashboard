@@ -37,6 +37,7 @@ import type { CurrencyCode, Goal } from "@/lib/money/database.types";
 import { useBalanceVisibility } from "../balance-visibility-provider";
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import { predictGoalCompletion } from "@/lib/money/forecasting";
+import { convertCurrency } from "@/lib/money/fx";
 
 export function GoalsContent() {
   const { accounts, goals, goalAccounts, plans, balances, transactions, settings, loading, refresh } =
@@ -68,11 +69,11 @@ export function GoalsContent() {
 
   const goalProgress = computeGoalProgress(goals, goalAccounts, balances, accounts, baseCurrency, fx);
 
-  // Sum expense amounts linked to each goal (raw, no FX — assumes single base currency)
+  // Sum expense amounts linked to each goal, converted to base currency
   const spentByGoal: Record<string, number> = {};
   for (const tx of transactions) {
     if (tx.type === "expense" && tx.goal_id) {
-      spentByGoal[tx.goal_id] = (spentByGoal[tx.goal_id] || 0) + tx.amount;
+      spentByGoal[tx.goal_id] = (spentByGoal[tx.goal_id] || 0) + convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
     }
   }
 
@@ -752,7 +753,7 @@ export function GoalsContent() {
                       }
                     }
                     // Fallback: savings-rate-based prediction
-                    const predictions = predictGoalCompletion(goals, goalAccounts, accounts, transactions, balances);
+                    const predictions = predictGoalCompletion(goals, goalAccounts, accounts, transactions, balances, fx, baseCurrency);
                     const pred = predictions.find((p) => p.goalId === goal.id);
                     if (pred?.predictedDate) {
                       return (
