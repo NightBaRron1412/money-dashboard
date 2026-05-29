@@ -53,9 +53,9 @@ export async function GET() {
     const prevTxs = txs.filter((t) => t.date >= prevFrom && t.date <= prevTo);
 
     const curIncome = curTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const curExpenses = curTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
+    const curExpenses = curTxs.filter((t) => t.type === "expense" && !t.exclude_from_monthly).reduce((s, t) => s + toBase(t.amount, t.currency), 0);
     const prevIncome = prevTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const prevExpenses = prevTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
+    const prevExpenses = prevTxs.filter((t) => t.type === "expense" && !t.exclude_from_monthly).reduce((s, t) => s + toBase(t.amount, t.currency), 0);
 
     const savingsRate = curIncome > 0 ? ((curIncome - curExpenses) / curIncome * 100) : null;
     const prevSavingsRate = prevIncome > 0 ? ((prevIncome - prevExpenses) / prevIncome * 100) : null;

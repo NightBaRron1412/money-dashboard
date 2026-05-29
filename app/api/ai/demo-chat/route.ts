@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         monthlySummaries[month] = { income: 0, expenses: 0, byCategory: {} };
       const amt = toBase(t.amount, t.currency);
       if (t.type === "income") monthlySummaries[month].income += amt;
-      else if (t.type === "expense") {
+      else if (t.type === "expense" && !t.exclude_from_monthly) {
         monthlySummaries[month].expenses += amt;
         if (t.category)
           monthlySummaries[month].byCategory[t.category] =

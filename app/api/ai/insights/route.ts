@@ -60,12 +60,12 @@ export async function GET() {
     const prevMonthTxs = txs.filter((t) => t.date >= prevFrom && t.date <= prevTo);
 
     const curIncome = currentMonthTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const curExpenses = currentMonthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
+    const curExpenses = currentMonthTxs.filter((t) => t.type === "expense" && !t.exclude_from_monthly).reduce((s, t) => s + toBase(t.amount, t.currency), 0);
     const prevIncome = prevMonthTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const prevExpenses = prevMonthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
+    const prevExpenses = prevMonthTxs.filter((t) => t.type === "expense" && !t.exclude_from_monthly).reduce((s, t) => s + toBase(t.amount, t.currency), 0);
 
     const categoryBreakdown: Record<string, number> = {};
-    for (const t of currentMonthTxs.filter((t) => t.type === "expense" && t.category)) {
+    for (const t of currentMonthTxs.filter((t) => t.type === "expense" && t.category && !t.exclude_from_monthly)) {
       categoryBreakdown[t.category!] = (categoryBreakdown[t.category!] ?? 0) + toBase(t.amount, t.currency);
     }
 
