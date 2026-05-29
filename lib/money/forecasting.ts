@@ -245,27 +245,36 @@ export function detectSpendingAnomalies(
       (currentByCategory[t.category!] ?? 0) + convert(t.amount, t.currency);
   }
 
+  // Pin to day-1 before subtracting months — otherwise dates like May 29
+  // try to roll back to Feb 29, which JS silently shifts to Mar 1, skipping
+  // Feb entirely and double-counting March in the average window.
   const prevMonths: string[] = [];
   for (let i = 1; i <= 3; i++) {
-    const d = new Date(now);
-    d.setMonth(d.getMonth() - i);
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     prevMonths.push(d.toISOString().slice(0, 7));
   }
 
   const prevExpenses = expenses.filter((t) =>
     prevMonths.includes(t.date.slice(0, 7))
   );
+  // Track sum AND set of distinct months that contributed per category, so
+  // sparse categories (rent paid late, quarterly insurance, etc.) average
+  // against their actual occurrence count instead of always-3.
   const prevByCategory: Record<string, number> = {};
+  const monthsWithCategory: Record<string, Set<string>> = {};
   for (const t of prevExpenses) {
-    prevByCategory[t.category!] =
-      (prevByCategory[t.category!] ?? 0) + convert(t.amount, t.currency);
+    const cat = t.category!;
+    prevByCategory[cat] = (prevByCategory[cat] ?? 0) + convert(t.amount, t.currency);
+    if (!monthsWithCategory[cat]) monthsWithCategory[cat] = new Set();
+    monthsWithCategory[cat].add(t.date.slice(0, 7));
   }
 
-  const monthCount = prevMonths.length || 1;
   const anomalies: SpendingAnomaly[] = [];
 
   for (const [category, currentSpend] of Object.entries(currentByCategory)) {
-    const avgSpend = (prevByCategory[category] ?? 0) / monthCount;
+    const occurrences = monthsWithCategory[category]?.size ?? 0;
+    if (occurrences === 0) continue; // no prior data, can't compare
+    const avgSpend = (prevByCategory[category] ?? 0) / occurrences;
     if (avgSpend < 10) continue; // ignore tiny categories
 
     const ratio = currentSpend / avgSpend;
