@@ -63,7 +63,13 @@ export function NetWorthChart({ baseCurrency, netWorthSnapshots }: ChartsProps) 
   const data = useMemo(() => {
     if (!netWorthSnapshots || netWorthSnapshots.length === 0) return [];
     const sorted = [...netWorthSnapshots].sort((a, b) => a.date.localeCompare(b.date));
-    return sorted.map((s) => ({
+    // Keep only the latest snapshot per calendar month so the chart shows
+    // one point per month instead of one per daily capture.
+    const latestPerMonth = new Map<string, typeof sorted[number]>();
+    for (const s of sorted) {
+      latestPerMonth.set(s.date.slice(0, 7), s);
+    }
+    return Array.from(latestPerMonth.values()).map((s) => ({
       month: format(parseISO(s.date), "MMM yy"),
       netWorth: Math.round(s.total_base),
     }));
