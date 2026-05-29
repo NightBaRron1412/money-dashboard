@@ -975,7 +975,7 @@ export function CreditCardsContent() {
                       </td>
                       <td className="px-4 py-3 text-text-secondary">
                         {isEditing ? (
-                          <div className="space-y-1">
+                          <div className="flex w-[180px] max-w-[180px] flex-col gap-1">
                             <input type="text" value={editChargeMerchant} onChange={(e) => setEditChargeMerchant(e.target.value)}
                               placeholder="Merchant"
                               className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
