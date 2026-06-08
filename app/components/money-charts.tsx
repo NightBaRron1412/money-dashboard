@@ -70,7 +70,7 @@ export function NetWorthChart({ baseCurrency, netWorthSnapshots }: ChartsProps) 
       latestPerMonth.set(s.date.slice(0, 7), s);
     }
     return Array.from(latestPerMonth.values()).map((s) => ({
-      month: format(parseISO(s.date), "MMM yy"),
+      month: format(parseISO(s.date), "MMM yyyy"),
       netWorth: Math.round(s.total_base),
     }));
   }, [netWorthSnapshots]);
