@@ -30,7 +30,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { getMonthRange, createTransaction, updateTransaction, createLinkedCreditCardCharge } from "@/lib/money/queries";
+import { getMonthRange, createTransaction, updateTransaction, createLinkedCreditCardCharge, computeCreditCardBalance } from "@/lib/money/queries";
 import type { CurrencyCode, RecurrenceFrequency } from "@/lib/money/database.types";
 import { convertCurrency } from "@/lib/money/fx";
 import toast from "react-hot-toast";
@@ -52,7 +52,7 @@ export function DashboardContent({
   demoMode?: boolean;
   routeBase?: string;
 }) {
-  const { accounts, transactions, goals, goalAccounts, holdings, dividends, subscriptions, creditCards, creditCardCharges, balances, settings, netWorthSnapshots, loading, error, refresh } =
+  const { accounts, transactions, goals, goalAccounts, holdings, dividends, subscriptions, creditCards, creditCardCharges, creditCardPayments, balances, settings, netWorthSnapshots, loading, error, refresh } =
     useMoneyData({ demoMode });
   const { fx, ready: fxReady } = useMoneyFx();
   const { showBalances } = useBalanceVisibility();
@@ -431,7 +431,13 @@ export function DashboardContent({
 
   const investTotalBase = portfolioMarketValueBase + totalDividendsBase;
 
-  const netWorthBase = cashTotalBase + investTotalBase;
+  // Credit card debt is a liability — subtract it from net worth.
+  const ccDebtBase = creditCards.reduce(
+    (sum, c) => sum + convertCurrency(computeCreditCardBalance(c.id, creditCardCharges, creditCardPayments), c.currency, baseCurrency, fx),
+    0
+  );
+
+  const netWorthBase = cashTotalBase + investTotalBase - ccDebtBase;
 
   // This month
   const monthTxs = transactions.filter(

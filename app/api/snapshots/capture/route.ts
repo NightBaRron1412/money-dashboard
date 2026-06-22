@@ -71,7 +71,17 @@ export async function POST(req: Request) {
       .filter((d) => !d.reinvested)
       .reduce((s, d) => s + toBase(d.amount, d.currency), 0);
 
-    const totalBase = cashBase + holdingsBase + dividendsBase;
+    // Credit card debt is a liability — subtract from net worth.
+    const cards = (await supabase.from("money_credit_cards").select("*").eq("user_id", OWNER_ID)).data ?? [];
+    const charges = (await supabase.from("money_credit_card_charges").select("*").eq("user_id", OWNER_ID)).data ?? [];
+    let ccDebtBase = 0;
+    for (const c of cards) {
+      const chg = charges.filter((x) => x.card_id === c.id).reduce((s, x) => s + x.amount, 0);
+      const pay = allPayments.filter((p) => p.card_id === c.id).reduce((s, p) => s + p.amount, 0);
+      ccDebtBase += toBase(chg - pay, c.currency as CurrencyCode);
+    }
+
+    const totalBase = cashBase + holdingsBase + dividendsBase - ccDebtBase;
     const today = new Date().toISOString().slice(0, 10);
 
     const round = (n: number) => Math.round(n * 100) / 100;
