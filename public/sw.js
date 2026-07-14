@@ -1,9 +1,18 @@
-const CACHE_NAME = "finance-v1";
+// Bump this version whenever the caching strategy changes — the activate
+// handler deletes every cache whose name != CACHE_NAME, purging stale ones.
+const CACHE_NAME = "finance-v2";
+
+// Only cache genuinely-static, stable icon assets. Do NOT cache Next.js build
+// output (/_next/*) or HTML: those change every deploy and content-hashed
+// chunks are already immutable, so caching them only risks serving a stale
+// HTML/chunk combo after a redeploy — which surfaces as ChunkLoadError and a
+// client-side crash. Letting the network serve them is correct and safe.
 const STATIC_ASSETS = [
   "/favicon.svg",
   "/favicon.png",
   "/icon-512.png",
   "/apple-touch-icon.png",
+  "/manifest.json",
 ];
 
 self.addEventListener("install", (event) => {
@@ -22,34 +31,16 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-
-  // Skip non-GET and cross-origin requests
   if (request.method !== "GET" || !request.url.startsWith(self.location.origin)) return;
 
-  // Skip API routes and Supabase calls — always go to network
   const url = new URL(request.url);
-  if (url.pathname.startsWith("/api/")) return;
+  // Only intercept the handful of static icon/manifest assets we pre-cache.
+  // Everything else — navigation, /_next/* chunks, CSS, API — goes straight
+  // to the network untouched, so deploys never serve a mismatched app shell.
+  if (!STATIC_ASSETS.includes(url.pathname)) return;
 
-  // Navigation requests: network-first, fall back to cache
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(request))
-    );
-    return;
-  }
-
-  // Static assets: cache-first
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((response) => {
-        if (response.ok && (request.url.match(/\.(js|css|png|svg|ico|woff2?)$/) || request.url.includes("/_next/"))) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return response;
-      });
-    })
+    caches.match(request).then((cached) => cached || fetch(request))
   );
 });
 
