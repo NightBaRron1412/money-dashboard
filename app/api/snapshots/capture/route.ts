@@ -55,6 +55,26 @@ export async function POST(req: Request) {
     // Holdings market value
     const symbols = [...new Set(holdings.map((h) => h.symbol))];
     const quotes = await getStockQuotes(symbols);
+
+    // Guard: if any real (non-cash) holding is missing a usable price, the
+    // quote provider failed for it. Writing the snapshot anyway would record
+    // a garbage (too-low) net worth and corrupt the chart. Bail instead —
+    // the next cron run or dashboard load will retry with good quotes.
+    const missingQuotes = holdings
+      .filter((h) => {
+        const sym = h.symbol.toUpperCase();
+        if (sym === "CASH" || sym === "CASHCAD") return false;
+        const price = quotes[sym]?.price;
+        return h.shares > 0 && (!price || price <= 0);
+      })
+      .map((h) => h.symbol);
+    if (missingQuotes.length > 0) {
+      return NextResponse.json(
+        { ok: false, skipped: true, reason: "missing_quotes", symbols: missingQuotes },
+        { status: 200 }
+      );
+    }
+
     let holdingsBase = 0;
     for (const h of holdings) {
       const sym = h.symbol.toUpperCase();

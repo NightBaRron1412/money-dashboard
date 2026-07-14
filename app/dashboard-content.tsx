@@ -176,17 +176,24 @@ export function DashboardContent({
     fetchQuotes();
   }, [fetchQuotes]);
 
-  // Capture today's net worth snapshot once per day (fire-and-forget, gated by
-  // localStorage so it runs at most once per browser/day). Cron handles the
+  // Capture today's net worth snapshot once per day (fire-and-forget). Gated by
+  // localStorage so it runs at most once per browser/day, but the flag is only
+  // set when the server confirms it actually wrote a row — if the capture was
+  // skipped (e.g. stock quotes unavailable) we leave the flag unset so the next
+  // load retries instead of locking in a missing/garbage day. Cron handles the
   // server-side schedule; this covers active users on days the cron might miss.
   useEffect(() => {
     if (loading || !fxReady) return;
     if (typeof window === "undefined") return;
     const today = nowEST().toISOString().slice(0, 10);
-    const key = "money-snapshot-captured";
+    const key = "money-snapshot-captured-v2";
     if (window.localStorage.getItem(key) === today) return;
     fetch("/api/snapshots/capture", { method: "POST" })
-      .then((res) => { if (res.ok) window.localStorage.setItem(key, today); })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        // Only mark done on a confirmed write; skipped/failed → retry next load.
+        if (data && data.ok) window.localStorage.setItem(key, today);
+      })
       .catch(() => { /* silent — cron will catch up */ });
   }, [loading, fxReady]);
 
