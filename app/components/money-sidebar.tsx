@@ -121,6 +121,8 @@ export function MoneySidebar({
           })}
           <button
             onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+            aria-expanded={moreMenuOpen}
+            aria-label="More navigation"
             className={cn(
               "flex flex-col items-center gap-0.5 px-1 py-1 text-[10px] transition",
               isOverflowActive || moreMenuOpen
@@ -145,6 +147,7 @@ export function MoneySidebar({
                 <span className="text-xs font-semibold text-text-primary">More</span>
                 <button
                   onClick={() => setMoreMenuOpen(false)}
+                  aria-label="Close more navigation"
                   className="rounded-lg p-2 text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
                 >
                   <X className="h-4 w-4" />
@@ -234,6 +237,7 @@ export function MoneySidebar({
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className="rounded-lg p-1 text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
           >
             {collapsed ? (

@@ -13,6 +13,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0b1020" };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://money.amirshetaia.com"),
   title: "Finance Dashboard | Amir Shetaia",
   description: "Track expenses, income, investments & goals — personal finance dashboard by Amir Shetaia",
   robots: { index: false, follow: false },

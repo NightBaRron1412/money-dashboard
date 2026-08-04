@@ -1,9 +1,8 @@
 import { test, expect } from "@playwright/test";
 
-const DEMO_URL = "https://money.amirshetaia.com/demo";
-
-test("tour steps through all pages", async ({ page }) => {
-  await page.goto(DEMO_URL, { waitUntil: "networkidle" });
+test("tour steps through all pages", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium");
+  await page.goto("/demo", { waitUntil: "networkidle" });
   await page.evaluate(() => localStorage.removeItem("demo-tour-completed"));
   await page.reload({ waitUntil: "networkidle" });
 

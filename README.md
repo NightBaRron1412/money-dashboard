@@ -42,7 +42,7 @@ A full-featured personal finance tracking dashboard built with Next.js. Track ac
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.9+
 - [pnpm](https://pnpm.io/) (recommended) or npm
 - A [Supabase](https://supabase.com/) project (free tier works)
 - A [Google Gemini API key](https://aistudio.google.com/apikey) (for AI features)
@@ -87,12 +87,13 @@ Open [http://localhost:3000](http://localhost:3000) for the main app, or [http:/
 |----------|----------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Your Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Your Supabase anonymous/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Recommended | Server-only key for protected API routes. Never expose it with a `NEXT_PUBLIC_` prefix. |
 | `SESSION_SECRET` | Yes | Secret for session cookie signing (any random string) |
 | `GEMINI_API_KEY` | For AI | Google Gemini API key for insights, chat, and categorization |
 | `NEXT_PUBLIC_MONEY_PUSH_VAPID_PUBLIC_KEY` | For push | VAPID public key for web push notifications |
 | `MONEY_PUSH_VAPID_PRIVATE_KEY` | For push | VAPID private key for web push notifications |
 | `MONEY_PUSH_VAPID_SUBJECT` | For push | VAPID subject (e.g. `mailto:you@example.com`) |
-| `CRON_SECRET` | For push | Secret to authenticate the Vercel cron endpoint |
+| `CRON_SECRET` | For scheduled jobs | Secret to authenticate push reminders and net-worth captures |
 | `NEXT_PUBLIC_ENABLE_ANALYTICS` | No | Set to `true` to enable Vercel Analytics |
 | `NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS` | No | Set to `true` to enable Vercel Speed Insights |
 
@@ -109,7 +110,7 @@ Visit `/demo` to explore the full dashboard with realistic sample data — no Su
 3. Add all environment variables in the Vercel project settings
 4. Deploy
 
-The included `vercel.json` configures a daily cron job (`/api/push/cron`) that sends push notification reminders for rent and upcoming bills at 5 PM UTC.
+The included `vercel.json` configures daily jobs for push reminders at 5 PM UTC and net-worth capture at 4:30 AM UTC. Both require Vercel's `CRON_SECRET` bearer token.
 
 ### Generate VAPID Keys
 
@@ -132,6 +133,7 @@ Set the output as `NEXT_PUBLIC_MONEY_PUSH_VAPID_PUBLIC_KEY` and `MONEY_PUSH_VAPI
 | `pnpm format` | Check formatting with Prettier |
 | `pnpm typecheck` | Run TypeScript type checking |
 | `pnpm test` | Run tests with Vitest |
+| `pnpm test:e2e` | Run the read-only demo suite in Chromium, mobile Chromium, Firefox, and WebKit |
 
 ## License
 

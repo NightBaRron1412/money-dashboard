@@ -15,4 +15,7 @@ tmp-*.cjs
 devserver.err
 devserver.log
 
-certificatestest-results/
+certificates/
+test-results/
+playwright-report/
+.playwright-cli/

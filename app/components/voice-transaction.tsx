@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Mic, Square, Loader2, X, AlertTriangle, Check } from "lucide-react";
 import { Modal, todayEST } from "./money-ui";
 import { useVoiceRecorder } from "../hooks/use-voice-recorder";
@@ -70,9 +70,13 @@ export function VoiceTransaction({ accounts, creditCards, settings, refresh, dem
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromAccountId, toAccountId, isCrossCurrencyTransfer]);
 
-  const categories = settings?.expense_categories?.length
-    ? settings.expense_categories
-    : ["Bills", "Food", "Fun", "Health", "Personal Care", "Rent", "Transport", "Other"];
+  const categories = useMemo(
+    () =>
+      settings?.expense_categories?.length
+        ? settings.expense_categories
+        : ["Bills", "Food", "Fun", "Health", "Personal Care", "Rent", "Transport", "Other"],
+    [settings?.expense_categories]
+  );
   const baseCurrency = settings?.base_currency ?? "CAD";
 
   const resetForm = useCallback(() => {
@@ -395,6 +399,7 @@ export function VoiceTransaction({ accounts, creditCards, settings, refresh, dem
           {isActive && (
             <button
               onClick={handleCancel}
+              aria-label="Cancel recording"
               className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-bg-secondary text-text-secondary shadow-lg transition hover:bg-bg-elevated hover:text-text-primary"
             >
               <X className="h-4 w-4" />
@@ -404,6 +409,7 @@ export function VoiceTransaction({ accounts, creditCards, settings, refresh, dem
           {/* Main mic button */}
           <button
             onClick={handleMicClick}
+            aria-label={recorderState === "recording" ? "Stop recording" : "Record a transaction"}
             disabled={sending || recorderState === "requesting" || recorderState === "processing"}
             className={cn(
               "flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-200",

@@ -179,7 +179,7 @@ export function CreditCardsContent() {
     } catch { /* silent */ } finally {
       setAutoCategorizePending(false);
     }
-  }, []);
+  }, [categories]);
 
   // Inline edit charge state
   const [editingChargeId, setEditingChargeId] = useState<string | null>(null);
