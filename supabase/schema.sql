@@ -5,10 +5,11 @@
 --
 -- Auth: PIN-based (verified server-side). No Supabase Auth needed.
 -- All rows use a fixed owner UUID: 00000000-0000-0000-0000-000000000001
--- RLS is enabled on all tables with browser access denied by default.
+-- RLS requires a server-only gateway secret that browsers never receive.
 -- ================================================================
 
 create extension if not exists "uuid-ossp";
+create extension if not exists pgcrypto with schema extensions;
 
 -- Helper: returns the fixed owner UUID for RLS policies.
 CREATE OR REPLACE FUNCTION money_owner_id() RETURNS uuid
@@ -306,30 +307,79 @@ create table if not exists money_reconciliation_actions (
 );
 
 -- ---------------------------------------------------------------
--- Grants: only the server-side service role can access finance tables
+-- Server gateway authorization
 -- ---------------------------------------------------------------
-grant all on money_accounts to service_role;
-grant all on money_transactions to service_role;
-grant all on money_goals to service_role;
-grant all on money_goal_accounts to service_role;
-grant all on money_allocation_plans to service_role;
-grant all on money_settings to service_role;
-grant all on money_holdings to service_role;
-grant all on money_subscriptions to service_role;
-grant all on money_dividends to service_role;
-grant all on money_push_subscriptions to service_role;
-grant all on money_notification_logs to service_role;
-grant all on money_credit_cards to service_role;
-grant all on money_credit_card_charges to service_role;
-grant all on money_credit_card_payments to service_role;
-grant all on money_reconciliation_sessions to service_role;
-grant all on money_reconciliation_actions to service_role;
-grant all on money_net_worth_snapshots to service_role;
+
+create table if not exists money_gateway_config (
+  id          boolean primary key default true check (id),
+  secret_hash text not null check (secret_hash ~ '^[0-9a-f]{64}$'),
+  updated_at  timestamptz not null default now()
+);
+
+alter table money_gateway_config enable row level security;
+revoke all privileges on money_gateway_config from public, anon, authenticated;
+grant select on money_gateway_config to anon;
+grant all privileges on money_gateway_config to service_role;
+
+insert into money_gateway_config (id, secret_hash, updated_at)
+values (
+  true,
+  '439d43c5ddafd21684a0b6152fff944ef2c081396aacbdd1cee7b79558e969dd',
+  now()
+)
+on conflict (id) do update set
+  secret_hash = excluded.secret_hash,
+  updated_at = excluded.updated_at;
+
+create policy money_gateway_config_read on money_gateway_config
+for select to anon
+using (
+  id = true
+  and secret_hash = encode(
+    extensions.digest(
+      coalesce(
+        coalesce(current_setting('request.headers', true), '{}')::jsonb
+          ->> 'x-money-gateway-secret',
+        ''
+      ),
+      'sha256'
+    ),
+    'hex'
+  )
+);
+
+create or replace function money_gateway_authorized()
+returns boolean
+language sql
+stable
+security invoker
+set search_path = pg_catalog, public, extensions
+as $$
+  select exists (
+    select 1
+    from public.money_gateway_config
+    where id = true
+      and secret_hash = encode(
+        extensions.digest(
+          coalesce(
+            coalesce(current_setting('request.headers', true), '{}')::jsonb
+              ->> 'x-money-gateway-secret',
+            ''
+          ),
+          'sha256'
+        ),
+        'hex'
+      )
+  );
+$$;
+
+revoke all privileges on function money_gateway_authorized()
+  from public, anon, authenticated;
+grant execute on function money_gateway_authorized() to anon, service_role;
 
 -- ---------------------------------------------------------------
--- RLS: browser roles have no policies or table privileges. The application
--- reaches these tables only through authenticated server routes using the
--- server-only service role.
+-- RLS: the publishable key can act only when the authenticated application
+-- server supplies the matching high-entropy gateway secret.
 -- ---------------------------------------------------------------
 
 DO $$
@@ -345,6 +395,14 @@ DECLARE
     'money_reconciliation_sessions', 'money_reconciliation_actions',
     'money_net_worth_snapshots'
   ];
+  user_id_tables text[] := ARRAY[
+    'money_accounts', 'money_transactions', 'money_goals',
+    'money_goal_accounts', 'money_allocation_plans', 'money_settings',
+    'money_holdings', 'money_subscriptions', 'money_dividends',
+    'money_push_subscriptions', 'money_notification_logs',
+    'money_credit_cards', 'money_credit_card_charges', 'money_credit_card_payments',
+    'money_net_worth_snapshots'
+  ];
 BEGIN
   FOREACH table_name IN ARRAY money_tables LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
@@ -352,6 +410,11 @@ BEGIN
       'REVOKE ALL PRIVILEGES ON TABLE %I FROM PUBLIC, anon, authenticated',
       table_name
     );
+    EXECUTE format(
+      'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE %I TO anon',
+      table_name
+    );
+    EXECUTE format('GRANT ALL PRIVILEGES ON TABLE %I TO service_role', table_name);
   END LOOP;
 
   FOR policy_record IN
@@ -363,6 +426,29 @@ BEGIN
       'DROP POLICY IF EXISTS %I ON %I',
       policy_record.policyname,
       policy_record.tablename
+    );
+  END LOOP;
+
+  FOREACH table_name IN ARRAY user_id_tables LOOP
+    EXECUTE format(
+      'CREATE POLICY %I ON %I FOR ALL TO anon '
+      'USING (money_gateway_authorized() AND user_id = money_owner_id()) '
+      'WITH CHECK (money_gateway_authorized() AND user_id = money_owner_id())',
+      table_name || '_gateway',
+      table_name
+    );
+  END LOOP;
+
+  FOREACH table_name IN ARRAY ARRAY[
+    'money_reconciliation_sessions',
+    'money_reconciliation_actions'
+  ] LOOP
+    EXECUTE format(
+      'CREATE POLICY %I ON %I FOR ALL TO anon '
+      'USING (money_gateway_authorized() AND owner_id = money_owner_id()) '
+      'WITH CHECK (money_gateway_authorized() AND owner_id = money_owner_id())',
+      table_name || '_gateway',
+      table_name
     );
   END LOOP;
 END $$;
@@ -510,6 +596,14 @@ RETURNS TABLE(new_count int) AS $$
   RETURNING failed_attempts AS new_count;
 $$ LANGUAGE sql;
 
+alter function money_owner_id() set search_path = pg_catalog, public;
+alter function get_running_balance(uuid, uuid, date, date)
+  set search_path = pg_catalog, public;
+alter function find_duplicate_transactions(uuid, uuid, date, date)
+  set search_path = pg_catalog, public;
+alter function money_increment_failed_attempts(uuid, integer, integer)
+  set search_path = pg_catalog, public;
+
 revoke all privileges on function money_owner_id()
   from public, anon, authenticated;
 revoke all privileges on function get_running_balance(uuid, uuid, date, date)
@@ -517,10 +611,12 @@ revoke all privileges on function get_running_balance(uuid, uuid, date, date)
 revoke all privileges on function find_duplicate_transactions(uuid, uuid, date, date)
   from public, anon, authenticated;
 revoke all privileges on function money_increment_failed_attempts(uuid, integer, integer)
-  from public, anon, authenticated;
+  from public, authenticated;
 
-grant execute on function money_owner_id() to service_role;
-grant execute on function get_running_balance(uuid, uuid, date, date) to service_role;
-grant execute on function find_duplicate_transactions(uuid, uuid, date, date) to service_role;
+grant execute on function money_owner_id() to anon, service_role;
+grant execute on function get_running_balance(uuid, uuid, date, date)
+  to anon, service_role;
+grant execute on function find_duplicate_transactions(uuid, uuid, date, date)
+  to anon, service_role;
 grant execute on function money_increment_failed_attempts(uuid, integer, integer)
-  to service_role;
+  to anon, service_role;

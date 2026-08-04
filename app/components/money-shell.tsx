@@ -22,8 +22,9 @@ function NotConfigured() {
         <h1 className="text-xl font-bold text-text-primary">Supabase Not Configured</h1>
         <p className="mt-2 text-sm text-text-secondary">
           Add <code className="rounded bg-bg-elevated px-1.5 py-0.5 text-xs font-mono text-accent-blue">NEXT_PUBLIC_SUPABASE_URL</code> to your{" "}
-          <code className="rounded bg-bg-elevated px-1.5 py-0.5 text-xs font-mono text-accent-blue">.env.local</code> file, plus a server-only{" "}
-          <code className="rounded bg-bg-elevated px-1.5 py-0.5 text-xs font-mono text-accent-blue">SUPABASE_SECRET_KEY</code>, to enable the finance dashboard.
+          <code className="rounded bg-bg-elevated px-1.5 py-0.5 text-xs font-mono text-accent-blue">.env.local</code> file, plus server-only{" "}
+          <code className="rounded bg-bg-elevated px-1.5 py-0.5 text-xs font-mono text-accent-blue">SUPABASE_PUBLISHABLE_KEY</code> and{" "}
+          <code className="rounded bg-bg-elevated px-1.5 py-0.5 text-xs font-mono text-accent-blue">MONEY_DATA_GATEWAY_SECRET</code> values, to enable the finance dashboard.
         </p>
       </div>
     </div>

@@ -11,32 +11,67 @@ import {
 
 /**
  * Server-side Supabase client for use in API routes.
- * Uses the server-only service role key. Browser traffic must use the
- * session-protected data gateway instead of connecting to Supabase directly.
+ * Uses server-only gateway credentials. Browser traffic must use the
+ * session-protected data gateway instead of connecting to money tables directly.
  */
 export function getServerSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const { url, key, gatewaySecret } = getServerDatabaseCredentials();
 
-  if (!url || !key) {
-    throw new Error("Server database credentials are not configured");
-  }
-
-  return createClient(url, key, {
+  return createClient(url.toString(), key, {
     auth: { persistSession: false, autoRefreshToken: false },
-    global: { fetch: createSupabaseServerFetch(key) },
+    global: {
+      fetch: createSupabaseServerFetch(key),
+      headers: gatewaySecret
+        ? { "x-money-gateway-secret": gatewaySecret }
+        : undefined,
+    },
   });
 }
 
-/** New sb_secret keys authenticate with apikey only, not as bearer JWTs. */
+export interface ServerDatabaseCredentials {
+  url: URL;
+  key: string;
+  gatewaySecret: string | null;
+}
+
+/** Resolve the server-only database authentication strategy. */
+export function getServerDatabaseCredentials(): ServerDatabaseCredentials {
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!rawUrl) {
+    throw new Error("Server database URL is not configured");
+  }
+
+  const url = new URL(rawUrl);
+  if (url.protocol !== "https:") {
+    throw new Error("Supabase URL must use HTTPS");
+  }
+
+  const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const gatewaySecret = process.env.MONEY_DATA_GATEWAY_SECRET;
+  if (publishableKey && gatewaySecret) {
+    return { url, key: publishableKey, gatewaySecret };
+  }
+  if (publishableKey || gatewaySecret) {
+    throw new Error("Server database gateway credentials are incomplete");
+  }
+
+  const legacyKey =
+    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (legacyKey) {
+    return { url, key: legacyKey, gatewaySecret: null };
+  }
+
+  throw new Error("Server database credentials are not configured");
+}
+
+/** Opaque sb_ keys authenticate with apikey only, not as bearer JWTs. */
 export function createSupabaseServerFetch(
   key: string,
   transport: typeof fetch = fetch
 ): typeof fetch {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(init?.headers);
-    if (key.startsWith("sb_secret_")) headers.delete("authorization");
+    if (key.startsWith("sb_")) headers.delete("authorization");
     return transport(input, { ...init, headers });
   };
 }

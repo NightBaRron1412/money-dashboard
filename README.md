@@ -86,7 +86,8 @@ Open [http://localhost:3000](http://localhost:3000) for the main app, or [http:/
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Your Supabase project URL |
-| `SUPABASE_SECRET_KEY` | Yes | Server-only `sb_secret_` key for protected API routes. Never expose it with a `NEXT_PUBLIC_` prefix. |
+| `SUPABASE_PUBLISHABLE_KEY` | Yes | Supabase publishable key used only by protected server routes. |
+| `MONEY_DATA_GATEWAY_SECRET` | Yes | High-entropy server secret enforced by database RLS. Never expose it with a `NEXT_PUBLIC_` prefix. |
 | `SESSION_SECRET` | Yes | Secret for session cookie signing (any random string) |
 | `GEMINI_API_KEY` | For AI | Google Gemini API key for insights, chat, and categorization |
 | `NEXT_PUBLIC_MONEY_PUSH_VAPID_PUBLIC_KEY` | For push | VAPID public key for web push notifications |
@@ -111,7 +112,7 @@ Visit `/demo` to explore the full dashboard with realistic sample data — no Su
 
 The included `vercel.json` configures daily jobs for push reminders at 5 PM UTC and net-worth capture at 4:30 AM UTC. Both require Vercel's `CRON_SECRET` bearer token.
 
-Production financial data is available only through authenticated server routes. The anonymous and authenticated Supabase browser roles have no privileges on the money tables, and the client never receives the service-role credential.
+Production financial data is available only through authenticated server routes. Database policies require a high-entropy gateway secret that the client never receives, so the publishable key alone cannot read or change money tables.
 
 ### Generate VAPID Keys
 

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/lib/supabase-server";
+import {
+  getServerDatabaseCredentials,
+  requireSession,
+} from "@/lib/supabase-server";
 import {
   addOwnerScope,
   getDataProxyTable,
@@ -40,21 +43,6 @@ function privateJson(body: { error: string }, status: number) {
     status,
     headers: PRIVATE_RESPONSE_HEADERS,
   });
-}
-
-function getServiceCredentials(): { url: URL; key: string } {
-  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!rawUrl || !key) {
-    throw new Error("Server database credentials are not configured");
-  }
-
-  const url = new URL(rawUrl);
-  if (url.protocol !== "https:") {
-    throw new Error("Supabase URL must use HTTPS");
-  }
-  return { url, key };
 }
 
 async function proxyDataRequest(request: NextRequest, context: RouteContext) {
@@ -99,7 +87,11 @@ async function proxyDataRequest(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const { url: supabaseUrl, key } = getServiceCredentials();
+    const {
+      url: supabaseUrl,
+      key,
+      gatewaySecret,
+    } = getServerDatabaseCredentials();
     const upstreamUrl = new URL(`/rest/v1/${table}`, supabaseUrl);
     upstreamUrl.search = scopedSearch.toString();
 
@@ -109,8 +101,11 @@ async function proxyDataRequest(request: NextRequest, context: RouteContext) {
       if (value) upstreamHeaders.set(name, value);
     }
     upstreamHeaders.set("apikey", key);
-    if (!key.startsWith("sb_secret_")) {
+    if (!key.startsWith("sb_")) {
       upstreamHeaders.set("authorization", `Bearer ${key}`);
+    }
+    if (gatewaySecret) {
+      upstreamHeaders.set("x-money-gateway-secret", gatewaySecret);
     }
 
     const upstream = await fetch(upstreamUrl, {
