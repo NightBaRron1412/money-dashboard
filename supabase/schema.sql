@@ -5,7 +5,7 @@
 --
 -- Auth: PIN-based (verified server-side). No Supabase Auth needed.
 -- All rows use a fixed owner UUID: 00000000-0000-0000-0000-000000000001
--- RLS is enabled on all tables with owner-scoped policies.
+-- RLS is enabled on all tables with browser access denied by default.
 -- ================================================================
 
 create extension if not exists "uuid-ossp";
@@ -306,78 +306,63 @@ create table if not exists money_reconciliation_actions (
 );
 
 -- ---------------------------------------------------------------
--- Grants – allow anon & authenticated roles full access
+-- Grants: only the server-side service role can access finance tables
 -- ---------------------------------------------------------------
-grant all on money_accounts to anon, authenticated;
-grant all on money_transactions to anon, authenticated;
-grant all on money_goals to anon, authenticated;
-grant all on money_goal_accounts to anon, authenticated;
-grant all on money_allocation_plans to anon, authenticated;
-grant all on money_settings to anon, authenticated;
-grant all on money_holdings to anon, authenticated;
-grant all on money_subscriptions to anon, authenticated;
-grant all on money_dividends to anon, authenticated;
-grant all on money_push_subscriptions to anon, authenticated;
-grant all on money_notification_logs to anon, authenticated;
-grant all on money_credit_cards to anon, authenticated;
-grant all on money_credit_card_charges to anon, authenticated;
-grant all on money_credit_card_payments to anon, authenticated;
-grant all on money_reconciliation_sessions to anon, authenticated;
-grant all on money_reconciliation_actions to anon, authenticated;
-grant all on money_net_worth_snapshots to anon, authenticated;
+grant all on money_accounts to service_role;
+grant all on money_transactions to service_role;
+grant all on money_goals to service_role;
+grant all on money_goal_accounts to service_role;
+grant all on money_allocation_plans to service_role;
+grant all on money_settings to service_role;
+grant all on money_holdings to service_role;
+grant all on money_subscriptions to service_role;
+grant all on money_dividends to service_role;
+grant all on money_push_subscriptions to service_role;
+grant all on money_notification_logs to service_role;
+grant all on money_credit_cards to service_role;
+grant all on money_credit_card_charges to service_role;
+grant all on money_credit_card_payments to service_role;
+grant all on money_reconciliation_sessions to service_role;
+grant all on money_reconciliation_actions to service_role;
+grant all on money_net_worth_snapshots to service_role;
 
 -- ---------------------------------------------------------------
--- RLS Policies: owner-scoped access on all tables
+-- RLS: browser roles have no policies or table privileges. The application
+-- reaches these tables only through authenticated server routes using the
+-- server-only service role.
 -- ---------------------------------------------------------------
 
--- Tables using user_id
-DO $$ DECLARE t text; BEGIN
-  FOREACH t IN ARRAY ARRAY[
+DO $$
+DECLARE
+  table_name text;
+  policy_record record;
+  money_tables text[] := ARRAY[
     'money_accounts', 'money_transactions', 'money_goals',
     'money_goal_accounts', 'money_allocation_plans', 'money_settings',
     'money_holdings', 'money_subscriptions', 'money_dividends',
+    'money_push_subscriptions', 'money_notification_logs',
     'money_credit_cards', 'money_credit_card_charges', 'money_credit_card_payments',
+    'money_reconciliation_sessions', 'money_reconciliation_actions',
     'money_net_worth_snapshots'
-  ] LOOP
-    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-    EXECUTE format('DROP POLICY IF EXISTS %I_owner ON %I', t, t);
+  ];
+BEGIN
+  FOREACH table_name IN ARRAY money_tables LOOP
+    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
     EXECUTE format(
-      'CREATE POLICY %I_owner ON %I FOR ALL TO anon, authenticated USING (user_id = money_owner_id()) WITH CHECK (user_id = money_owner_id())',
-      t, t
+      'REVOKE ALL PRIVILEGES ON TABLE %I FROM PUBLIC, anon, authenticated',
+      table_name
     );
   END LOOP;
-END $$;
 
--- Push subscriptions (separate policies per operation for Supabase security checks)
-alter table money_push_subscriptions enable row level security;
-drop policy if exists money_push_subscriptions_select_policy on money_push_subscriptions;
-create policy money_push_subscriptions_select_policy on money_push_subscriptions for select to anon, authenticated using (user_id = money_owner_id());
-drop policy if exists money_push_subscriptions_insert_policy on money_push_subscriptions;
-create policy money_push_subscriptions_insert_policy on money_push_subscriptions for insert to anon, authenticated with check (user_id = money_owner_id());
-drop policy if exists money_push_subscriptions_update_policy on money_push_subscriptions;
-create policy money_push_subscriptions_update_policy on money_push_subscriptions for update to anon, authenticated using (user_id = money_owner_id()) with check (user_id = money_owner_id());
-drop policy if exists money_push_subscriptions_delete_policy on money_push_subscriptions;
-create policy money_push_subscriptions_delete_policy on money_push_subscriptions for delete to anon, authenticated using (user_id = money_owner_id());
-
--- Notification logs
-alter table money_notification_logs enable row level security;
-drop policy if exists money_notification_logs_select_policy on money_notification_logs;
-create policy money_notification_logs_select_policy on money_notification_logs for select to anon, authenticated using (user_id = money_owner_id());
-drop policy if exists money_notification_logs_insert_policy on money_notification_logs;
-create policy money_notification_logs_insert_policy on money_notification_logs for insert to anon, authenticated with check (user_id = money_owner_id());
-drop policy if exists money_notification_logs_update_policy on money_notification_logs;
-create policy money_notification_logs_update_policy on money_notification_logs for update to anon, authenticated using (user_id = money_owner_id()) with check (user_id = money_owner_id());
-drop policy if exists money_notification_logs_delete_policy on money_notification_logs;
-create policy money_notification_logs_delete_policy on money_notification_logs for delete to anon, authenticated using (user_id = money_owner_id());
-
--- Reconciliation tables use owner_id (not user_id)
-DO $$ DECLARE t text; BEGIN
-  FOREACH t IN ARRAY ARRAY['money_reconciliation_sessions', 'money_reconciliation_actions'] LOOP
-    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-    EXECUTE format('DROP POLICY IF EXISTS %I_owner ON %I', t, t);
+  FOR policy_record IN
+    SELECT tablename, policyname
+    FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = ANY(money_tables)
+  LOOP
     EXECUTE format(
-      'CREATE POLICY %I_owner ON %I FOR ALL TO anon, authenticated USING (owner_id = money_owner_id()) WITH CHECK (owner_id = money_owner_id())',
-      t, t
+      'DROP POLICY IF EXISTS %I ON %I',
+      policy_record.policyname,
+      policy_record.tablename
     );
   END LOOP;
 END $$;
@@ -524,3 +509,18 @@ RETURNS TABLE(new_count int) AS $$
   WHERE user_id = p_owner_id
   RETURNING failed_attempts AS new_count;
 $$ LANGUAGE sql;
+
+revoke all privileges on function money_owner_id()
+  from public, anon, authenticated;
+revoke all privileges on function get_running_balance(uuid, uuid, date, date)
+  from public, anon, authenticated;
+revoke all privileges on function find_duplicate_transactions(uuid, uuid, date, date)
+  from public, anon, authenticated;
+revoke all privileges on function money_increment_failed_attempts(uuid, integer, integer)
+  from public, anon, authenticated;
+
+grant execute on function money_owner_id() to service_role;
+grant execute on function get_running_balance(uuid, uuid, date, date) to service_role;
+grant execute on function find_duplicate_transactions(uuid, uuid, date, date) to service_role;
+grant execute on function money_increment_failed_attempts(uuid, integer, integer)
+  to service_role;

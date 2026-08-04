@@ -3,30 +3,49 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 let _supabase: SupabaseClient | null = null;
 
 export function isSupabaseConfigured(): boolean {
-  return !!(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY)
-  );
+  return !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+}
+
+export function createDataProxyFetch(transport: typeof fetch = fetch): typeof fetch {
+  return async (input: RequestInfo | URL, init?: RequestInit) => {
+    const original = new Request(input, init);
+    const target = new URL(original.url);
+    const proxyUrl = `/api/data${target.pathname}${target.search}`;
+    const headers = new Headers(original.headers);
+
+    headers.delete("apikey");
+    headers.delete("authorization");
+    headers.set("x-money-csrf", "1");
+
+    return transport(proxyUrl, {
+      method: original.method,
+      headers,
+      body: ["GET", "HEAD"].includes(original.method)
+        ? undefined
+        : await original.arrayBuffer(),
+      credentials: "same-origin",
+      cache: "no-store",
+      signal: original.signal,
+    });
+  };
 }
 
 export function getSupabase(): SupabaseClient | null {
   if (_supabase) return _supabase;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-  if (!url || !key) {
+  if (!url) {
     return null;
   }
 
-  _supabase = createClient(url, key, {
+  _supabase = createClient(url, "proxy-only-client", {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
     },
+    global: { fetch: createDataProxyFetch() },
   });
 
   return _supabase;

@@ -11,20 +11,34 @@ import {
 
 /**
  * Server-side Supabase client for use in API routes.
- * Uses the service role key if available, otherwise falls back to anon key.
+ * Uses the server-only service role key. Browser traffic must use the
+ * session-protected data gateway instead of connecting to Supabase directly.
  */
 export function getServerSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    throw new Error("Supabase env vars not configured");
+    throw new Error("Server database credentials are not configured");
   }
 
-  return createClient(url, key);
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: createSupabaseServerFetch(key) },
+  });
+}
+
+/** New sb_secret keys authenticate with apikey only, not as bearer JWTs. */
+export function createSupabaseServerFetch(
+  key: string,
+  transport: typeof fetch = fetch
+): typeof fetch {
+  return async (input: RequestInfo | URL, init?: RequestInit) => {
+    const headers = new Headers(init?.headers);
+    if (key.startsWith("sb_secret_")) headers.delete("authorization");
+    return transport(input, { ...init, headers });
+  };
 }
 
 const BCRYPT_ROUNDS = 10;
@@ -216,7 +230,14 @@ export async function verifySessionToken(token: string): Promise<boolean> {
 
     const parts = payload.split(":");
     const timestamp = parseInt(parts[parts.length - 1], 10);
-    if (isNaN(timestamp) || Date.now() - timestamp > SESSION_TOKEN_MAX_AGE_MS) {
+    const ownerId = parts.slice(0, -1).join(":");
+    const age = Date.now() - timestamp;
+    if (
+      ownerId !== OWNER_ID ||
+      isNaN(timestamp) ||
+      age < -5 * 60 * 1000 ||
+      age > SESSION_TOKEN_MAX_AGE_MS
+    ) {
       return false;
     }
 
@@ -237,16 +258,26 @@ export async function verifySessionToken(token: string): Promise<boolean> {
   }
 }
 
+/** Require only the signed session, without an additional database lookup. */
+export async function requireSession(): Promise<NextResponse | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!token || !(await verifySessionToken(token))) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: { "Cache-Control": "private, no-store" } }
+    );
+  }
+  return null;
+}
+
 /**
  * Verify the caller has a valid session cookie. Returns null if authenticated,
  * or a 401 NextResponse to return immediately.
  */
 export async function requireAuth(): Promise<NextResponse | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token || !(await verifySessionToken(token))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const sessionError = await requireSession();
+  if (sessionError) return sessionError;
   const { locked } = await checkLockout();
   if (locked) {
     return NextResponse.json({ error: "Account locked" }, { status: 403 });

@@ -1,5 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { isCronAuthorized } from "@/lib/supabase-server";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  createSupabaseServerFetch,
+  isCronAuthorized,
+} from "@/lib/supabase-server";
 
 const originalCronSecret = process.env.CRON_SECRET;
 
@@ -35,5 +38,25 @@ describe("cron authorization", () => {
         })
       )
     ).toBe(false);
+  });
+});
+
+describe("server Supabase credentials", () => {
+  it("does not send opaque secret keys as bearer JWTs", async () => {
+    const response = new Response("{}", { status: 200 });
+    const transport = vi.fn(async () => response) as unknown as typeof fetch;
+    const serverFetch = createSupabaseServerFetch("sb_secret_test", transport);
+
+    await serverFetch("https://project.supabase.co/rest/v1/money_accounts", {
+      headers: {
+        apikey: "sb_secret_test",
+        authorization: "Bearer sb_secret_test",
+      },
+    });
+
+    const [, init] = (transport as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    const headers = new Headers(init.headers);
+    expect(headers.get("apikey")).toBe("sb_secret_test");
+    expect(headers.has("authorization")).toBe(false);
   });
 });
