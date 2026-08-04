@@ -5,6 +5,7 @@ export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 const MAX_SYMBOLS = 25;
+const SYMBOL_RE = /^[A-Z0-9.^=/-]{1,20}$/i;
 
 export async function GET(req: NextRequest) {
 
@@ -16,7 +17,14 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const symbols = symbolsParam.split(",").map((s) => s.trim()).filter(Boolean).slice(0, MAX_SYMBOLS);
+  const symbols = symbolsParam
+    .split(",")
+    .map((s) => s.trim())
+    .filter((symbol) => SYMBOL_RE.test(symbol))
+    .slice(0, MAX_SYMBOLS);
+  if (symbols.length === 0) {
+    return NextResponse.json({ error: "No valid symbols provided" }, { status: 400 });
+  }
 
   try {
     const results = await fetchYahooQuotes(symbols);

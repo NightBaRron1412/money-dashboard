@@ -6,6 +6,7 @@ import { getMonthRange, computeAccountBalance } from "@/lib/money/queries";
 import { getServerFxRates, convertToBase, getStockQuotes } from "@/lib/money/server-fx";
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import type { CurrencyCode } from "@/lib/money/database.types";
+import { computeNetWorthBase } from "@/lib/money/net-worth";
 
 export const maxDuration = 30;
 
@@ -104,14 +105,19 @@ export async function GET() {
       portfolioValue += quote?.currency ? toBase(mv, quote.currency as CurrencyCode) : toBase(mv, h.cost_currency);
     }
     const totalDividendsNR = dividends.filter((d) => !d.reinvested).reduce((s, d) => s + toBase(d.amount, d.currency), 0);
-    const totalNetWorth = cashNetWorth + portfolioValue + totalDividendsNR;
 
     // Credit card utilization
     const totalCCBalance = creditCards.reduce((sum, card) => {
       const ch = ccCharges.filter((c) => c.card_id === card.id).reduce((s, c) => s + c.amount, 0);
       const py = allPayments.filter((p) => p.card_id === card.id).reduce((s, p) => s + p.amount, 0);
-      return sum + toBase(Math.max(0, ch - py), card.currency);
+      return sum + toBase(ch - py, card.currency);
     }, 0);
+    const totalNetWorth = computeNetWorthBase({
+      cashBase: cashNetWorth,
+      holdingsBase: portfolioValue,
+      dividendsBase: totalDividendsNR,
+      creditCardDebtBase: totalCCBalance,
+    });
 
     // Goal progress
     const goalProgress = computeGoalProgress(goals, goalAccounts, balances, accounts, base, fx);

@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     const primaryIncomeAccountId = Object.entries(incomeAccounts).sort((a, b) => b[1] - a[1])[0]?.[0];
     const primaryIncomeAccount = accounts.find((a) => a.id === primaryIncomeAccountId);
 
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto" }).format(new Date());
 
     const systemPrompt = `You are a voice transaction parser for a personal finance app. The user will speak in English or Arabic (or a mix). Your job is to extract structured transaction data from the audio.
 
@@ -193,11 +193,14 @@ Respond ONLY with valid JSON matching this schema:
     for (const modelName of AUDIO_MODELS) {
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
-          const model = genAI.getGenerativeModel({
-            model: modelName,
-            systemInstruction: systemPrompt,
-            generationConfig: { responseMimeType: "application/json" },
-          });
+          const model = genAI.getGenerativeModel(
+            {
+              model: modelName,
+              systemInstruction: systemPrompt,
+              generationConfig: { responseMimeType: "application/json" },
+            },
+            { timeout: 25_000 }
+          );
 
           const response = await model.generateContent([
             { inlineData: { mimeType, data: audioBase64 } },

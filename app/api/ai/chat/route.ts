@@ -6,6 +6,7 @@ import { getServerFxRates, convertToBase, getStockQuotes } from "@/lib/money/ser
 import { computeAccountBalance } from "@/lib/money/queries";
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import type { CurrencyCode } from "@/lib/money/database.types";
+import { computeNetWorthBase } from "@/lib/money/net-worth";
 
 export const maxDuration = 30;
 
@@ -44,8 +45,8 @@ export async function POST(request: NextRequest) {
       supabase.from("money_goals").select("*").eq("user_id", OWNER_ID),
       supabase.from("money_goal_accounts").select("*").eq("user_id", OWNER_ID),
       supabase.from("money_credit_cards").select("*").eq("user_id", OWNER_ID),
-      supabase.from("money_credit_card_charges").select("*").eq("user_id", OWNER_ID).gte("date", sixMonthCutoff).order("date", { ascending: false }).limit(500),
-      supabase.from("money_credit_card_payments").select("*").eq("user_id", OWNER_ID).gte("date", sixMonthCutoff).order("date", { ascending: false }).limit(200),
+      supabase.from("money_credit_card_charges").select("*").eq("user_id", OWNER_ID),
+      supabase.from("money_credit_card_payments").select("*").eq("user_id", OWNER_ID),
       supabase.from("money_dividends").select("*").eq("user_id", OWNER_ID).gte("date", sixMonthCutoff).order("date", { ascending: false }),
       getServerFxRates(),
       supabase.from("money_transactions").select("*").eq("user_id", OWNER_ID),
@@ -107,12 +108,7 @@ export async function POST(request: NextRequest) {
     const cashNetWorth = accounts
       .filter((a) => a.type === "checking")
       .reduce((sum, a) => sum + toBase(balances[a.id] ?? 0, a.currency), 0);
-    const investingCashAdded = accounts
-      .filter((a) => a.type === "investing")
-      .reduce((sum, a) => sum + toBase(balances[a.id] ?? 0, a.currency), 0);
     const totalDividends = dividends.filter((d) => !d.reinvested).reduce((s, d) => s + toBase(d.amount, d.currency), 0);
-    const investTotalBase = portfolioValue + totalDividends;
-    const totalNetWorth = cashNetWorth + investTotalBase;
 
     // Credit card utilization
     const ccDetails = creditCards.map((card) => {
@@ -121,6 +117,13 @@ export async function POST(request: NextRequest) {
       const balance = charges - payments;
       const utilization = card.credit_limit > 0 ? (balance / card.credit_limit) * 100 : 0;
       return { name: card.name, balance: toBase(balance, card.currency), limit: toBase(card.credit_limit, card.currency), utilization };
+    });
+    const creditCardDebt = ccDetails.reduce((sum, card) => sum + card.balance, 0);
+    const totalNetWorth = computeNetWorthBase({
+      cashBase: cashNetWorth,
+      holdingsBase: portfolioValue,
+      dividendsBase: totalDividends,
+      creditCardDebtBase: creditCardDebt,
     });
 
     // Goal progress

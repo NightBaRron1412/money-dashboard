@@ -19,6 +19,7 @@ export function requireGeminiKey(): GoogleGenerativeAI {
 
 const MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
 const MAX_RETRIES = 2;
+const GEMINI_TIMEOUT_MS = 25_000;
 
 async function withRetry<T>(fn: (model: string) => Promise<T>): Promise<T> {
   let lastErr: unknown;
@@ -54,10 +55,13 @@ export async function generateText(
 ): Promise<string> {
   const genAI = requireGeminiKey();
   return withRetry(async (modelName) => {
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: IDENTITY_PREAMBLE + systemPrompt,
-    });
+    const model = genAI.getGenerativeModel(
+      {
+        model: modelName,
+        systemInstruction: IDENTITY_PREAMBLE + systemPrompt,
+      },
+      { timeout: GEMINI_TIMEOUT_MS }
+    );
     const result = await model.generateContent(userPrompt);
     return result.response.text();
   });
@@ -69,13 +73,16 @@ export async function generateJSON<T>(
 ): Promise<T> {
   const genAI = requireGeminiKey();
   return withRetry(async (modelName) => {
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: IDENTITY_PREAMBLE + systemPrompt,
-      generationConfig: {
-        responseMimeType: "application/json",
+    const model = genAI.getGenerativeModel(
+      {
+        model: modelName,
+        systemInstruction: IDENTITY_PREAMBLE + systemPrompt,
+        generationConfig: {
+          responseMimeType: "application/json",
+        },
       },
-    });
+      { timeout: GEMINI_TIMEOUT_MS }
+    );
     const result = await model.generateContent(userPrompt);
     const text = result.response.text();
     return JSON.parse(text) as T;

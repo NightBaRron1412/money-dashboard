@@ -28,6 +28,7 @@ export async function POST() {
     "money_accounts",
   ];
 
+  const failures: string[] = [];
   for (const table of tables) {
     const { error } = await supabase
       .from(table)
@@ -35,7 +36,15 @@ export async function POST() {
       .eq(table === "money_reconciliation_sessions" || table === "money_reconciliation_actions" ? "owner_id" : "user_id", OWNER_ID);
     if (error) {
       console.error(`reset: failed to clear ${table}:`, error.message);
+      failures.push(table);
     }
+  }
+
+  if (failures.length > 0) {
+    return NextResponse.json(
+      { error: "Reset was only partially completed. Review server logs before retrying." },
+      { status: 500 }
+    );
   }
 
   const cookieStore = await cookies();

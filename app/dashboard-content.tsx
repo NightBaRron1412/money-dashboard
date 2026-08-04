@@ -44,6 +44,7 @@ import { useBalanceVisibility } from "./balance-visibility-provider";
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import { detectSpendingAnomalies, forecastCashFlow, type CashFlowForecast } from "@/lib/money/forecasting";
 import { TakeTourButton } from "./tour/take-tour-button";
+import { computeNetWorthBase } from "@/lib/money/net-worth";
 
 export function DashboardContent({
   demoMode = false,
@@ -183,7 +184,7 @@ export function DashboardContent({
   // load retries instead of locking in a missing/garbage day. Cron handles the
   // server-side schedule; this covers active users on days the cron might miss.
   useEffect(() => {
-    if (loading || !fxReady) return;
+    if (demoMode || loading || !fxReady) return;
     if (typeof window === "undefined") return;
     const today = nowEST().toISOString().slice(0, 10);
     const key = "money-snapshot-captured-v2";
@@ -195,7 +196,7 @@ export function DashboardContent({
         if (data && data.ok) window.localStorage.setItem(key, today);
       })
       .catch(() => { /* silent — cron will catch up */ });
-  }, [loading, fxReady]);
+  }, [demoMode, loading, fxReady]);
 
   useEffect(() => {
     if (loading || error) return;
@@ -436,15 +437,18 @@ export function DashboardContent({
     .filter((a) => a.type === "investing")
     .reduce((sum, a) => sum + convertCurrency(balances[a.id] || 0, a.currency, baseCurrency, fx), 0);
 
-  const investTotalBase = portfolioMarketValueBase + totalDividendsBase;
-
   // Credit card debt is a liability — subtract it from net worth.
   const ccDebtBase = creditCards.reduce(
     (sum, c) => sum + convertCurrency(computeCreditCardBalance(c.id, creditCardCharges, creditCardPayments), c.currency, baseCurrency, fx),
     0
   );
 
-  const netWorthBase = cashTotalBase + investTotalBase - ccDebtBase;
+  const netWorthBase = computeNetWorthBase({
+    cashBase: cashTotalBase,
+    holdingsBase: portfolioMarketValueBase,
+    dividendsBase: totalDividendsBase,
+    creditCardDebtBase: ccDebtBase,
+  });
 
   // This month
   const monthTxs = transactions.filter(

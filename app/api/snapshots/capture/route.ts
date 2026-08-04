@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
-import { getServerSupabase, requireAuth } from "@/lib/supabase-server";
+import {
+  getServerSupabase,
+  isCronAuthorized,
+  requireAuth,
+} from "@/lib/supabase-server";
 import { OWNER_ID } from "@/lib/money/constants";
 import { computeAccountBalance } from "@/lib/money/queries";
 import { getServerFxRates, convertToBase, getStockQuotes } from "@/lib/money/server-fx";
 import type { CurrencyCode } from "@/lib/money/database.types";
+import { computeNetWorthBase } from "@/lib/money/net-worth";
 
 /**
- * POST /api/snapshots/capture
+ * GET or POST /api/snapshots/capture
  *
  * Computes today's net worth on the server using the same formula as the
  * dashboard widget and upserts a row into money_net_worth_snapshots
@@ -14,11 +19,10 @@ import type { CurrencyCode } from "@/lib/money/database.types";
  *   - daily Vercel cron
  *   - dashboard mount (fire-and-forget) as a fallback for active users
  */
-export async function POST(req: Request) {
-  // Allow the Vercel cron user-agent OR an authenticated session
-  const userAgent = req.headers.get("user-agent") ?? "";
-  const isCron = userAgent.includes("vercel-cron");
-  if (!isCron) {
+async function capture(req: Request) {
+  // Vercel invokes configured crons with GET and the CRON_SECRET bearer token.
+  // Authenticated dashboard sessions may also POST as a daily fallback.
+  if (!isCronAuthorized(req)) {
     const authErr = await requireAuth();
     if (authErr) return authErr;
   }
@@ -101,7 +105,12 @@ export async function POST(req: Request) {
       ccDebtBase += toBase(chg - pay, c.currency as CurrencyCode);
     }
 
-    const totalBase = cashBase + holdingsBase + dividendsBase - ccDebtBase;
+    const totalBase = computeNetWorthBase({
+      cashBase,
+      holdingsBase,
+      dividendsBase,
+      creditCardDebtBase: ccDebtBase,
+    });
     const today = new Date().toISOString().slice(0, 10);
 
     const round = (n: number) => Math.round(n * 100) / 100;
@@ -131,4 +140,12 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function GET(req: Request) {
+  return capture(req);
+}
+
+export async function POST(req: Request) {
+  return capture(req);
 }

@@ -17,6 +17,7 @@ export interface QuoteResult {
 let cachedCrumb: string | null = null;
 let cachedCookie: string | null = null;
 let crumbExpiresAt = 0;
+const YAHOO_TIMEOUT_MS = 12_000;
 
 async function getYahooCrumb(): Promise<{ crumb: string; cookie: string }> {
   if (cachedCrumb && cachedCookie && Date.now() < crumbExpiresAt) {
@@ -26,6 +27,7 @@ async function getYahooCrumb(): Promise<{ crumb: string; cookie: string }> {
   const initRes = await fetch("https://fc.yahoo.com", {
     headers: { "User-Agent": "Mozilla/5.0" },
     redirect: "manual",
+    signal: AbortSignal.timeout(YAHOO_TIMEOUT_MS),
   });
 
   const setCookies = initRes.headers.getSetCookie?.() ?? [];
@@ -33,7 +35,10 @@ async function getYahooCrumb(): Promise<{ crumb: string; cookie: string }> {
 
   const crumbRes = await fetch(
     "https://query2.finance.yahoo.com/v1/test/getcrumb",
-    { headers: { "User-Agent": "Mozilla/5.0", Cookie: cookieStr } }
+    {
+      headers: { "User-Agent": "Mozilla/5.0", Cookie: cookieStr },
+      signal: AbortSignal.timeout(YAHOO_TIMEOUT_MS),
+    }
   );
 
   if (!crumbRes.ok) {
@@ -101,18 +106,21 @@ export async function fetchYahooQuotes(
   if (tickers.length > 0) {
     try {
       const { crumb, cookie } = await getYahooCrumb();
-      const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(",")}&crumb=${encodeURIComponent(crumb)}`;
+      const encodedTickers = tickers.map(encodeURIComponent).join(",");
+      const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodedTickers}&crumb=${encodeURIComponent(crumb)}`;
 
       let res = await fetch(url, {
         headers: { "User-Agent": "Mozilla/5.0", Cookie: cookie },
+        signal: AbortSignal.timeout(YAHOO_TIMEOUT_MS),
       });
 
       if (!res.ok) {
         cachedCrumb = null;
         const retry = await getYahooCrumb();
-        const retryUrl = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(",")}&crumb=${encodeURIComponent(retry.crumb)}`;
+        const retryUrl = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodedTickers}&crumb=${encodeURIComponent(retry.crumb)}`;
         res = await fetch(retryUrl, {
           headers: { "User-Agent": "Mozilla/5.0", Cookie: retry.cookie },
+          signal: AbortSignal.timeout(YAHOO_TIMEOUT_MS),
         });
       }
 

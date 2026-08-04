@@ -21,6 +21,8 @@ function tx(overrides: Partial<Transaction> & { type: Transaction["type"]; amoun
     notes: null,
     recurrence: null,
     is_recurring: false,
+    exclude_from_monthly: false,
+    goal_id: null,
     linked_charge_id: null,
     idempotency_key: null,
     received_amount: null,

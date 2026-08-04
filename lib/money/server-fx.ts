@@ -28,7 +28,7 @@ export async function getServerFxRates(): Promise<FxRates> {
 export async function getStockQuotes(symbols: string[]): Promise<Record<string, QuoteResult>> {
   if (symbols.length === 0) return {};
 
-  const key = symbols.sort().join(",");
+  const key = [...symbols].sort().join(",");
   if (cachedStocks && Date.now() < cachedStocks.expiresAt) {
     if (symbols.every((s) => s in cachedStocks!.quotes)) return cachedStocks.quotes;
   }

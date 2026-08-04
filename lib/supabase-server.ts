@@ -254,6 +254,12 @@ export async function requireAuth(): Promise<NextResponse | null> {
   return null;
 }
 
+/** Verify a Vercel cron request using the configured bearer secret. */
+export function isCronAuthorized(request: Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  return !!secret && request.headers.get("authorization") === `Bearer ${secret}`;
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function isValidUUID(value: unknown): value is string {

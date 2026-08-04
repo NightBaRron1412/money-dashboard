@@ -6,6 +6,7 @@ import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import { getDemoMoneyData } from "../../../hooks/demo-data";
 import { checkDemoRateLimit } from "@/lib/money/demo-rate-limit";
 import type { CurrencyCode } from "@/lib/money/database.types";
+import { computeNetWorthBase } from "@/lib/money/net-worth";
 
 export const maxDuration = 30;
 
@@ -115,8 +116,6 @@ export async function POST(request: NextRequest) {
     const totalDividends = dividends
       .filter((d) => !d.reinvested)
       .reduce((s, d) => s + toBase(d.amount, d.currency), 0);
-    const investTotalBase = portfolioValue + totalDividends;
-    const totalNetWorth = cashNetWorth + investTotalBase;
 
     const ccDetails = creditCards.map((card) => {
       const charges = ccCharges
@@ -134,6 +133,13 @@ export async function POST(request: NextRequest) {
         limit: toBase(card.credit_limit, card.currency),
         utilization,
       };
+    });
+    const creditCardDebt = ccDetails.reduce((sum, card) => sum + card.balance, 0);
+    const totalNetWorth = computeNetWorthBase({
+      cashBase: cashNetWorth,
+      holdingsBase: portfolioValue,
+      dividendsBase: totalDividends,
+      creditCardDebtBase: creditCardDebt,
     });
 
     const goalProgress = computeGoalProgress(goals, goalAccounts, balances, accounts, base, fx);

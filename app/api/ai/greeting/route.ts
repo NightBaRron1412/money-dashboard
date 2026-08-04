@@ -6,6 +6,7 @@ import { getMonthRange, computeAccountBalance } from "@/lib/money/queries";
 import { getServerFxRates, convertToBase, getStockQuotes } from "@/lib/money/server-fx";
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import type { CurrencyCode } from "@/lib/money/database.types";
+import { computeNetWorthBase } from "@/lib/money/net-worth";
 
 export const maxDuration = 30;
 
@@ -24,7 +25,7 @@ export async function GET() {
     const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const { from: prevFrom, to: prevTo } = getMonthRange(prevMonth);
 
-    const [txRes, allTxRes, subRes, settingsRes, accountRes, holdingRes, goalRes, goalAcctRes, allPayRes, fx] = await Promise.all([
+    const [txRes, allTxRes, subRes, settingsRes, accountRes, holdingRes, goalRes, goalAcctRes, allPayRes, ccRes, ccChargeRes, dividendRes, fx] = await Promise.all([
       supabase.from("money_transactions").select("*").eq("user_id", OWNER_ID).gte("date", prevFrom).lte("date", to),
       supabase.from("money_transactions").select("*").eq("user_id", OWNER_ID),
       supabase.from("money_subscriptions").select("*").eq("user_id", OWNER_ID).eq("is_active", true),
@@ -34,6 +35,9 @@ export async function GET() {
       supabase.from("money_goals").select("*").eq("user_id", OWNER_ID),
       supabase.from("money_goal_accounts").select("*").eq("user_id", OWNER_ID),
       supabase.from("money_credit_card_payments").select("*").eq("user_id", OWNER_ID),
+      supabase.from("money_credit_cards").select("*").eq("user_id", OWNER_ID),
+      supabase.from("money_credit_card_charges").select("*").eq("user_id", OWNER_ID),
+      supabase.from("money_dividends").select("*").eq("user_id", OWNER_ID),
       getServerFxRates(),
     ]);
 
@@ -46,6 +50,9 @@ export async function GET() {
     const goals = goalRes.data ?? [];
     const goalAccounts = goalAcctRes.data ?? [];
     const allPayments = allPayRes.data ?? [];
+    const creditCards = ccRes.data ?? [];
+    const ccCharges = ccChargeRes.data ?? [];
+    const dividends = dividendRes.data ?? [];
     const base: CurrencyCode = (settings?.base_currency as CurrencyCode) ?? "CAD";
     const toBase = (amount: number, currency: CurrencyCode) => convertToBase(amount, currency, base, fx);
 
@@ -61,7 +68,9 @@ export async function GET() {
     const prevSavingsRate = prevIncome > 0 ? ((prevIncome - prevExpenses) / prevIncome * 100) : null;
 
     const categoryBreakdown: Record<string, number> = {};
-    for (const t of curTxs.filter((t) => t.type === "expense" && t.category)) {
+    for (const t of curTxs.filter(
+      (t) => t.type === "expense" && t.category && !t.exclude_from_monthly
+    )) {
       categoryBreakdown[t.category!] = (categoryBreakdown[t.category!] ?? 0) + toBase(t.amount, t.currency);
     }
     const topCategories = Object.entries(categoryBreakdown)
@@ -94,7 +103,24 @@ export async function GET() {
       portfolioValue += base_mv;
       if (quote) portfolioDayChange += base_mv * (quote.changePercent / 100);
     }
-    const totalNetWorth = cashNetWorth + portfolioValue;
+    const dividendsBase = dividends
+      .filter((d) => !d.reinvested)
+      .reduce((sum, d) => sum + toBase(d.amount, d.currency), 0);
+    const creditCardDebt = creditCards.reduce((sum, card) => {
+      const charges = ccCharges
+        .filter((charge) => charge.card_id === card.id)
+        .reduce((cardSum, charge) => cardSum + charge.amount, 0);
+      const payments = allPayments
+        .filter((payment) => payment.card_id === card.id)
+        .reduce((cardSum, payment) => cardSum + payment.amount, 0);
+      return sum + toBase(charges - payments, card.currency);
+    }, 0);
+    const totalNetWorth = computeNetWorthBase({
+      cashBase: cashNetWorth,
+      holdingsBase: portfolioValue,
+      dividendsBase,
+      creditCardDebtBase: creditCardDebt,
+    });
 
     // Goal progress
     const goalProgress = computeGoalProgress(goals, goalAccounts, balances, accounts, base, fx);
@@ -130,6 +156,7 @@ Time: ${timeOfDay}
 User's name: ${settings?.display_name || "there"}
 Currency: ${base}
 Net worth: ${totalNetWorth.toFixed(0)} (cash ${cashNetWorth.toFixed(0)}, investments ${portfolioValue.toFixed(0)})
+Credit card debt: ${creditCardDebt.toFixed(0)}
 ${portfolioDayChange !== 0 ? `Portfolio today: ${portfolioDayChange >= 0 ? "+" : ""}${portfolioDayChange.toFixed(0)} ${base}` : ""}
 This month: Income ${curIncome.toFixed(0)}, Expenses ${curExpenses.toFixed(0)}${savingsRate !== null ? `, Savings rate ${savingsRate.toFixed(0)}%` : ""}
 Last month: Income ${prevIncome.toFixed(0)}, Expenses ${prevExpenses.toFixed(0)}${prevSavingsRate !== null ? `, Savings rate ${prevSavingsRate.toFixed(0)}%` : ""}
