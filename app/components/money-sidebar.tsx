@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -87,6 +87,21 @@ export function MoneySidebar({
 
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
+  useEffect(() => {
+    setMoreMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreMenuOpen(false);
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [moreMenuOpen]);
+
   // If active page is in overflow, check for active state
   const isOverflowActive = mobileOverflowItems.some((item) =>
     pathname.startsWith(item.href)
@@ -120,8 +135,10 @@ export function MoneySidebar({
             );
           })}
           <button
+            type="button"
             onClick={() => setMoreMenuOpen(!moreMenuOpen)}
             aria-expanded={moreMenuOpen}
+            aria-controls="mobile-more-navigation"
             aria-label="More navigation"
             className={cn(
               "flex flex-col items-center gap-0.5 px-1 py-1 text-[10px] transition",
@@ -134,20 +151,32 @@ export function MoneySidebar({
             <span>More</span>
           </button>
         </div>
+      </nav>
 
-        {/* Overflow menu sheet */}
+        {/* Keep the sheet outside the blurred nav. Mobile Safari otherwise
+            treats the nav as the containing block for fixed descendants. */}
         {moreMenuOpen && (
           <>
-            <div
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+            <button
+              type="button"
+              aria-label="Close more navigation"
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
               onClick={() => setMoreMenuOpen(false)}
             />
-            <div className="fixed inset-x-0 z-50 mx-2 mb-1 rounded-2xl border border-border-subtle bg-bg-secondary p-3 shadow-lg" style={{ bottom: "calc(3.5rem + 1px + env(safe-area-inset-bottom, 0px))" }}>
+            <section
+              id="mobile-more-navigation"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="mobile-more-navigation-title"
+              className="fixed inset-x-0 z-[60] mx-2 mb-1 rounded-2xl border border-border-subtle bg-bg-secondary p-3 shadow-lg md:hidden"
+              style={{ bottom: "calc(3.5rem + 1px + env(safe-area-inset-bottom, 0px))" }}
+            >
               <div className="mb-2 flex items-center justify-between px-1">
-                <span className="text-xs font-semibold text-text-primary">More</span>
+                <span id="mobile-more-navigation-title" className="text-xs font-semibold text-text-primary">More</span>
                 <button
+                  type="button"
                   onClick={() => setMoreMenuOpen(false)}
-                  aria-label="Close more navigation"
+                  aria-label="Close more navigation menu"
                   className="rounded-lg p-2 text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
                 >
                   <X className="h-4 w-4" />
@@ -177,6 +206,7 @@ export function MoneySidebar({
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border-subtle pt-2">
                 <button
+                  type="button"
                   onClick={() => {
                     setTheme(isDark ? "light" : "dark");
                     setMoreMenuOpen(false);
@@ -187,6 +217,7 @@ export function MoneySidebar({
                   <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     toggleBalances();
                     setMoreMenuOpen(false);
@@ -207,6 +238,7 @@ export function MoneySidebar({
                   </Link>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => {
                       setMoreMenuOpen(false);
                       signOut();
@@ -218,10 +250,9 @@ export function MoneySidebar({
                   </button>
                 )}
               </div>
-            </div>
+            </section>
           </>
         )}
-      </nav>
 
       {/* Desktop sidebar */}
       <aside

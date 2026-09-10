@@ -72,10 +72,11 @@ test("demo never attempts a production snapshot write", async ({ page }) => {
 });
 
 test("mobile overflow navigation reaches settings", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile-chromium");
+  test.skip(!testInfo.project.name.startsWith("mobile-"));
   await page.goto("/demo");
 
   await page.getByRole("button", { name: "More navigation" }).click();
+  await expect(page.getByRole("dialog", { name: "More" })).toBeVisible();
   await page.getByRole("link", { name: "Settings", exact: true }).click();
 
   await expect(page).toHaveURL(/\/demo\/settings$/);
