@@ -32,8 +32,8 @@ const config: Config = {
 				}
 			},
 			boxShadow: {
-				glow: '0 10px 40px -12px var(--accent-pink, rgba(180, 36, 132, 0.35))',
-				soft: '0 20px 60px -24px rgba(0,0,0,0.35)',
+				glow: '0 12px 30px -22px var(--accent-purple)',
+				soft: 'var(--card-shadow)',
 				card: 'var(--card-shadow)'
 			},
 			borderRadius: {

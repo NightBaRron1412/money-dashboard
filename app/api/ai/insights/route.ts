@@ -5,8 +5,13 @@ import { isGeminiConfigured, generateText } from "@/lib/money/ai";
 import { getMonthRange, computeAccountBalance } from "@/lib/money/queries";
 import { getServerFxRates, convertToBase, getStockQuotes } from "@/lib/money/server-fx";
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
-import type { CurrencyCode } from "@/lib/money/database.types";
+import type { CurrencyCode, RecurrenceFrequency } from "@/lib/money/database.types";
 import { computeNetWorthBase } from "@/lib/money/net-worth";
+import { isIncludedInMonthlyTotals } from "@/lib/money/transaction-filters";
+import {
+  subscriptionMonthlyEquivalent,
+  subscriptionYearlyEquivalent,
+} from "@/lib/money/subscription-costs";
 
 export const maxDuration = 30;
 
@@ -59,31 +64,35 @@ export async function GET() {
 
     const currentMonthTxs = txs.filter((t) => t.date >= from && t.date <= to);
     const prevMonthTxs = txs.filter((t) => t.date >= prevFrom && t.date <= prevTo);
+    const includedCurrentMonthTxs = currentMonthTxs.filter(isIncludedInMonthlyTotals);
+    const includedPrevMonthTxs = prevMonthTxs.filter(isIncludedInMonthlyTotals);
 
-    const curIncome = currentMonthTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const curExpenses = currentMonthTxs.filter((t) => t.type === "expense" && !t.exclude_from_monthly).reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const prevIncome = prevMonthTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const prevExpenses = prevMonthTxs.filter((t) => t.type === "expense" && !t.exclude_from_monthly).reduce((s, t) => s + toBase(t.amount, t.currency), 0);
+    const curIncome = includedCurrentMonthTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
+    const curExpenses = includedCurrentMonthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
+    const prevIncome = includedPrevMonthTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
+    const prevExpenses = includedPrevMonthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
 
     const categoryBreakdown: Record<string, number> = {};
-    for (const t of currentMonthTxs.filter((t) => t.type === "expense" && t.category && !t.exclude_from_monthly)) {
+    for (const t of includedCurrentMonthTxs.filter((t) => t.type === "expense" && t.category)) {
       categoryBreakdown[t.category!] = (categoryBreakdown[t.category!] ?? 0) + toBase(t.amount, t.currency);
     }
 
     const savingsRate = curIncome > 0 ? ((curIncome - curExpenses) / curIncome * 100).toFixed(1) : "N/A";
     const prevSavingsRate = prevIncome > 0 ? ((prevIncome - prevExpenses) / prevIncome * 100).toFixed(1) : "N/A";
 
-    const monthlySubCost = subs.reduce((s, sub) => {
-      const f = sub.frequency as string;
-      const mult = f === "weekly" ? 4.33 : f === "bi-weekly" ? 2.17 : f === "monthly" ? 1 : 1/12;
-      return s + toBase(sub.amount, sub.currency) * mult;
+    const yearlySubCost = subs.reduce((s, sub) => {
+      return s + subscriptionYearlyEquivalent(
+        toBase(sub.amount, sub.currency),
+        sub.frequency as RecurrenceFrequency
+      );
     }, 0);
-    const yearlySubCost = monthlySubCost * 12;
+    const monthlySubCost = yearlySubCost / 12;
     const subDetails = subs.map(sub => {
-      const f = sub.frequency as string;
-      const mult = f === "weekly" ? 4.33 : f === "bi-weekly" ? 2.17 : f === "monthly" ? 1 : 1/12;
-      const mo = toBase(sub.amount, sub.currency) * mult;
-      return `${sub.name}: ${mo.toFixed(0)} ${base}/month (billed ${sub.amount} ${sub.currency} ${f})`;
+      const frequency = sub.frequency as RecurrenceFrequency;
+      const amountBase = toBase(sub.amount, sub.currency);
+      const monthly = subscriptionMonthlyEquivalent(amountBase, frequency);
+      const yearly = subscriptionYearlyEquivalent(amountBase, frequency);
+      return `${sub.name}: ${monthly.toFixed(2)} ${base}/month, ${yearly.toFixed(2)} ${base}/year (billed ${sub.amount} ${sub.currency} ${frequency})`;
     }).join(", ");
 
     // Account balances & net worth
@@ -140,7 +149,7 @@ Credit card debt: ${totalCCBalance.toFixed(0)}
 This month: Income ${curIncome.toFixed(0)}, Expenses ${curExpenses.toFixed(0)}, Savings rate ${savingsRate}%
 Last month: Income ${prevIncome.toFixed(0)}, Expenses ${prevExpenses.toFixed(0)}, Savings rate ${prevSavingsRate}%
 Top expense categories: ${Object.entries(categoryBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([c, a]) => `${c}: ${a.toFixed(0)}`).join(", ") || "None"}
-Active subscriptions: ${subs.length} totaling ~${monthlySubCost.toFixed(0)} ${base}/month (~${yearlySubCost.toFixed(0)}/year): ${subDetails}
+Active subscriptions: ${subs.length} totaling exactly ${monthlySubCost.toFixed(2)} ${base}/month and ${yearlySubCost.toFixed(2)} ${base}/year: ${subDetails}
 Dividend income (2 months): ${totalDividends.toFixed(0)}
 Goals: ${goalSummary || "None"}
 Budget: ${settings?.monthly_essentials_budget ?? 0}/month

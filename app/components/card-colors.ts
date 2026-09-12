@@ -25,14 +25,14 @@ export interface CardColor {
 }
 
 export const CARD_COLORS: readonly CardColor[] = [
-  { slug: "slate",    icon: "bg-slate-500/10 text-slate-400",     bar: "bg-slate-500",   swatch: "bg-slate-500" },
-  { slug: "blue",     icon: "bg-blue-500/10 text-blue-400",       bar: "bg-blue-500",    swatch: "bg-blue-500" },
-  { slug: "sky",      icon: "bg-sky-500/10 text-sky-400",         bar: "bg-sky-500",     swatch: "bg-sky-500" },
-  { slug: "emerald",  icon: "bg-emerald-500/10 text-emerald-400", bar: "bg-emerald-500", swatch: "bg-emerald-500" },
-  { slug: "amber",    icon: "bg-amber-500/10 text-amber-400",     bar: "bg-amber-500",   swatch: "bg-amber-500" },
-  { slug: "rose",     icon: "bg-rose-500/10 text-rose-400",       bar: "bg-rose-500",    swatch: "bg-rose-500" },
-  { slug: "purple",   icon: "bg-purple-500/10 text-purple-400",   bar: "bg-purple-500",  swatch: "bg-purple-500" },
-  { slug: "fuchsia",  icon: "bg-fuchsia-500/10 text-fuchsia-400", bar: "bg-fuchsia-500", swatch: "bg-fuchsia-500" },
+  { slug: "slate",    icon: "bg-[#7d8490]/10 text-[#7d8490]", bar: "bg-[#7d8490]", swatch: "bg-[#7d8490]" },
+  { slug: "blue",     icon: "bg-[#4f6edb]/10 text-[#4f6edb]", bar: "bg-[#4f6edb]", swatch: "bg-[#4f6edb]" },
+  { slug: "sky",      icon: "bg-[#568ba1]/10 text-[#568ba1]", bar: "bg-[#568ba1]", swatch: "bg-[#568ba1]" },
+  { slug: "emerald",  icon: "bg-[#4f8f7e]/10 text-[#4f8f7e]", bar: "bg-[#4f8f7e]", swatch: "bg-[#4f8f7e]" },
+  { slug: "amber",    icon: "bg-[#b7654b]/10 text-[#b7654b]", bar: "bg-[#b7654b]", swatch: "bg-[#b7654b]" },
+  { slug: "rose",     icon: "bg-[#ac6878]/10 text-[#ac6878]", bar: "bg-[#ac6878]", swatch: "bg-[#ac6878]" },
+  { slug: "purple",   icon: "bg-[#8072b2]/10 text-[#8072b2]", bar: "bg-[#8072b2]", swatch: "bg-[#8072b2]" },
+  { slug: "fuchsia",  icon: "bg-[#966c98]/10 text-[#966c98]", bar: "bg-[#966c98]", swatch: "bg-[#966c98]" },
 ] as const;
 
 const BY_SLUG = new Map(CARD_COLORS.map((c) => [c.slug, c]));

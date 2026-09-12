@@ -8,6 +8,8 @@ import type {
   CurrencyCode,
 } from "./database.types";
 import { convertCurrency, type FxRates } from "./fx";
+import { isIncludedInMonthlyTotals } from "./transaction-filters";
+import { subscriptionMonthlyEquivalent } from "./subscription-costs";
 
 /* ------------------------------------------------------------------ */
 /*  Cash Flow Forecasting                                              */
@@ -46,7 +48,10 @@ export function forecastCashFlow(
   const cutoff = threeMonthsAgo.toISOString().slice(0, 10);
 
   const recent = transactions.filter(
-    (t) => t.date >= cutoff && t.type !== "transfer"
+    (t) =>
+      t.date >= cutoff &&
+      t.type !== "transfer" &&
+      isIncludedInMonthlyTotals(t)
   );
 
   let totalIncome = 0;
@@ -54,7 +59,7 @@ export function forecastCashFlow(
   for (const t of recent) {
     const amt = toBase(t.amount, t.currency);
     if (t.type === "income") totalIncome += amt;
-    else if (t.type === "expense" && !t.exclude_from_monthly) totalExpenses += amt;
+    else if (t.type === "expense") totalExpenses += amt;
   }
 
   const months = Math.max(
@@ -68,20 +73,7 @@ export function forecastCashFlow(
   let monthlySubCost = 0;
   for (const s of activeSubs) {
     const amtBase = toBase(s.amount, s.currency);
-    switch (s.frequency) {
-      case "weekly":
-        monthlySubCost += amtBase * 4.33;
-        break;
-      case "bi-weekly":
-        monthlySubCost += amtBase * 2.17;
-        break;
-      case "monthly":
-        monthlySubCost += amtBase;
-        break;
-      case "yearly":
-        monthlySubCost += amtBase / 12;
-        break;
-    }
+    monthlySubCost += subscriptionMonthlyEquivalent(amtBase, s.frequency);
   }
 
   const rentMonthly = settings.rent_amount || 0;
@@ -152,14 +144,17 @@ export function predictGoalCompletion(
   const cutoff = threeMonthsAgo.toISOString().slice(0, 10);
 
   const recent = transactions.filter(
-    (t) => t.date >= cutoff && t.type !== "transfer"
+    (t) =>
+      t.date >= cutoff &&
+      t.type !== "transfer" &&
+      isIncludedInMonthlyTotals(t)
   );
   let totalIncome = 0;
   let totalExpenses = 0;
   for (const t of recent) {
     const amt = toBase(t.amount, t.currency);
     if (t.type === "income") totalIncome += amt;
-    else if (t.type === "expense" && !t.exclude_from_monthly) totalExpenses += amt;
+    else if (t.type === "expense") totalExpenses += amt;
   }
 
   const months = Math.max(

@@ -57,14 +57,14 @@ const INCOME_SOURCES: IncomeSource[] = [
 ];
 
 const SOURCE_COLORS: Record<string, string> = {
-  Paycheck: "bg-emerald-500",
-  Stocks: "bg-blue-500",
-  Bonus: "bg-yellow-500",
-  Freelance: "bg-purple-500",
-  Dividends: "bg-cyan-500",
-  Refund: "bg-orange-500",
-  Gift: "bg-pink-500",
-  Other: "bg-gray-500",
+  Paycheck: "bg-[#4f8f7e]",
+  Stocks: "bg-[#6581c3]",
+  Bonus: "bg-[#8072b2]",
+  Freelance: "bg-[#966c98]",
+  Dividends: "bg-[#478596]",
+  Refund: "bg-[#d4875f]",
+  Gift: "bg-[#bc7297]",
+  Other: "bg-[#7d8490]",
 };
 
 const createdAtMs = (value: string) => {
@@ -145,6 +145,7 @@ export function IncomeContent() {
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrence, setRecurrence] = useState<RecurrenceFrequency>(defaultPaycheckRecurrence);
+  const [excludeFromMonthly, setExcludeFromMonthly] = useState(false);
   const [formError, setFormError] = useState("");
 
   // Inline edit state
@@ -157,6 +158,7 @@ export function IncomeContent() {
   const [editIsRecurring, setEditIsRecurring] = useState(false);
   const [editRecurrence, setEditRecurrence] =
     useState<RecurrenceFrequency>("bi-weekly");
+  const [editExcludeFromMonthly, setEditExcludeFromMonthly] = useState(false);
 
   /* Sorting */
   const [sortKey, setSortKey] = useState<
@@ -297,6 +299,7 @@ export function IncomeContent() {
   const handleOpenAdd = () => {
     setShowAdd(true);
     setFormError("");
+    setExcludeFromMonthly(false);
     setAmount(settings?.paycheck_amount?.toString() || "");
     setRecurrence(defaultPaycheckRecurrence);
     if (plans.length === 0) {
@@ -368,6 +371,7 @@ export function IncomeContent() {
         notes: splitNote,
         is_recurring: isRecurring,
         recurrence: isRecurring ? recurrence : null,
+        exclude_from_monthly: excludeFromMonthly,
       });
 
       // If split is enabled, create transfer transactions
@@ -404,6 +408,7 @@ export function IncomeContent() {
       setSelectedPlanId(activePlan?.id ?? plans[0]?.id ?? "");
       setIsRecurring(false);
       setRecurrence(defaultPaycheckRecurrence);
+      setExcludeFromMonthly(false);
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : "Failed to save");
     } finally {
@@ -426,6 +431,7 @@ export function IncomeContent() {
     account_id: string | null;
     is_recurring: boolean;
     recurrence: RecurrenceFrequency | null;
+    exclude_from_monthly: boolean;
   }) => {
     setEditingId(tx.id);
     setEditDate(tx.date);
@@ -435,6 +441,7 @@ export function IncomeContent() {
     setEditAccountId(tx.account_id || accounts[0]?.id || "");
     setEditIsRecurring(tx.is_recurring);
     setEditRecurrence(tx.recurrence || "bi-weekly");
+    setEditExcludeFromMonthly(tx.exclude_from_monthly);
   };
 
   const handleSaveEdit = async (id: string) => {
@@ -453,6 +460,7 @@ export function IncomeContent() {
         merchant: editMerchant || null,
         is_recurring: editIsRecurring,
         recurrence: editIsRecurring ? editRecurrence : null,
+        exclude_from_monthly: editExcludeFromMonthly,
       });
       await refresh();
       setEditingId(null);
@@ -694,6 +702,16 @@ export function IncomeContent() {
                               <option value="yearly">Yearly</option>
                             </select>
                           )}
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditExcludeFromMonthly(!editExcludeFromMonthly)}
+                              className={`relative h-5 w-9 shrink-0 rounded-full transition ${editExcludeFromMonthly ? "bg-accent-purple" : "bg-bg-elevated border border-border-subtle"}`}
+                            >
+                              <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${editExcludeFromMonthly ? "translate-x-4" : ""}`} />
+                            </button>
+                            <span className="text-[10px] text-text-secondary">Exclude reports</span>
+                          </div>
                         </div>
                       ) : (
                         <span className="inline-flex max-w-[180px] items-center gap-1.5" title={tx.merchant || tx.notes || undefined}>
@@ -701,6 +719,11 @@ export function IncomeContent() {
                           {tx.is_recurring && (
                             <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-accent-purple/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent-purple brightness-125" title={tx.recurrence || "recurring"}>
                               <Repeat className="h-2.5 w-2.5" /> {tx.recurrence}
+                            </span>
+                          )}
+                          {tx.exclude_from_monthly && (
+                            <span className="inline-flex shrink-0 rounded bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400" title="Excluded from reports, summaries, and forecasts">
+                              Excluded
                             </span>
                           )}
                         </span>
@@ -887,6 +910,17 @@ export function IncomeContent() {
               </select>
             </div>
           )}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setExcludeFromMonthly(!excludeFromMonthly)}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition ${excludeFromMonthly ? "bg-accent-purple" : "bg-bg-elevated"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${excludeFromMonthly ? "translate-x-5" : ""}`} />
+            </button>
+            <span className="text-sm text-text-primary">Exclude from reports and forecasts</span>
+          </div>
 
           {/* Allocation plan shortcut */}
           {accountId && plans.length > 0 && (

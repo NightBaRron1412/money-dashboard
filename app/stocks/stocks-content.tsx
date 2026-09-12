@@ -61,8 +61,8 @@ interface Quote {
 }
 
 const COLORS = [
-  "#a78bfa", "#60a5fa", "#34d399", "#fbbf24", "#f87171",
-  "#f472b6", "#818cf8", "#2dd4bf", "#fb923c", "#38bdf8",
+  "#4f6edb", "#6581c3", "#4f8f7e", "#d4875f", "#c45f5f",
+  "#bc7297", "#6879ad", "#478596", "#b66f7f", "#568ba1",
 ];
 const CHART_AXIS_COLOR = "var(--text-secondary)";
 const CHART_GRID_COLOR = "color-mix(in srgb, var(--text-secondary) 28%, transparent)";
@@ -859,7 +859,7 @@ export function StocksContent() {
                         <Cell
                           key={entry.name}
                           fill={
-                            entry.gain >= 0 ? "#10b981" : "#ef4444"
+                            entry.gain >= 0 ? "var(--status-positive)" : "var(--status-negative)"
                           }
                         />
                       ))}

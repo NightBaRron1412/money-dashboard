@@ -30,21 +30,40 @@ import {
   X,
   Scale,
   MessageSquare,
+  CircleDollarSign,
 } from "lucide-react";
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/income", label: "Income", icon: Wallet },
-  { href: "/expenses", label: "Expenses", icon: ArrowDownUp },
-  { href: "/credit-cards", label: "Credit Cards", icon: CreditCard },
-  { href: "/stocks", label: "Stocks", icon: TrendingUp },
-  { href: "/goals", label: "Goals", icon: Target },
-  { href: "/accounts", label: "Accounts", icon: PiggyBank },
-  { href: "/subscriptions", label: "Subscriptions", icon: Receipt },
-  { href: "/reports", label: "Reports", icon: BarChart3 },
-  { href: "/reconcile", label: "Reconcile", icon: Scale },
-  { href: "/chat", label: "AI Chat", icon: MessageSquare },
-  { href: "/settings", label: "Settings", icon: Settings },
+const navSections = [
+  {
+    label: "Overview",
+    items: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "Everyday money",
+    items: [
+      { href: "/income", label: "Income", icon: Wallet },
+      { href: "/expenses", label: "Expenses", icon: ArrowDownUp },
+      { href: "/accounts", label: "Accounts", icon: PiggyBank },
+      { href: "/credit-cards", label: "Credit Cards", icon: CreditCard },
+      { href: "/subscriptions", label: "Subscriptions", icon: Receipt },
+    ],
+  },
+  {
+    label: "Plan & grow",
+    items: [
+      { href: "/stocks", label: "Investments", icon: TrendingUp },
+      { href: "/goals", label: "Goals", icon: Target },
+      { href: "/reports", label: "Reports", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { href: "/reconcile", label: "Reconcile", icon: Scale },
+      { href: "/chat", label: "AI Assistant", icon: MessageSquare },
+      { href: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
 ];
 
 export function MoneySidebar({
@@ -66,7 +85,10 @@ export function MoneySidebar({
   const isDark = (resolvedTheme ?? "dark") === "dark";
   const remapHref = (href: string) =>
     routeBase ? `${routeBase}${href === "/" ? "" : href}` : href;
-  const mappedNavItems = navItems.map((item) => ({ ...item, href: remapHref(item.href) }));
+  const mappedNavSections = navSections.map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({ ...item, href: remapHref(item.href) })),
+  }));
   const mobileNavItems = [
     { href: remapHref("/"), label: "Home", icon: LayoutDashboard },
     { href: remapHref("/income"), label: "Income", icon: Wallet },
@@ -95,8 +117,11 @@ export function MoneySidebar({
   return (
     <>
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border-subtle bg-bg-secondary/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <div className="grid grid-cols-6 items-center py-2">
+      <nav
+        className="fixed inset-x-3 z-50 overflow-hidden rounded-2xl border border-border-subtle bg-[var(--sidebar-bg)] shadow-card backdrop-blur-xl md:hidden"
+        style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))" }}
+      >
+        <div className="grid grid-cols-6 items-center p-1.5">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -108,9 +133,9 @@ export function MoneySidebar({
                 key={item.href}
                 href={item.href as any}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 px-1 py-1 text-[10px] transition",
+                  "flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[10px] font-medium transition",
                   isActive
-                    ? "text-accent-purple"
+                    ? "bg-text-primary text-bg-main"
                     : "text-text-secondary hover:text-text-primary"
                 )}
               >
@@ -124,9 +149,9 @@ export function MoneySidebar({
             aria-expanded={moreMenuOpen}
             aria-label="More navigation"
             className={cn(
-              "flex flex-col items-center gap-0.5 px-1 py-1 text-[10px] transition",
+              "flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[10px] font-medium transition",
               isOverflowActive || moreMenuOpen
-                ? "text-accent-purple"
+                ? "bg-text-primary text-bg-main"
                 : "text-text-secondary hover:text-text-primary"
             )}
           >
@@ -134,15 +159,16 @@ export function MoneySidebar({
             <span>More</span>
           </button>
         </div>
+      </nav>
 
-        {/* Overflow menu sheet */}
+        {/* Keep fixed overlays outside the clipped, backdrop-filtered nav. */}
         {moreMenuOpen && (
           <>
             <div
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
               onClick={() => setMoreMenuOpen(false)}
             />
-            <div className="fixed inset-x-0 z-50 mx-2 mb-1 rounded-2xl border border-border-subtle bg-bg-secondary p-3 shadow-lg" style={{ bottom: "calc(3.5rem + 1px + env(safe-area-inset-bottom, 0px))" }}>
+            <div className="fixed inset-x-3 z-50 overflow-y-auto overscroll-contain rounded-[1.75rem] border border-border-subtle bg-[var(--sidebar-bg)] p-4 shadow-card backdrop-blur-xl md:hidden" style={{ bottom: "calc(5.25rem + env(safe-area-inset-bottom, 0px))", maxHeight: "calc(100dvh - 6rem - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px))" }}>
               <div className="mb-2 flex items-center justify-between px-1">
                 <span className="text-xs font-semibold text-text-primary">More</span>
                 <button
@@ -163,9 +189,9 @@ export function MoneySidebar({
                       href={item.href as any}
                       onClick={() => setMoreMenuOpen(false)}
                       className={cn(
-                        "flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition",
+                        "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition",
                         isActive
-                          ? "bg-accent-purple/10 text-accent-purple font-medium"
+                          ? "bg-text-primary text-bg-main"
                           : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
                       )}
                     >
@@ -221,24 +247,35 @@ export function MoneySidebar({
             </div>
           </>
         )}
-      </nav>
 
       {/* Desktop sidebar */}
       <aside
         data-tour="sidebar"
         className={cn(
-          "fixed inset-y-0 left-0 z-40 hidden h-screen shrink-0 flex-col border-r border-border-subtle bg-bg-secondary transition-all duration-200 md:flex",
-          collapsed ? "w-16" : "w-56"
+          "fixed inset-y-0 left-0 z-40 hidden h-screen shrink-0 flex-col border-r border-border-subtle bg-[var(--sidebar-bg)] backdrop-blur-xl transition-all duration-200 md:flex",
+          collapsed ? "w-20" : "w-64"
         )}
       >
-        <div className="flex items-center justify-between px-4 py-5">
-          {!collapsed && (
-            <span className="text-sm font-bold text-text-primary">💰 Finance</span>
-          )}
+        <div className={cn("relative flex items-center gap-3 px-4 py-6", collapsed ? "justify-center" : "justify-between")}>
+          <Link
+            href={remapHref("/") as any}
+            className={cn("flex min-w-0 items-center gap-3", collapsed && "justify-center")}
+            title={collapsed ? "Money" : undefined}
+          >
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-purple text-text-on-accent shadow-sm">
+              <CircleDollarSign className="h-5 w-5" />
+            </span>
+            {!collapsed && (
+              <span className="min-w-0">
+                <span className="block text-base font-semibold tracking-[-0.03em] text-text-primary">Money</span>
+                <span className="block text-[10px] font-medium uppercase tracking-[0.12em] text-text-secondary">Personal finance</span>
+              </span>
+            )}
+          </Link>
           <button
             onClick={() => setCollapsed(!collapsed)}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="rounded-lg p-1 text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
+            className={cn("rounded-full p-2 text-text-secondary hover:bg-bg-elevated hover:text-text-primary", collapsed && "absolute -right-3 top-8 border border-border-subtle bg-[var(--card-bg)] shadow-sm")}
           >
             {collapsed ? (
               <ChevronRight className="h-4 w-4" />
@@ -248,38 +285,47 @@ export function MoneySidebar({
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2">
-          {mappedNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              item.href === "/" || item.href === routeBase
-                ? pathname === item.href
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href as any}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm transition",
-                  isActive
-                    ? "bg-accent-purple/10 text-accent-purple font-medium"
-                    : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary",
-                  collapsed && "justify-center px-0"
-                )}
-                title={collapsed ? item.label : undefined}
-              >
-                <Icon className="h-4 w-4 flex-shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
+        <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-2">
+          {mappedNavSections.map((section) => (
+            <div key={section.label} className="space-y-1">
+              {!collapsed && (
+                <p className="px-3 pb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-text-secondary/70">
+                  {section.label}
+                </p>
+              )}
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  item.href === "/" || item.href === routeBase
+                    ? pathname === item.href
+                    : pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href as any}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+                      isActive
+                        ? "bg-text-primary text-bg-main shadow-sm"
+                        : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary",
+                      collapsed && "justify-center px-0"
+                    )}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    {!collapsed && <span>{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
-        <div className="border-t border-border-subtle px-2 py-2 space-y-0.5">
+        <div className="mx-3 space-y-1 border-t border-border-subtle py-4">
           <button
             onClick={() => setTheme(isDark ? "light" : "dark")}
             className={cn(
-              "flex w-full items-center gap-3 rounded-xl px-3 py-1.5 text-sm text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary",
+              "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary",
               collapsed && "justify-center px-0"
             )}
             title={collapsed ? "Toggle Theme" : undefined}
@@ -292,7 +338,7 @@ export function MoneySidebar({
             data-tour="balance-toggle"
             onClick={toggleBalances}
             className={cn(
-              "flex w-full items-center gap-3 rounded-xl px-3 py-1.5 text-sm text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary",
+              "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary",
               collapsed && "justify-center px-0"
             )}
             title={collapsed ? (showBalances ? "Hide Balances" : "Show Balances") : undefined}
@@ -309,7 +355,7 @@ export function MoneySidebar({
           <Link
             href="/"
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary",
+              "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary",
               collapsed && "justify-center px-0"
             )}
             title={collapsed ? "Back to Site" : undefined}
@@ -321,7 +367,7 @@ export function MoneySidebar({
             <Link
               href="/"
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary",
+                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary",
                 collapsed && "justify-center px-0"
               )}
               title={collapsed ? "Exit Demo" : undefined}
@@ -333,7 +379,7 @@ export function MoneySidebar({
             <button
               onClick={() => signOut()}
               className={cn(
-                "flex w-full items-center gap-3 rounded-xl px-3 py-1.5 text-sm text-text-secondary transition hover:bg-red-500/10 hover:text-red-400",
+                "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-red-500/10 hover:text-red-400",
                 collapsed && "justify-center px-0"
               )}
               title={collapsed ? "Sign Out" : undefined}

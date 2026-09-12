@@ -412,12 +412,12 @@ export function VoiceTransaction({ accounts, creditCards, settings, refresh, dem
             aria-label={recorderState === "recording" ? "Stop recording" : "Record a transaction"}
             disabled={sending || recorderState === "requesting" || recorderState === "processing"}
             className={cn(
-              "flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-200",
+              "flex h-14 w-14 items-center justify-center rounded-full border border-border-subtle shadow-card transition-all duration-200",
               recorderState === "recording"
-                ? "bg-accent-purple text-white shadow-accent-purple/30 hover:bg-accent-purple/90 scale-110"
+                ? "scale-110 bg-[#405fcb] text-white hover:opacity-90"
                 : sending || recorderState === "requesting"
                   ? "bg-bg-elevated text-text-secondary cursor-wait"
-                  : "bg-gradient-to-br from-accent-purple to-accent-pink text-white shadow-glow hover:scale-105 active:scale-95"
+                  : "bg-text-primary text-bg-main hover:-translate-y-1 active:scale-95"
             )}
             title={recorderState === "recording" ? "Stop recording" : "Record a transaction"}
           >
@@ -776,7 +776,7 @@ export function VoiceTransaction({ accounts, creditCards, settings, refresh, dem
               <button
                 onClick={handleSave}
                 disabled={saving || !amount}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent-purple to-accent-pink px-4 py-2.5 text-sm font-bold text-white shadow-glow transition hover:opacity-90 disabled:opacity-50"
+                className="money-primary-action flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50"
               >
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

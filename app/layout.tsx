@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import type { Metadata, Viewport } from "next/types";
 import { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/react";
@@ -8,14 +8,21 @@ import { isAnalyticsEnabled, isSpeedInsightsEnabled } from "@/lib/analytics";
 import { Providers } from "./providers";
 import { SwRegister } from "./sw-register";
 
-const inter = Inter({ subsets: ["latin"] });
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0b1020" };
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f6f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e1014" },
+  ],
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://money.amirshetaia.com"),
-  title: "Finance Dashboard | Amir Shetaia",
-  description: "Track expenses, income, investments & goals — personal finance dashboard by Amir Shetaia",
+  title: "Money | Personal Finance",
+  description: "A clear view of accounts, spending, investments, goals, and cash flow.",
   robots: { index: false, follow: false },
   icons: {
     icon: [
@@ -26,27 +33,27 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "Finance Dashboard | Amir Shetaia",
-    description: "Track expenses, income, investments & goals",
+    title: "Money | Personal Finance",
+    description: "A clear view of accounts, spending, investments, goals, and cash flow.",
     url: "https://money.amirshetaia.com",
-    siteName: "Finance Dashboard",
+    siteName: "Money",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Finance Dashboard Preview" }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Finance Dashboard | Amir Shetaia",
-    description: "Track expenses, income, investments & goals",
+    title: "Money | Personal Finance",
+    description: "A clear view of accounts, spending, investments, goals, and cash flow.",
     images: ["/og-image.png"],
   },
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, title: "Finance Dashboard", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Money", statusBarStyle: "black-translucent" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased text-sm sm:text-base`} suppressHydrationWarning>
+      <body className={`${manrope.className} ${manrope.variable} antialiased text-sm sm:text-base`} suppressHydrationWarning>
         <Providers>{children}</Providers>
         <SwRegister />
         {isAnalyticsEnabled ? <Analytics /> : null}

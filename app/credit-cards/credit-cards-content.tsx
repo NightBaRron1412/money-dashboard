@@ -58,6 +58,7 @@ import {
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { SortableCard } from "../components/sortable-card";
 import { CARD_COLORS, cardColorClasses } from "../components/card-colors";
+import { getCreditCardPaymentSource } from "@/lib/money/credit-card-payment-source";
 
 const DEFAULT_CATEGORIES = [
   "Bills",
@@ -307,9 +308,13 @@ export function CreditCardsContent() {
     if (filterPayCard) list = list.filter((p) => p.card_id === filterPayCard);
     if (filterPayAccount) {
       if (filterPayAccount === "cashback") {
-        list = list.filter((p) => !p.account_id && !p.notes?.includes("Credit"));
+        list = list.filter((p) => getCreditCardPaymentSource(p) === "cashback");
       } else if (filterPayAccount === "credit") {
-        list = list.filter((p) => !p.account_id && p.notes?.includes("Credit"));
+        list = list.filter((p) => getCreditCardPaymentSource(p) === "credit");
+      } else if (filterPayAccount === "correction") {
+        list = list.filter((p) => getCreditCardPaymentSource(p) === "correction");
+      } else if (filterPayAccount === "other") {
+        list = list.filter((p) => getCreditCardPaymentSource(p) === "other");
       } else {
         list = list.filter((p) => p.account_id === filterPayAccount);
       }
@@ -1086,6 +1091,8 @@ export function CreditCardsContent() {
               ))}
               <option value="cashback">Cashback</option>
               <option value="credit">Credit / Refund</option>
+              <option value="correction">Balance correction</option>
+              <option value="other">Other adjustment</option>
             </select>
             <select
               value={filterPayMonth}
@@ -1145,8 +1152,7 @@ export function CreditCardsContent() {
                   const acct = accounts.find(
                     (a) => a.id === payment.account_id
                   );
-                  const isCredit = !payment.account_id && payment.notes?.includes("Credit");
-                  const isCashback = !payment.account_id && !isCredit;
+                  const paymentSource = getCreditCardPaymentSource(payment);
                   const isEditingPay = editingPayId === payment.id;
                   return (
                     <tr
@@ -1171,12 +1177,14 @@ export function CreditCardsContent() {
                           </select>
                         ) : payment.account_id ? (
                           <span className="block max-w-[130px] truncate" title={acct?.name || undefined}>{acct?.name || "—"}</span>
-                        ) : isCredit ? (
+                        ) : paymentSource === "credit" ? (
                           <span className="inline-flex rounded-lg bg-accent-blue/10 px-2 py-0.5 text-[11px] font-medium text-accent-blue">Credit / Refund</span>
-                        ) : isCashback ? (
+                        ) : paymentSource === "cashback" ? (
                           <span className="inline-flex rounded-lg bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">Cashback</span>
+                        ) : paymentSource === "correction" ? (
+                          <span className="inline-flex rounded-lg bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-400">Balance correction</span>
                         ) : (
-                          <span className="text-text-secondary">—</span>
+                          <span className="inline-flex rounded-lg bg-bg-elevated px-2 py-0.5 text-[11px] font-medium text-text-secondary">Other adjustment</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right font-semibold text-emerald-400">

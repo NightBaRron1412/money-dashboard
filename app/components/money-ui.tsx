@@ -21,16 +21,16 @@ export function StatCard({ title, value, subtitle, icon, trend, className }: Sta
   return (
     <div
       className={cn(
-        "rounded-2xl border border-border-subtle bg-[var(--card-bg)] p-5 shadow-card backdrop-blur-sm transition hover:border-accent-blue/30",
+        "money-surface money-interactive-surface min-h-[138px] p-6",
         className
       )}
     >
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-text-secondary">{title}</p>
-          <p className="mt-1 text-2xl font-bold text-text-primary">{value}</p>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-text-secondary">{title}</p>
+          <p className="mt-3 break-words text-[1.75rem] font-semibold leading-none tracking-[-0.045em] text-text-primary">{value}</p>
           {subtitle && (
-            <p className="mt-0.5 text-xs text-text-secondary">{subtitle}</p>
+            <p className="mt-2 text-xs text-text-secondary">{subtitle}</p>
           )}
           {trend && (
             <p
@@ -45,7 +45,7 @@ export function StatCard({ title, value, subtitle, icon, trend, className }: Sta
           )}
         </div>
         {icon && (
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-bg-elevated text-text-secondary">
+          <div className="ml-4 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-bg-elevated text-accent-purple">
             {icon}
           </div>
         )}
@@ -106,14 +106,14 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, action }: PageHeaderProps) {
   return (
-    <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between lg:mb-10">
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">{title}</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.045em] text-text-primary sm:text-4xl">{title}</h1>
         {description && (
-          <p className="mt-0.5 text-sm text-text-secondary">{description}</p>
+          <p className="mt-2 text-sm text-text-secondary">{description}</p>
         )}
       </div>
-      {action && <div className="flex-shrink-0">{action}</div>}
+      {action && <div className="w-full flex-shrink-0 sm:w-auto">{action}</div>}
     </div>
   );
 }
@@ -130,9 +130,9 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border-subtle bg-bg-secondary/50 backdrop-blur-sm px-6 py-16 text-center">
+    <div className="money-surface flex flex-col items-center justify-center border-dashed px-6 py-20 text-center">
       {icon && (
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-bg-elevated text-text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-bg-elevated text-accent-purple">
           {icon}
         </div>
       )}
@@ -183,13 +183,13 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
       />
       <div
         className={cn(
-          "relative z-10 mx-4 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-border-subtle bg-[var(--card-bg)] p-6 shadow-card backdrop-blur-xl transition-all duration-200",
+          "relative z-10 mx-4 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-[1.75rem] border border-border-subtle bg-[var(--card-bg)] p-7 shadow-card transition-all duration-200",
           visible ? "scale-100 opacity-100" : "scale-95 opacity-0",
           className
         )}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-text-primary">{title}</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-text-primary">{title}</h2>
           <button
             onClick={onClose}
             className="rounded-lg p-2 text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
@@ -258,35 +258,35 @@ export function todayEST(): string {
 /* ------------------------------------------------------------------ */
 
 const CATEGORY_COLOR_MAP: Record<string, { tw: string; hex: string }> = {
-  Food:            { tw: "bg-orange-500",  hex: "#f97316" },
-  Transport:       { tw: "bg-blue-500",    hex: "#3b82f6" },
-  Bills:           { tw: "bg-purple-500",  hex: "#8b5cf6" },
-  Rent:            { tw: "bg-red-500",     hex: "#ef4444" },
-  Fun:             { tw: "bg-pink-500",    hex: "#ec4899" },
-  Health:          { tw: "bg-emerald-500", hex: "#10b981" },
-  "Personal Care": { tw: "bg-fuchsia-500", hex: "#d946ef" },
-  Education:       { tw: "bg-indigo-500",  hex: "#6366f1" },
-  Shopping:        { tw: "bg-amber-500",   hex: "#f59e0b" },
-  Groceries:       { tw: "bg-lime-500",    hex: "#84cc16" },
-  Entertainment:   { tw: "bg-rose-500",    hex: "#f43f5e" },
-  Savings:         { tw: "bg-teal-500",    hex: "#14b8a6" },
-  Travel:          { tw: "bg-cyan-500",    hex: "#06b6d4" },
-  Insurance:       { tw: "bg-sky-500",     hex: "#0ea5e9" },
-  Subscriptions:   { tw: "bg-violet-500",  hex: "#8b5cf6" },
-  Other:           { tw: "bg-gray-400",    hex: "#9ca3af" },
+  Food:            { tw: "bg-[#d4875f]", hex: "#d4875f" },
+  Transport:       { tw: "bg-[#6581c3]", hex: "#6581c3" },
+  Bills:           { tw: "bg-[#8072b2]", hex: "#8072b2" },
+  Rent:            { tw: "bg-[#c45f5f]", hex: "#c45f5f" },
+  Fun:             { tw: "bg-[#bc7297]", hex: "#bc7297" },
+  Health:          { tw: "bg-[#4f8f7e]", hex: "#4f8f7e" },
+  "Personal Care": { tw: "bg-[#966c98]", hex: "#966c98" },
+  Education:       { tw: "bg-[#6879ad]", hex: "#6879ad" },
+  Shopping:        { tw: "bg-[#b66f7f]", hex: "#b66f7f" },
+  Groceries:       { tw: "bg-[#789461]", hex: "#789461" },
+  Entertainment:  { tw: "bg-[#ac6878]", hex: "#ac6878" },
+  Savings:         { tw: "bg-[#478596]", hex: "#478596" },
+  Travel:          { tw: "bg-[#568ba1]", hex: "#568ba1" },
+  Insurance:       { tw: "bg-[#607a96]", hex: "#607a96" },
+  Subscriptions:   { tw: "bg-[#756baa]", hex: "#756baa" },
+  Other:           { tw: "bg-[#7d8490]", hex: "#7d8490" },
 };
 
 const FALLBACK_COLORS = [
-  { tw: "bg-teal-500",    hex: "#14b8a6" },
-  { tw: "bg-cyan-500",    hex: "#06b6d4" },
-  { tw: "bg-indigo-500",  hex: "#6366f1" },
-  { tw: "bg-amber-500",   hex: "#f59e0b" },
-  { tw: "bg-rose-500",    hex: "#f43f5e" },
-  { tw: "bg-lime-500",    hex: "#84cc16" },
-  { tw: "bg-sky-500",     hex: "#0ea5e9" },
-  { tw: "bg-yellow-500",  hex: "#eab308" },
-  { tw: "bg-red-400",     hex: "#f87171" },
-  { tw: "bg-violet-400",  hex: "#a78bfa" },
+  { tw: "bg-[#4f8f7e]", hex: "#4f8f7e" },
+  { tw: "bg-[#568ba1]", hex: "#568ba1" },
+  { tw: "bg-[#6879ad]", hex: "#6879ad" },
+  { tw: "bg-[#d4875f]", hex: "#d4875f" },
+  { tw: "bg-[#ac6878]", hex: "#ac6878" },
+  { tw: "bg-[#789461]", hex: "#789461" },
+  { tw: "bg-[#607a96]", hex: "#607a96" },
+  { tw: "bg-[#b66f7f]", hex: "#b66f7f" },
+  { tw: "bg-[#c45f5f]", hex: "#c45f5f" },
+  { tw: "bg-[#756baa]", hex: "#756baa" },
 ];
 
 function hashStr(s: string): number {

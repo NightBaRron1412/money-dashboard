@@ -44,6 +44,7 @@ import type {
   CurrencyCode,
 } from "@/lib/money/database.types";
 import { convertCurrency } from "@/lib/money/fx";
+import { subscriptionMonthlyEquivalent } from "@/lib/money/subscription-costs";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -61,23 +62,6 @@ const CATEGORIES = [
   "Streaming",
   "Other",
 ] as const;
-
-function monthlyEquivalent(amount: number, freq: RecurrenceFrequency): number {
-  switch (freq) {
-    case "weekly":
-      return amount * (52 / 12);
-    case "bi-weekly":
-      return amount * (26 / 12);
-    case "monthly":
-      return amount;
-    case "yearly":
-      return amount / 12;
-  }
-}
-
-function yearlyEquivalent(amount: number, freq: RecurrenceFrequency): number {
-  return monthlyEquivalent(amount, freq) * 12;
-}
 
 function frequencyLabel(freq: RecurrenceFrequency): string {
   switch (freq) {
@@ -234,7 +218,7 @@ export function SubscriptionsContent() {
       switch (sortKey) {
         case "name": cmp = a.name.localeCompare(b.name); break;
         case "amount": cmp = a.amount - b.amount; break;
-        case "monthly": cmp = convertCurrency(monthlyEquivalent(a.amount, a.frequency), a.currency ?? baseCurrency, baseCurrency, fx) - convertCurrency(monthlyEquivalent(b.amount, b.frequency), b.currency ?? baseCurrency, baseCurrency, fx); break;
+        case "monthly": cmp = convertCurrency(subscriptionMonthlyEquivalent(a.amount, a.frequency), a.currency ?? baseCurrency, baseCurrency, fx) - convertCurrency(subscriptionMonthlyEquivalent(b.amount, b.frequency), b.currency ?? baseCurrency, baseCurrency, fx); break;
         case "next": cmp = a.next_billing.localeCompare(b.next_billing); break;
       }
       return sortDir === "asc" ? cmp : -cmp;
@@ -256,7 +240,7 @@ export function SubscriptionsContent() {
     () =>
       activeSubs.reduce(
         (sum, s) => {
-          const monthly = monthlyEquivalent(s.amount, s.frequency);
+          const monthly = subscriptionMonthlyEquivalent(s.amount, s.frequency);
           return sum + convertCurrency(monthly, s.currency ?? baseCurrency, baseCurrency, fx);
         },
         0
@@ -274,7 +258,7 @@ export function SubscriptionsContent() {
     const map: Record<string, number> = {};
     for (const s of activeSubs) {
       const cat = s.category || "Other";
-      const monthly = monthlyEquivalent(s.amount, s.frequency);
+      const monthly = subscriptionMonthlyEquivalent(s.amount, s.frequency);
       map[cat] = (map[cat] || 0) + convertCurrency(monthly, s.currency ?? baseCurrency, baseCurrency, fx);
     }
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
@@ -547,12 +531,12 @@ export function SubscriptionsContent() {
         <td className="px-4 py-3 text-right text-text-secondary">
           {isInlineEditing ? (
             <span className="text-xs text-text-secondary">
-              {formatMoney(convertCurrency(monthlyEquivalent(parseFloat(editSubAmount) || 0, editSubFrequency), editSubCurrency, baseCurrency, fx), baseCurrency)}/mo
+              {formatMoney(convertCurrency(subscriptionMonthlyEquivalent(parseFloat(editSubAmount) || 0, editSubFrequency), editSubCurrency, baseCurrency, fx), baseCurrency)}/mo
             </span>
           ) : (
             <>
               {showBalances
-                ? formatMoney(convertCurrency(monthlyEquivalent(sub.amount, sub.frequency), sub.currency ?? baseCurrency, baseCurrency, fx), baseCurrency)
+                ? formatMoney(convertCurrency(subscriptionMonthlyEquivalent(sub.amount, sub.frequency), sub.currency ?? baseCurrency, baseCurrency, fx), baseCurrency)
                 : HIDDEN_BALANCE}
               <span className="text-[10px]">/mo</span>
             </>

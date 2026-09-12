@@ -20,6 +20,7 @@ import type { Transaction, CurrencyCode, NetWorthSnapshot } from "@/lib/money/da
 import type { FxRates } from "@/lib/money/fx";
 import { getCategoryColorHex } from "./money-ui";
 import { convertCurrency } from "@/lib/money/fx";
+import { isIncludedInMonthlyTotals } from "@/lib/money/transaction-filters";
 import { format, parseISO } from "date-fns";
 import { formatMoney, formatMoneyCompact } from "./money-ui";
 import { useBalanceVisibility } from "../balance-visibility-provider";
@@ -27,24 +28,24 @@ import { useBalanceVisibility } from "../balance-visibility-provider";
 const HIDDEN = "••••••";
 
 const COLORS = [
-  "#a78bfa",
-  "#60a5fa",
-  "#34d399",
-  "#fbbf24",
-  "#f87171",
-  "#f472b6",
-  "#818cf8",
-  "#2dd4bf",
-  "#fb923c",
-  "#38bdf8",
+  "#4f6edb",
+  "#6581c3",
+  "#d4875f",
+  "#8072b2",
+  "#c45f5f",
+  "#789461",
+  "#bc7297",
+  "#478596",
+  "#b66f7f",
+  "#607a96",
 ];
 
 
 const CHART_AXIS_COLOR = "var(--text-secondary)";
-const CHART_GRID_COLOR = "color-mix(in srgb, var(--text-secondary) 28%, transparent)";
+const CHART_GRID_COLOR = "color-mix(in srgb, var(--text-secondary) 18%, transparent)";
 const CHART_TOOLTIP_BG = "var(--card-bg, var(--bg-secondary))";
 const CHART_TOOLTIP_BORDER = "1px solid var(--border-subtle)";
-const CHART_TOOLTIP_SHADOW = "0 8px 24px -4px rgba(0,0,0,0.25)";
+const CHART_TOOLTIP_SHADOW = "0 16px 40px -20px rgba(0,0,0,0.38)";
 const CHART_TOOLTIP_TEXT = "var(--text-primary)";
 const CHART_TOOLTIP_LABEL = "var(--text-secondary)";
 const CHART_CURSOR = "var(--bg-elevated)";
@@ -81,7 +82,7 @@ export function NetWorthChart({ baseCurrency, netWorthSnapshots }: ChartsProps) 
     <ChartCard title="Net Worth Over Time">
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
+          <CartesianGrid strokeDasharray="2 8" stroke={CHART_GRID_COLOR} vertical={false} />
           <XAxis dataKey="month" tick={{ fontSize: 11, fill: CHART_AXIS_COLOR }} />
           <YAxis
             tick={{ fontSize: 11, fill: CHART_AXIS_COLOR }}
@@ -105,9 +106,9 @@ export function NetWorthChart({ baseCurrency, netWorthSnapshots }: ChartsProps) 
           <Line
             type="monotone"
             dataKey="netWorth"
-            stroke="#8b5cf6"
+            stroke="#4f6edb"
             strokeWidth={2}
-            dot={{ fill: "#8b5cf6", r: 3 }}
+            dot={{ fill: "#4f6edb", r: 3 }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -130,7 +131,9 @@ export function ExpensesByCategoryChart({
   const { showBalances } = useBalanceVisibility();
   const data = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const tx of transactions.filter((t) => t.type === "expense")) {
+    for (const tx of transactions.filter(
+      (t) => t.type === "expense" && isIncludedInMonthlyTotals(t)
+    )) {
       const cat = tx.category || "Other";
       map[cat] = (map[cat] || 0) + convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
     }
@@ -205,7 +208,7 @@ export function IncomeVsExpensesChart({
     if (transactions.length === 0) return [];
     const map: Record<string, { income: number; expenses: number }> = {};
     for (const tx of transactions) {
-      if (tx.type === "transfer") continue;
+      if (tx.type === "transfer" || !isIncludedInMonthlyTotals(tx)) continue;
       const key = tx.date.slice(0, 7);
       if (!map[key]) map[key] = { income: 0, expenses: 0 };
       const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
@@ -227,7 +230,7 @@ export function IncomeVsExpensesChart({
     <ChartCard title="Income vs Expenses">
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
+          <CartesianGrid strokeDasharray="2 8" stroke={CHART_GRID_COLOR} vertical={false} />
           <XAxis dataKey="month" tick={{ fontSize: 11, fill: CHART_AXIS_COLOR }} />
           <YAxis
             tick={{ fontSize: 11, fill: CHART_AXIS_COLOR }}
@@ -249,8 +252,8 @@ export function IncomeVsExpensesChart({
             formatter={(value) => showBalances ? formatMoney(Number(value ?? 0), baseCurrency) : HIDDEN}
           />
           <Legend wrapperStyle={{ fontSize: 12, color: CHART_AXIS_COLOR }} />
-          <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} name="Income" />
-          <Bar dataKey="expenses" fill="#ef4444" radius={[4, 4, 0, 0]} name="Expenses" />
+          <Bar dataKey="income" fill="#4f6edb" radius={[8, 8, 0, 0]} name="Income" />
+          <Bar dataKey="expenses" fill="#c45f5f" radius={[8, 8, 0, 0]} name="Expenses" />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>
@@ -282,7 +285,7 @@ export function GoalProgressChart({ goals, baseCurrency }: GoalChartProps) {
     <ChartCard title="Goal Progress">
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={data} layout="vertical">
-          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
+          <CartesianGrid strokeDasharray="2 8" stroke={CHART_GRID_COLOR} vertical={false} />
           <XAxis
             type="number"
             tick={{ fontSize: 11, fill: CHART_AXIS_COLOR }}
@@ -307,8 +310,8 @@ export function GoalProgressChart({ goals, baseCurrency }: GoalChartProps) {
               name === "current" ? "Current" : "Target",
             ]}
           />
-          <Bar dataKey="target" fill="var(--bg-elevated)" radius={[0, 4, 4, 0]} name="Target" />
-          <Bar dataKey="current" fill="#8b5cf6" radius={[0, 4, 4, 0]} name="Current" />
+          <Bar dataKey="target" fill="var(--bg-elevated)" radius={[0, 8, 8, 0]} name="Target" />
+          <Bar dataKey="current" fill="#4f6edb" radius={[0, 8, 8, 0]} name="Current" />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>
@@ -326,8 +329,8 @@ function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border-subtle bg-bg-secondary p-5">
-      <h3 className="mb-4 text-sm font-semibold text-text-primary">{title}</h3>
+    <div className="money-surface p-6 sm:p-7">
+      <h3 className="mb-6 text-base font-semibold tracking-[-0.025em] text-text-primary">{title}</h3>
       {children}
     </div>
   );
@@ -335,7 +338,7 @@ function ChartCard({
 
 function EmptyChart({ label }: { label: string }) {
   return (
-    <div className="flex h-[280px] items-center justify-center rounded-2xl border border-dashed border-border-subtle bg-bg-secondary/50">
+    <div className="money-surface flex h-[280px] items-center justify-center border-dashed">
       <p className="text-sm text-text-secondary">{label}</p>
     </div>
   );

@@ -35,6 +35,7 @@ import {
 } from "recharts";
 import type { CurrencyCode } from "@/lib/money/database.types";
 import { convertCurrency } from "@/lib/money/fx";
+import { isIncludedInMonthlyTotals } from "@/lib/money/transaction-filters";
 
 const CHART_TOOLTIP_STYLE = {
   background: "var(--bg-secondary)",
@@ -94,7 +95,7 @@ export function ReportsContent() {
   /* ---------------------------------------------------------------- */
   const filteredTxs = useMemo(() => {
     return transactions.filter((tx) => {
-      if (tx.type === "transfer") return false;
+      if (tx.type === "transfer" || !isIncludedInMonthlyTotals(tx)) return false;
       if (view === "month") return tx.date.startsWith(selectedMonth);
       if (view === "year") return tx.date.startsWith(selectedYear);
       return true; // all time
@@ -114,7 +115,7 @@ export function ReportsContent() {
         if (!map[day]) map[day] = { income: 0, expenses: 0 };
         const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
         if (tx.type === "income") map[day].income += amt;
-        if (tx.type === "expense" && !tx.exclude_from_monthly) map[day].expenses += amt;
+        if (tx.type === "expense") map[day].expenses += amt;
       }
     } else if (view === "year") {
       // Monthly breakdown for selected year
@@ -127,7 +128,7 @@ export function ReportsContent() {
         if (!map[monthIdx]) map[monthIdx] = { income: 0, expenses: 0 };
         const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
         if (tx.type === "income") map[monthIdx].income += amt;
-        if (tx.type === "expense" && !tx.exclude_from_monthly) map[monthIdx].expenses += amt;
+        if (tx.type === "expense") map[monthIdx].expenses += amt;
       }
     } else {
       // Year-by-year for all time
@@ -136,7 +137,7 @@ export function ReportsContent() {
         if (!map[yr]) map[yr] = { income: 0, expenses: 0 };
         const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
         if (tx.type === "income") map[yr].income += amt;
-        if (tx.type === "expense" && !tx.exclude_from_monthly) map[yr].expenses += amt;
+        if (tx.type === "expense") map[yr].expenses += amt;
       }
     }
 
@@ -340,13 +341,13 @@ export function ReportsContent() {
               <Legend wrapperStyle={{ fontSize: 12, color: CHART_AXIS_COLOR }} />
               <Bar
                 dataKey="income"
-                fill="#10b981"
+                fill="var(--status-positive)"
                 radius={[4, 4, 0, 0]}
                 name="Income"
               />
               <Bar
                 dataKey="expenses"
-                fill="#ef4444"
+                fill="var(--status-negative)"
                 radius={[4, 4, 0, 0]}
                 name="Expenses"
               />
@@ -388,9 +389,9 @@ export function ReportsContent() {
               <Line
                 type="monotone"
                 dataKey="savingsRate"
-                stroke="#8b5cf6"
+                stroke="var(--accent-purple)"
                 strokeWidth={2}
-                dot={{ fill: "#8b5cf6", r: 3 }}
+                dot={{ fill: "var(--accent-purple)", r: 3 }}
                 name="Savings Rate"
               />
             </LineChart>

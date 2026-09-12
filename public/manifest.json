@@ -1,12 +1,12 @@
 {
-  "name": "Finance Dashboard",
-  "short_name": "Finance",
-  "description": "Track expenses, income, investments & goals",
+  "name": "Money",
+  "short_name": "Money",
+  "description": "A clear view of accounts, spending, investments, goals, and cash flow.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#0b1020",
-  "background_color": "#0b1020",
+  "theme_color": "#f5f6f8",
+  "background_color": "#f5f6f8",
   "icons": [
     {
       "src": "/favicon.svg",

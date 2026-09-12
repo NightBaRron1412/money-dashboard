@@ -4,21 +4,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-blue disabled:pointer-events-none disabled:opacity-60 ring-offset-bg-main",
+  "inline-flex items-center justify-center rounded-full text-sm font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-accent-purple text-text-on-accent shadow-glow hover:-translate-y-1",
-        outline: "border border-border-subtle bg-transparent text-text-primary hover:border-accent-blue hover:text-accent-blue",
+        default: "money-primary-action",
+        outline: "money-secondary-action",
         ghost: "text-text-primary hover:bg-bg-elevated",
-        secondary: "bg-accent-blue text-text-on-accent hover:-translate-y-1 hover:shadow-glow",
-        subtle: "bg-bg-elevated text-text-primary hover:bg-bg-secondary"
+        secondary: "bg-accent-purple text-text-on-accent hover:-translate-y-0.5 hover:opacity-90",
+        subtle: "bg-bg-elevated text-text-primary hover:bg-border-subtle"
       },
       size: {
-        default: "h-10 px-4 py-2",
+        default: "h-11 px-5 py-2",
         sm: "h-10 px-3",
         lg: "h-11 px-6 text-base",
-        icon: "h-10 w-10"
+        icon: "h-10 w-10 p-0"
       }
     },
     defaultVariants: {

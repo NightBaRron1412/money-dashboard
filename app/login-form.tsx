@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "./auth-provider";
-import { Lock, KeyRound, Delete, Loader2 } from "lucide-react";
+import { Lock, KeyRound, Delete, Loader2, CircleDollarSign, ShieldCheck } from "lucide-react";
 
 const PIN_LENGTH = 6;
 
@@ -111,7 +111,7 @@ export function LoginForm() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleDigit, handleDelete]);
 
-  const title = isSetupMode ? "Set Your PIN" : "Finance Dashboard";
+  const title = isSetupMode ? "Secure your dashboard" : "Welcome back";
   const subtitle = isSetupMode
     ? setupStep === "confirm"
       ? "Confirm your PIN"
@@ -129,74 +129,98 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center overflow-hidden bg-bg-main p-4">
-      <div className="w-full max-w-xs">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-purple to-accent-pink shadow-glow">
-            <Icon className="h-7 w-7 text-white" />
+    <div className="flex min-h-screen items-center justify-center bg-bg-main p-4 sm:p-8">
+      <div className="money-surface grid w-full max-w-4xl overflow-hidden lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="relative hidden min-h-[640px] flex-col justify-between overflow-hidden bg-text-primary p-10 text-bg-main lg:flex">
+          <div className="relative z-10 flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-bg-main text-text-primary">
+              <CircleDollarSign className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-base font-semibold tracking-[-0.03em]">Money</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-55">Personal finance</p>
+            </div>
           </div>
-          <h1 className="text-xl font-bold text-text-primary">{title}</h1>
-          <p className="mt-1 text-sm text-text-secondary">{subtitle}</p>
+          <div className="relative z-10">
+            <p className="max-w-sm text-4xl font-semibold leading-[1.05] tracking-[-0.06em]">A clearer view of your money.</p>
+            <p className="mt-5 max-w-sm text-sm leading-6 opacity-60">Accounts, spending, investments, and goals—organized around the decisions that matter.</p>
+          </div>
+          <div className="relative z-10 flex items-center gap-2 text-xs font-medium opacity-65">
+            <ShieldCheck className="h-4 w-4" /> Your financial dashboard is PIN protected
+          </div>
+          <div className="pointer-events-none absolute -bottom-40 -right-32 h-96 w-96 rounded-full border-[70px] border-bg-main/5" />
         </div>
 
-        {/* PIN Dots */}
-        <div
-          className={`mb-8 flex items-center justify-center gap-3 ${shake ? "animate-shake" : ""}`}
-        >
-          {Array.from({ length: PIN_LENGTH }).map((_, i) => (
+        <div className="flex min-h-[600px] items-center p-7 sm:p-12">
+          <div className="mx-auto w-full max-w-xs">
+            <div className="mb-8">
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-bg-elevated text-accent-purple lg:hidden">
+                <CircleDollarSign className="h-6 w-6" />
+              </div>
+              <div className="mb-5 hidden h-11 w-11 items-center justify-center rounded-full bg-bg-elevated text-accent-purple lg:flex">
+                <Icon className="h-5 w-5" />
+              </div>
+              <h1 className="text-3xl font-semibold tracking-[-0.05em] text-text-primary">{title}</h1>
+              <p className="mt-2 text-sm text-text-secondary">{subtitle}</p>
+            </div>
+
             <div
-              key={i}
-              className={`h-3.5 w-3.5 rounded-full border-2 transition-all duration-200 ${
-                i < currentPin.length
-                  ? isSetupMode
-                    ? "border-accent-pink bg-accent-pink scale-110"
-                    : "border-accent-purple bg-accent-purple scale-110"
-                  : "border-border-subtle bg-transparent"
-              }`}
-            />
-          ))}
-        </div>
-
-        {/* Error */}
-        {error && (
-          <p className="mb-4 text-center text-xs text-red-400">{error}</p>
-        )}
-
-        {/* Loading */}
-        {loading && (
-          <div className="mb-4 flex justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-accent-purple" />
-          </div>
-        )}
-
-        {/* Number Pad */}
-        <div className="grid grid-cols-3 gap-3">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-            <button
-              key={n}
-              onClick={() => handleDigit(String(n))}
-              disabled={loading}
-              className="flex h-16 items-center justify-center rounded-2xl border border-border-subtle bg-bg-secondary text-xl font-semibold text-text-primary transition hover:bg-bg-elevated active:scale-95 focus-visible:ring-2 focus-visible:ring-accent-purple disabled:opacity-50"
+              className={`mb-8 flex items-center gap-3 ${shake ? "animate-shake" : ""}`}
+              aria-label={`${currentPin.length} of ${PIN_LENGTH} PIN digits entered`}
             >
-              {n}
-            </button>
-          ))}
-          <div /> {/* empty cell */}
-          <button
-            onClick={() => handleDigit("0")}
-            disabled={loading}
-            className="flex h-16 items-center justify-center rounded-2xl border border-border-subtle bg-bg-secondary text-xl font-semibold text-text-primary transition hover:bg-bg-elevated active:scale-95 focus-visible:ring-2 focus-visible:ring-accent-purple disabled:opacity-50"
-          >
-            0
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={loading}
-            className="flex h-16 items-center justify-center rounded-2xl border border-border-subtle bg-bg-secondary text-text-secondary transition hover:bg-bg-elevated active:scale-95 focus-visible:ring-2 focus-visible:ring-accent-purple disabled:opacity-50"
-          >
-            <Delete className="h-5 w-5" />
-          </button>
+              {Array.from({ length: PIN_LENGTH }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-3 w-3 rounded-full border transition-all duration-200 ${
+                    i < currentPin.length
+                      ? "scale-110 border-accent-purple bg-accent-purple"
+                      : "border-border-subtle bg-bg-elevated"
+                  }`}
+                />
+              ))}
+            </div>
+
+            {error && (
+              <p className="mb-4 rounded-xl bg-red-500/10 px-3 py-2 text-xs font-medium text-red-500">{error}</p>
+            )}
+
+            {loading && (
+              <div className="mb-4 flex items-center gap-2 text-xs font-medium text-text-secondary">
+                <Loader2 className="h-4 w-4 animate-spin text-accent-purple" /> Checking PIN…
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-2.5">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => handleDigit(String(n))}
+                  disabled={loading}
+                  aria-label={`Enter ${n}`}
+                  className="flex h-14 items-center justify-center rounded-2xl border border-border-subtle bg-[var(--card-bg)] text-lg font-semibold text-text-primary transition hover:-translate-y-0.5 hover:bg-bg-elevated active:scale-95 disabled:opacity-50"
+                >
+                  {n}
+                </button>
+              ))}
+              <div />
+              <button
+                onClick={() => handleDigit("0")}
+                disabled={loading}
+                aria-label="Enter 0"
+                className="flex h-14 items-center justify-center rounded-2xl border border-border-subtle bg-[var(--card-bg)] text-lg font-semibold text-text-primary transition hover:-translate-y-0.5 hover:bg-bg-elevated active:scale-95 disabled:opacity-50"
+              >
+                0
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={loading}
+                aria-label="Delete last digit"
+                className="flex h-14 items-center justify-center rounded-2xl border border-border-subtle bg-[var(--card-bg)] text-text-secondary transition hover:-translate-y-0.5 hover:bg-bg-elevated hover:text-text-primary active:scale-95 disabled:opacity-50"
+              >
+                <Delete className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

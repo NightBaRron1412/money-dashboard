@@ -5,8 +5,13 @@ import { computeAccountBalance } from "@/lib/money/queries";
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import { getDemoMoneyData } from "../../../hooks/demo-data";
 import { checkDemoRateLimit } from "@/lib/money/demo-rate-limit";
-import type { CurrencyCode } from "@/lib/money/database.types";
+import type { CurrencyCode, RecurrenceFrequency } from "@/lib/money/database.types";
 import { computeNetWorthBase } from "@/lib/money/net-worth";
+import { isIncludedInMonthlyTotals } from "@/lib/money/transaction-filters";
+import {
+  subscriptionMonthlyEquivalent,
+  subscriptionYearlyEquivalent,
+} from "@/lib/money/subscription-costs";
 
 export const maxDuration = 30;
 
@@ -158,13 +163,13 @@ export async function POST(request: NextRequest) {
       string,
       { income: number; expenses: number; byCategory: Record<string, number> }
     > = {};
-    for (const t of txs) {
+    for (const t of txs.filter(isIncludedInMonthlyTotals)) {
       const month = t.date.slice(0, 7);
       if (!monthlySummaries[month])
         monthlySummaries[month] = { income: 0, expenses: 0, byCategory: {} };
       const amt = toBase(t.amount, t.currency);
       if (t.type === "income") monthlySummaries[month].income += amt;
-      else if (t.type === "expense" && !t.exclude_from_monthly) {
+      else if (t.type === "expense") {
         monthlySummaries[month].expenses += amt;
         if (t.category)
           monthlySummaries[month].byCategory[t.category] =
@@ -173,7 +178,7 @@ export async function POST(request: NextRequest) {
     }
 
     const topMerchants: Record<string, number> = {};
-    for (const t of txs.filter((t) => t.type === "expense" && t.merchant)) {
+    for (const t of txs.filter((t) => t.type === "expense" && t.merchant && isIncludedInMonthlyTotals(t))) {
       topMerchants[t.merchant!] =
         (topMerchants[t.merchant!] ?? 0) + toBase(t.amount, t.currency);
     }
@@ -209,11 +214,12 @@ ${goals.length > 0 ? goals.map((g) => {
 
 === SUBSCRIPTIONS (amounts shown as monthly equivalent) ===
 ${subs.filter((s) => s.is_active).map((s) => {
-  const freq = s.frequency as string;
-  const mult = freq === "weekly" ? 4.33 : freq === "bi-weekly" ? 2.17 : freq === "monthly" ? 1 : 1 / 12;
-  const monthlyBase = toBase(s.amount, s.currency) * mult;
-  const billedAs = `billed ${s.amount} ${s.currency} ${freq}`;
-  return `${s.name}: ${monthlyBase.toFixed(0)} ${base}/month (${billedAs}), next billing ${s.next_billing}${s.category ? `, category: ${s.category}` : ""}`;
+  const frequency = s.frequency as RecurrenceFrequency;
+  const amountBase = toBase(s.amount, s.currency);
+  const monthlyBase = subscriptionMonthlyEquivalent(amountBase, frequency);
+  const yearlyBase = subscriptionYearlyEquivalent(amountBase, frequency);
+  const billedAs = `billed ${s.amount} ${s.currency} ${frequency}`;
+  return `${s.name}: ${monthlyBase.toFixed(2)} ${base}/month, ${yearlyBase.toFixed(2)} ${base}/year (${billedAs}), next billing ${s.next_billing}${s.category ? `, category: ${s.category}` : ""}`;
 }).join("\n") || "None"}
 
 === DIVIDENDS: ${totalDividends6m.toFixed(0)} total ===
