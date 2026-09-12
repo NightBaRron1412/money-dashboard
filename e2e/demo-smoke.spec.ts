@@ -10,8 +10,8 @@ test("demo dashboard renders its primary content", async ({ page }) => {
   await page.goto("/demo");
 
   await expect(page.getByRole("main")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
-  await expect(page.getByText("Net Worth", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
+  await expect(page.getByText("Total net worth", { exact: true })).toBeVisible();
 });
 
 test("every demo section opens without authentication", async ({ page }) => {
@@ -49,7 +49,7 @@ test("demo load has no critical console or HTTP errors", async ({ page }) => {
   });
 
   await page.goto("/demo");
-  await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
   await page.waitForTimeout(1_000);
 
   expect(consoleErrors).toEqual([]);
@@ -65,17 +65,18 @@ test("demo never attempts a production snapshot write", async ({ page }) => {
   });
 
   await page.goto("/demo");
-  await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
   await page.waitForTimeout(500);
 
   expect(snapshotRequests).toEqual([]);
 });
 
 test("mobile overflow navigation reaches settings", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile-chromium");
+  test.skip(!testInfo.project.name.startsWith("mobile-"));
   await page.goto("/demo");
 
   await page.getByRole("button", { name: "More navigation" }).click();
+  await expect(page.getByRole("dialog", { name: "More" })).toBeVisible();
   await page.getByRole("link", { name: "Settings", exact: true }).click();
 
   await expect(page).toHaveURL(/\/demo\/settings$/);
