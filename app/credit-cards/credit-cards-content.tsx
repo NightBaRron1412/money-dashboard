@@ -1,4 +1,5 @@
 "use client";
+import { TransactionEditDialog, EditField } from "../components/transaction-edit-dialog";
 import { MonthlyExclusion } from "../components/monthly-exclusion";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -990,23 +991,14 @@ export function CreditCardsContent() {
                     (c) => c.id === charge.card_id
                   );
                   const linkedTransaction = transactions.find(t => t.id === charge.linked_transaction_id || t.linked_charge_id === charge.id);
-                  const isEditing = editingChargeId === charge.id;
+
                   return (
                     <tr
                       key={charge.id}
                       className="border-b border-border-subtle last:border-0 hover:bg-bg-elevated/50"
                     >
                       <td className="px-4 py-3 text-text-secondary">
-                        {isEditing ? (
-                          <div className="flex w-[180px] max-w-[180px] flex-col gap-1">
-                            <MerchantInput value={editChargeMerchant} onChange={setEditChargeMerchant} records={merchantHistory} />
-                            {linkedTransaction && <ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editChargeAmount)} currency={card?.currency || baseCurrency} excluded={editChargeExcluded} />}
-                            {linkedTransaction && <MonthlyExclusion checked={editChargeExcluded} onChange={setEditChargeExcluded} />}
-                            <input type="text" value={editChargeNotes} onChange={(e) => setEditChargeNotes(e.target.value)}
-                              placeholder="Notes"
-                              className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-[10px] text-text-secondary outline-none focus:border-accent-purple" />
-                          </div>
-                        ) : (
+                        {(
                           <span className="block max-w-[180px]">
                             <span className="block truncate" title={charge.merchant || undefined}>{charge.merchant || "—"}</span>
                             {charge.notes && <span className="block truncate text-[10px] text-text-secondary/70" title={charge.notes}>{charge.notes}</span>}
@@ -1017,10 +1009,7 @@ export function CreditCardsContent() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-text-primary">
-                        {isEditing ? (
-                          <input type="date" value={editChargeDate} onChange={(e) => setEditChargeDate(e.target.value)}
-                            className="w-full max-w-[140px] rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
-                        ) : (
+                        {(
                           format(new Date(charge.date + "T00:00:00"), "MMM d, yyyy")
                         )}
                       </td>
@@ -1029,20 +1018,12 @@ export function CreditCardsContent() {
                       </td>
 
                       <td className="px-4 py-3 text-text-secondary">
-                        {isEditing ? (
-                          <select value={editChargeCategory} onChange={(e) => setEditChargeCategory(e.target.value)}
-                            className="rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple">
-                            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-                          </select>
-                        ) : (
+                        {(
                           charge.category || "—"
                         )}
                       </td>
                       <td className="px-4 py-3 text-right font-semibold text-red-400">
-                        {isEditing ? (
-                          <input type="number" step="0.01" value={editChargeAmount} onChange={(e) => setEditChargeAmount(e.target.value)}
-                            className="w-20 rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
-                        ) : (
+                        {(
                           showBalances
                             ? formatMoney(charge.amount, card?.currency ?? baseCurrency)
                             : HIDDEN_BALANCE
@@ -1056,18 +1037,7 @@ export function CreditCardsContent() {
                         </td>
                       )}
                       <td className="px-4 py-3 text-right">
-                        {isEditing ? (
-                          <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => handleSaveEditCharge(charge.id)} disabled={saving}
-                              className="rounded-lg p-1 text-emerald-400 hover:bg-emerald-500/10" title="Save">
-                              <Check className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => setEditingChargeId(null)}
-                              className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400" title="Cancel">
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ) : (
+                        {(
                           <div className="flex items-center justify-end gap-1">
                             <button
                               aria-label="Edit charge"
@@ -1265,7 +1235,13 @@ export function CreditCardsContent() {
       )}
 
       {/* Add Card Modal */}
-      <Modal
+      <TransactionEditDialog open={!!editingChargeId} title="Edit Charge" saving={saving} onClose={() => setEditingChargeId(null)} onSave={async () => {if (editingChargeId) await handleSaveEditCharge(editingChargeId);}}>
+        <div className="grid gap-5 sm:grid-cols-2"><EditField label="Date"><input aria-label="Date" type="date" required value={editChargeDate} onChange={event => setEditChargeDate(event.target.value)} /></EditField><EditField label={`Amount (${creditCards.find(card => card.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.card_id)?.currency || baseCurrency})`}><input aria-label="Amount" type="number" required min="0.01" step="0.01" value={editChargeAmount} onChange={event => setEditChargeAmount(event.target.value)} /></EditField><EditField label="Category"><select aria-label="Category" value={editChargeCategory} onChange={event => setEditChargeCategory(event.target.value)}>{!chargeCategories.includes(editChargeCategory) && <option value={editChargeCategory}>{editChargeCategory}</option>}{chargeCategories.map(value => <option key={value} value={value}>{value}</option>)}</select></EditField><EditField label="Card"><div className="rounded-xl bg-bg-elevated px-3 py-3 text-sm text-text-primary">{creditCards.find(card => card.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.card_id)?.name || "Credit card"}</div></EditField></div>
+        <EditField label="Merchant"><MerchantInput value={editChargeMerchant} onChange={setEditChargeMerchant} records={merchantHistory} /></EditField>
+        <EditField label="Notes"><textarea aria-label="Notes" rows={2} placeholder="Add a note…" value={editChargeNotes} onChange={event => setEditChargeNotes(event.target.value)} /></EditField>
+        {transactions.some(tx => tx.linked_charge_id === editingChargeId || tx.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.linked_transaction_id) && <section className="transaction-editor-options"><h3 className="text-sm font-semibold text-text-primary">Spending preferences</h3><ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editChargeAmount)} currency={creditCards.find(card => card.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.card_id)?.currency || baseCurrency} excluded={editChargeExcluded} /><MonthlyExclusion checked={editChargeExcluded} onChange={setEditChargeExcluded} /></section>}
+      </TransactionEditDialog>
+            <Modal
         open={showAddCard}
         onClose={() => setShowAddCard(false)}
         title="Add Credit Card"

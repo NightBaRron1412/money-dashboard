@@ -718,3 +718,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .money-stat > div > div > p:nth-child(2) { font-size: clamp(1.25rem, 2vw, 1.75rem); overflow-wrap: normal; }
 .dark main .bg-accent-purple.shadow-glow, .dark [role=dialog] .bg-accent-purple.text-white { background: var(--text-primary); color: var(--bg-main); }
 .money-settings-group:not([open]) { padding-top: 12px; padding-bottom: 12px; }
+
+/* Transaction details belong in a focused editor, never inside a ledger cell. */
+.transaction-editor { display: flex; flex-direction: column; gap: 20px; }
+.transaction-editor-field { min-width: 0; }
+.transaction-editor-field :is(input:not([type=checkbox]), select, textarea) { display: block; width: 100%; max-width: 100%; min-height: 46px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--bg-elevated); color: var(--text-primary); padding: 11px 13px; font-size: 14px; line-height: 1.5; }
+.transaction-editor-field textarea { resize: vertical; min-height: 80px; }
+.transaction-editor-options { display: flex; flex-direction: column; gap: 12px; padding-top: 20px; border-top: 1px solid var(--border-subtle); }
+.transaction-editor input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent-blue); }
+.transaction-editor-actions { display: flex; justify-content: flex-end; gap: 10px; position: sticky; bottom: -24px; margin: 0 -24px -24px; padding: 16px 24px 24px; border-top: 1px solid var(--border-subtle); background: var(--card-bg); z-index: 10; }
+@media (max-width: 639px) {
+  .transaction-editor { gap: 16px; }
+  .transaction-editor-field :is(input:not([type=checkbox]), select, textarea) { font-size: 16px; }
+  .transaction-editor-actions { bottom: -24px; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+  .transaction-editor-actions button { flex: 1; }
+}

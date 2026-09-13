@@ -1,4 +1,5 @@
 "use client";
+import { TransactionEditDialog, EditField } from "../components/transaction-edit-dialog";
 import { MonthlyExclusion } from "../components/monthly-exclusion";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
@@ -703,25 +704,19 @@ export function ExpensesContent() {
                   ? creditCards.find((c) => c.id === linkedCharge.card_id)
                   : null;
                 const accountDisplay = acct?.name || (linkedCard ? `💳 ${linkedCard.name}` : null) || "—";
-                const isEditing = editingId === tx.id;
+
                 return (
                   <tr
                     key={tx.id}
                     className="border-b border-border-subtle last:border-0 hover:bg-bg-elevated/50"
                   >
                     <td className="px-4 py-3 text-text-primary">
-                      {isEditing ? (
-                        <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)}
-                          className="w-full max-w-[140px] rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
-                      ) : (
+                      {(
                         format(new Date(tx.date + "T00:00:00"), "MMM d, yyyy")
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 font-semibold text-red-400">
-                      {isEditing ? (
-                        <input type="number" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)}
-                          className="w-20 rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
-                      ) : showBalances ? (
+                      {showBalances ? (
                         <span>
                           -{formatMoney(tx.amount, tx.currency)}
                           {(() => {
@@ -736,15 +731,7 @@ export function ExpensesContent() {
                       ) : HIDDEN_BALANCE}
                     </td>
                     <td className="px-4 py-3">
-                      {isEditing ? (
-                        <select value={editCategory} onChange={(e) => setEditCategory(e.target.value)}
-                          className="rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple">
-                          {!categories.includes(editCategory) && (
-                            <option value={editCategory}>{editCategory}</option>
-                          )}
-                          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                      ) : (
+                      {(
                         <span className="inline-flex items-center gap-1.5">
                           <span className={`h-2 w-2 rounded-full ${getCategoryColorTw(tx.category || "Other")}`} />
                           <span className="text-text-primary">{tx.category || "Other"}</span>
@@ -752,40 +739,7 @@ export function ExpensesContent() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-text-secondary max-w-[180px]">
-                      {isEditing ? (
-                        <div className="space-y-1.5">
-                          <MerchantInput value={editMerchant} onChange={setEditMerchant} records={merchantHistory} />
-                          <label className="block text-xs text-text-secondary">Notes<textarea aria-label="Notes" value={editNotes} onChange={event => setEditNotes(event.target.value)} className="mt-1 w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-2 text-sm text-text-primary" /></label>
-                          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-text-secondary"><input type="checkbox" checked={editIsRecurring} onChange={event => setEditIsRecurring(event.target.checked)} className="h-4 w-4" />Recurring</label>
-                          {editIsRecurring && (
-                            <select
-                              aria-label="Frequency" value={editRecurrence}
-                              onChange={(e) => setEditRecurrence(e.target.value as RecurrenceFrequency)}
-                              className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple"
-                            >
-                              <option value="weekly">Weekly</option>
-                              <option value="bi-weekly">Bi-weekly</option>
-                              <option value="monthly">Monthly</option>
-                              <option value="yearly">Yearly</option>
-                            </select>
-                          )}
-                          <ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editAmount)} currency={tx.currency} excluded={editExcludeFromMonthly} />
-                          <MonthlyExclusion checked={editExcludeFromMonthly} onChange={setEditExcludeFromMonthly} />
-                          {goals.length > 0 && (
-                            <select
-                              value={editGoalId}
-                              onChange={(e) => setEditGoalId(e.target.value)}
-                              className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple"
-                              title="Link to goal"
-                            >
-                              <option value="">No goal</option>
-                              {goals.map((g) => (
-                                <option key={g.id} value={g.id}>↳ {g.name}</option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
-                      ) : (
+                      {(
                         <div className="max-w-[200px]">
                           <span className="block truncate text-text-primary" title={tx.merchant || undefined}>{tx.merchant || "—"}</span>
                           {tx.notes && (
@@ -814,22 +768,7 @@ export function ExpensesContent() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-text-secondary">
-                      {isEditing ? (
-                        <select value={editAccountId} onChange={(e) => setEditAccountId(e.target.value)}
-                          className="rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple">
-                          <option value="">Select…</option>
-                          {accounts.length > 0 && (
-                            <optgroup label="Accounts">
-                              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                            </optgroup>
-                          )}
-                          {creditCards.length > 0 && (
-                            <optgroup label="Credit Cards">
-                              {creditCards.map((cc) => <option key={cc.id} value={`cc:${cc.id}`}>💳 {cc.name}</option>)}
-                            </optgroup>
-                          )}
-                        </select>
-                      ) : (
+                      {(
                         <span className="block max-w-[140px] truncate" title={accountDisplay}>{accountDisplay}</span>
                       )}
                     </td>
@@ -841,18 +780,7 @@ export function ExpensesContent() {
                       </td>
                     )}
                     <td className="px-4 py-3 text-right">
-                      {isEditing ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => handleSaveEdit(tx.id)} disabled={saving}
-                            className="rounded-lg p-1 text-emerald-400 hover:bg-emerald-500/10" title="Save">
-                            <Check className="h-4 w-4" />
-                          </button>
-                          <button onClick={() => setEditingId(null)}
-                            className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400" title="Cancel">
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : (
+                      {(
                         <div className="flex items-center justify-end gap-1">
                           {tx.is_recurring && (
                             <button onClick={() => handleDuplicate(tx)} disabled={saving}
@@ -881,7 +809,13 @@ export function ExpensesContent() {
       )}
 
       {/* Add Modal */}
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add Expense">
+      <TransactionEditDialog open={!!editingId} title="Edit Expense" saving={saving} onClose={() => setEditingId(null)} onSave={async () => {if (editingId) await handleSaveEdit(editingId);}}>
+        <div className="grid gap-5 sm:grid-cols-2"><EditField label="Date"><input aria-label="Date" type="date" required value={editDate} onChange={event => setEditDate(event.target.value)} /></EditField><EditField label={`Amount (${transactions.find(tx => tx.id === editingId)?.currency || baseCurrency})`}><input aria-label="Amount" type="number" required min="0.01" step="0.01" value={editAmount} onChange={event => setEditAmount(event.target.value)} /></EditField><EditField label="Category"><select aria-label="Category" value={editCategory} onChange={event => setEditCategory(event.target.value)}>{!categories.includes(editCategory) && <option value={editCategory}>{editCategory}</option>}{categories.map(value => <option key={value} value={value}>{value}</option>)}</select></EditField><EditField label="Pay from"><select aria-label="Account" required value={editAccountId} onChange={event => setEditAccountId(event.target.value)}><option value="">Select an account</option>{accounts.map(account => <option key={account.id} value={account.id}>{account.name} ({account.currency})</option>)}{creditCards.map(card => <option key={card.id} value={`cc:${card.id}`}>{card.name} ({card.currency})</option>)}</select></EditField></div>
+        <EditField label="Merchant"><MerchantInput value={editMerchant} onChange={setEditMerchant} records={merchantHistory} /></EditField>
+        <EditField label="Notes"><textarea aria-label="Notes" rows={2} placeholder="Add a note…" value={editNotes} onChange={event => setEditNotes(event.target.value)} /></EditField>
+        <section className="transaction-editor-options"><h3 className="text-sm font-semibold text-text-primary">Spending preferences</h3><div className="grid items-center gap-3 sm:grid-cols-2"><label className="flex min-h-11 items-center gap-3 text-sm text-text-primary"><input type="checkbox" checked={editIsRecurring} onChange={event => setEditIsRecurring(event.target.checked)} />Recurring</label>{editIsRecurring && <EditField label="Frequency"><select aria-label="Frequency" value={editRecurrence} onChange={event => setEditRecurrence(event.target.value as RecurrenceFrequency)}><option value="weekly">Weekly</option><option value="bi-weekly">Bi-weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></EditField>}</div><ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editAmount)} currency={transactions.find(tx => tx.id === editingId)?.currency || baseCurrency} excluded={editExcludeFromMonthly} /><MonthlyExclusion checked={editExcludeFromMonthly} onChange={setEditExcludeFromMonthly} /><EditField label="Link to goal"><select aria-label="Link to goal" value={editGoalId} onChange={event => setEditGoalId(event.target.value)}><option value="">No goal</option>{goals.map(goal => <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select></EditField></section>
+      </TransactionEditDialog>
+            <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add Expense">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="min-w-0">

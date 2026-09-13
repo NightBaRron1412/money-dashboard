@@ -4,6 +4,8 @@ for(const kind of ['expenses','income']) test(`${kind} can edit notes recurrence
  await page.goto(`/demo/${kind}`);
  const edit=page.getByRole('button',{name:kind==='expenses'?'Edit expense':'Edit income',exact:true}).first();
  await edit.click();
+ await expect(page.getByRole("dialog", {name:kind === "expenses" ? "Edit Expense" : "Edit Income"})).toBeVisible();
+ await expect(page.locator("tbody input, tbody textarea, tbody select")).toHaveCount(0);
  await page.getByRole('textbox',{name:'Notes',exact:true}).fill('Updated note after creation');
  await page.getByRole('checkbox',{name:'Recurring',exact:true}).check();
  await page.getByRole('combobox',{name:'Frequency',exact:true}).selectOption('yearly');
