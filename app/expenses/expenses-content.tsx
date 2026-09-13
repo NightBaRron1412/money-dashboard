@@ -1,4 +1,5 @@
 "use client";
+import { MonthlyExclusion } from "../components/monthly-exclusion";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { monthlyAmount } from "@/lib/money/transaction-filters";
@@ -95,6 +96,7 @@ export function ExpensesContent() {
   const [editAmount, setEditAmount] = useState("");
   const [editCategory, setEditCategory] = useState("Food");
   const [editMerchant, setEditMerchant] = useState("");
+  const [editNotes, setEditNotes] = useState("");
   const [editIsRecurring, setEditIsRecurring] = useState(false);
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceFrequency>("monthly");
   const [editAccountId, setEditAccountId] = useState("");
@@ -385,12 +387,13 @@ export function ExpensesContent() {
     }
   };
 
-  const startEdit = (tx: { id: string; date: string; amount: number; category: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; account_id: string | null; exclude_from_monthly: boolean; personal_share_percent?: number; shared_with?: string | null; goal_id: string | null; linked_charge_id: string | null }) => {
+  const startEdit = (tx: { notes: string | null; id: string; date: string; amount: number; category: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; account_id: string | null; exclude_from_monthly: boolean; personal_share_percent?: number; shared_with?: string | null; goal_id: string | null; linked_charge_id: string | null }) => {
     setEditingId(tx.id);
     setEditDate(tx.date);
     setEditAmount(tx.amount.toString());
     setEditCategory(tx.category || categories[0] || "Other");
     setEditMerchant(tx.merchant || "");
+    setEditNotes(tx.notes || "");
     setEditIsRecurring(tx.is_recurring);
     setEditRecurrence(tx.recurrence || "monthly");
     setEditExcludeFromMonthly(tx.exclude_from_monthly);
@@ -438,7 +441,7 @@ export function ExpensesContent() {
               amount: amt,
               merchant: editMerchant || null,
               category: editCategory,
-              notes: null,
+              notes: editNotes.trim() || null,
             },
             {
               currency: cardCurrency,
@@ -461,7 +464,7 @@ export function ExpensesContent() {
             from_account_id: null,
             to_account_id: null,
             merchant: editMerchant || null,
-            notes: null,
+            notes: editNotes.trim() || null,
             is_recurring: editIsRecurring,
             recurrence: editIsRecurring ? editRecurrence : null,
             exclude_from_monthly: editExcludeFromMonthly, personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null,
@@ -475,6 +478,7 @@ export function ExpensesContent() {
           amount: amt,
           category: editCategory,
           merchant: editMerchant || null,
+          notes: editNotes.trim() || null,
           is_recurring: editIsRecurring,
           recurrence: editIsRecurring ? editRecurrence : null,
           exclude_from_monthly: editExcludeFromMonthly, personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null,
@@ -751,19 +755,11 @@ export function ExpensesContent() {
                       {isEditing ? (
                         <div className="space-y-1.5">
                           <MerchantInput value={editMerchant} onChange={setEditMerchant} records={merchantHistory} />
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setEditIsRecurring(!editIsRecurring)}
-                              className={`relative h-5 w-9 shrink-0 rounded-full transition ${editIsRecurring ? "bg-accent-purple" : "bg-bg-elevated border border-border-subtle"}`}
-                            >
-                              <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${editIsRecurring ? "translate-x-4" : ""}`} />
-                            </button>
-                            <span className="text-[10px] text-text-secondary">Recurring</span>
-                          </div>
+                          <label className="block text-xs text-text-secondary">Notes<textarea aria-label="Notes" value={editNotes} onChange={event => setEditNotes(event.target.value)} className="mt-1 w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-2 text-sm text-text-primary" /></label>
+                          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-text-secondary"><input type="checkbox" checked={editIsRecurring} onChange={event => setEditIsRecurring(event.target.checked)} className="h-4 w-4" />Recurring</label>
                           {editIsRecurring && (
                             <select
-                              value={editRecurrence}
+                              aria-label="Frequency" value={editRecurrence}
                               onChange={(e) => setEditRecurrence(e.target.value as RecurrenceFrequency)}
                               className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple"
                             >
@@ -774,16 +770,7 @@ export function ExpensesContent() {
                             </select>
                           )}
                           <ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editAmount)} currency={tx.currency} excluded={editExcludeFromMonthly} />
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setEditExcludeFromMonthly(!editExcludeFromMonthly)}
-                              className={`relative h-5 w-9 shrink-0 rounded-full transition ${editExcludeFromMonthly ? "bg-accent-purple" : "bg-bg-elevated border border-border-subtle"}`}
-                            >
-                              <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${editExcludeFromMonthly ? "translate-x-4" : ""}`} />
-                            </button>
-                            <span className="text-[10px] text-text-secondary">Exclude monthly</span>
-                          </div>
+                          <MonthlyExclusion checked={editExcludeFromMonthly} onChange={setEditExcludeFromMonthly} />
                           {goals.length > 0 && (
                             <select
                               value={editGoalId}
@@ -874,7 +861,7 @@ export function ExpensesContent() {
                               <Copy className="h-4 w-4" />
                             </button>
                           )}
-                          <button onClick={() => startEdit(tx)}
+                          <button aria-label="Edit expense" onClick={() => startEdit(tx)}
                             className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue">
                             <Pencil className="h-4 w-4" />
                           </button>

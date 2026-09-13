@@ -57,9 +57,20 @@ test("excluded credit card charge updates its linked expense", async ({page}) =>
   await dialog.getByRole("button",{name:"Add Charge",exact:true}).click();
   await expect(dialog).not.toBeVisible();
   const row=page.getByRole("row").filter({hasText:"UX exclusion check"});
-  await expect(row.getByRole("button",{name:"Excluded · Include"})).toBeVisible();
-  await row.getByRole("button",{name:"Excluded · Include"}).click();
-  await expect(row.getByRole("button",{name:"In monthly totals · Exclude"})).toBeVisible();
+  await expect(row.getByText("Excluded", {exact:true})).toBeVisible();
+  await expect(row.getByRole("checkbox", {name:"Exclude from monthly totals"})).toHaveCount(0);
+  await row.getByRole("button", {name:"Edit charge"}).click();
+  const excluded = page.getByRole("checkbox", {name:"Exclude from monthly totals"});
+  await expect(excluded).toBeChecked();
+  await excluded.uncheck();
+  await page.getByRole("button", {name:"Cancel", exact:true}).click();
+  await expect(row.getByText("Excluded", {exact:true})).toBeVisible();
+  await row.getByRole("button", {name:"Edit charge"}).click();
+  await excluded.uncheck();
+  await page.getByRole("button", {name:"Save", exact:true}).click();
+  await expect(row.getByText("Excluded", {exact:true})).toHaveCount(0);
+  await row.getByRole("button", {name:"Edit charge"}).click();
+  await expect(excluded).not.toBeChecked();
 });
 
 test("shared card expense keeps full payment and counts only the personal share", async ({page}) => {

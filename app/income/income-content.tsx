@@ -1,4 +1,5 @@
 "use client";
+import { MonthlyExclusion } from "../components/monthly-exclusion";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { MerchantInput } from "../components/merchant-input";
@@ -156,6 +157,8 @@ export function IncomeContent() {
   const [editAmount, setEditAmount] = useState("");
   const [editSource, setEditSource] = useState<IncomeSource>("Paycheck");
   const [editMerchant, setEditMerchant] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [incomeNotes, setIncomeNotes] = useState("");
   const [editAccountId, setEditAccountId] = useState("");
   const [editIsRecurring, setEditIsRecurring] = useState(false);
   const [editRecurrence, setEditRecurrence] =
@@ -369,7 +372,7 @@ export function IncomeContent() {
         from_account_id: null,
         to_account_id: null,
         merchant: merchant || null,
-        notes: splitNote,
+        notes: [incomeNotes.trim(), splitNote].filter(Boolean).join(" — ") || null,
         is_recurring: isRecurring,
         recurrence: isRecurring ? recurrence : null,
         exclude_from_monthly: excludeFromMonthly,
@@ -407,6 +410,7 @@ export function IncomeContent() {
       setSplitEnabled(false);
       setSplits({});
       setSelectedPlanId(activePlan?.id ?? plans[0]?.id ?? "");
+      setIncomeNotes("");
       setIsRecurring(false);
       setRecurrence(defaultPaycheckRecurrence);
       setExcludeFromMonthly(false);
@@ -424,6 +428,7 @@ export function IncomeContent() {
   };
 
   const startEdit = (tx: {
+    notes: string | null;
     id: string;
     date: string;
     amount: number;
@@ -439,6 +444,7 @@ export function IncomeContent() {
     setEditAmount(tx.amount.toString());
     setEditSource((tx.category as IncomeSource) || "Paycheck");
     setEditMerchant(tx.merchant || "");
+    setEditNotes(tx.notes || "");
     setEditAccountId(tx.account_id || accounts[0]?.id || "");
     setEditIsRecurring(tx.is_recurring);
     setEditRecurrence(tx.recurrence || "bi-weekly");
@@ -459,6 +465,7 @@ export function IncomeContent() {
         account_id: editAccount.id,
         currency: editAccount.currency,
         merchant: editMerchant || null,
+          notes: editNotes.trim() || null,
         is_recurring: editIsRecurring,
         recurrence: editIsRecurring ? editRecurrence : null,
         exclude_from_monthly: editExcludeFromMonthly,
@@ -669,23 +676,11 @@ export function IncomeContent() {
                       {isEditing ? (
                         <div className="space-y-1.5">
                           <MerchantInput value={editMerchant} onChange={setEditMerchant} records={transactions} />
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setEditIsRecurring(!editIsRecurring)}
-                              className={`relative h-5 w-9 shrink-0 rounded-full transition ${editIsRecurring ? "bg-accent-purple" : "bg-bg-elevated border border-border-subtle"}`}
-                            >
-                              <span
-                                className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${editIsRecurring ? "translate-x-4" : ""}`}
-                              />
-                            </button>
-                            <span className="text-[10px] text-text-secondary">
-                              Recurring
-                            </span>
-                          </div>
+                          <label className="block text-xs text-text-secondary">Notes<textarea aria-label="Notes" value={editNotes} onChange={event => setEditNotes(event.target.value)} className="mt-1 w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-2 text-sm text-text-primary" /></label>
+                          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-text-secondary"><input type="checkbox" checked={editIsRecurring} onChange={event => setEditIsRecurring(event.target.checked)} className="h-4 w-4" />Recurring</label>
                           {editIsRecurring && (
                             <select
-                              value={editRecurrence}
+                              aria-label="Frequency" value={editRecurrence}
                               onChange={(e) =>
                                 setEditRecurrence(
                                   e.target.value as RecurrenceFrequency
@@ -699,16 +694,7 @@ export function IncomeContent() {
                               <option value="yearly">Yearly</option>
                             </select>
                           )}
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setEditExcludeFromMonthly(!editExcludeFromMonthly)}
-                              className={`relative h-5 w-9 shrink-0 rounded-full transition ${editExcludeFromMonthly ? "bg-accent-purple" : "bg-bg-elevated border border-border-subtle"}`}
-                            >
-                              <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${editExcludeFromMonthly ? "translate-x-4" : ""}`} />
-                            </button>
-                            <span className="text-[10px] text-text-secondary">Exclude reports</span>
-                          </div>
+                          <MonthlyExclusion checked={editExcludeFromMonthly} onChange={setEditExcludeFromMonthly} />
                         </div>
                       ) : (
                         <span className="inline-flex max-w-[180px] items-center gap-1.5" title={tx.merchant || tx.notes || undefined}>
@@ -758,7 +744,7 @@ export function IncomeContent() {
                         </div>
                       ) : (
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => startEdit(tx)}
+                          <button aria-label="Edit income" onClick={() => startEdit(tx)}
                             className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue">
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -878,6 +864,7 @@ export function IncomeContent() {
             <MerchantInput value={merchant} onChange={setMerchant} records={transactions} />
           </div>
 
+          <label className="block text-xs text-text-secondary">Notes (optional)<textarea aria-label="Notes" value={incomeNotes} onChange={event => setIncomeNotes(event.target.value)} className="mt-1 w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary" /></label>
           {/* Recurring toggle */}
           <div className="flex items-center gap-3">
             <button

@@ -603,7 +603,7 @@ export function SubscriptionsContent() {
                 )}
               </button>
               <button
-                onClick={() => startInlineEdit(sub)}
+                aria-label="Edit subscription" onClick={() => openEdit(sub)}
                 className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"
               >
                 <Pencil className="h-4 w-4" />
@@ -846,7 +846,7 @@ export function SubscriptionsContent() {
               </label>
               <input
                 type="text"
-                value={name}
+                aria-label="Name" value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Netflix, Spotify…"
                 className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
@@ -857,7 +857,7 @@ export function SubscriptionsContent() {
                 Category
               </label>
               <select
-                value={category}
+                aria-label="Category" value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
               >
@@ -877,7 +877,7 @@ export function SubscriptionsContent() {
               <input
                 type="number"
                 step="0.01"
-                value={amount}
+                aria-label="Amount" value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="9.99"
                 className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
@@ -888,7 +888,7 @@ export function SubscriptionsContent() {
                 Currency
               </label>
               <select
-                value={currency}
+                aria-label="Currency" value={currency}
                 onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
                 className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
               >
@@ -904,7 +904,7 @@ export function SubscriptionsContent() {
                 Frequency
               </label>
               <select
-                value={frequency}
+                aria-label="Frequency" value={frequency}
                 onChange={(e) =>
                   setFrequency(e.target.value as RecurrenceFrequency)
                 }
@@ -924,7 +924,7 @@ export function SubscriptionsContent() {
               </label>
               <input
                 type="date"
-                value={nextBilling}
+                aria-label="Next billing date" value={nextBilling}
                 onChange={(e) => setNextBilling(e.target.value)}
                 className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
               />
@@ -947,7 +947,7 @@ export function SubscriptionsContent() {
             </label>
             <input
               type="text"
-              value={notes}
+              aria-label="Notes" value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Shared with family, annual plan…"
               className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
@@ -961,7 +961,7 @@ export function SubscriptionsContent() {
               Link this subscription to an account or credit card. When you mark as paid, this will be pre-selected (you can still change it).
             </p>
             <select
-              value={defaultPaymentAccountId}
+              aria-label="Default pay from" value={defaultPaymentAccountId}
               onChange={(e) => setDefaultPaymentAccountId(e.target.value)}
               className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
             >

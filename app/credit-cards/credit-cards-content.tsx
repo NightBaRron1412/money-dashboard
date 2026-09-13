@@ -1,4 +1,5 @@
 "use client";
+import { MonthlyExclusion } from "../components/monthly-exclusion";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { ExpenseShare } from "../components/expense-share";
@@ -174,8 +175,8 @@ export function CreditCardsContent() {
   const [editSharePercent, setEditSharePercent] = useState(100);
   const [editSharedWith, setEditSharedWith] = useState("");
   const [chargeExcluded, setChargeExcluded] = useState(false);
-  const [exclusionSaving, setExclusionSaving] = useState<string | null>(null);
-  const [exclusionError, setExclusionError] = useState("");
+  const [editChargeExcluded, setEditChargeExcluded] = useState(false);
+
   const [chargeNotes, setChargeNotes] = useState("");
   const [chargeError, setChargeError] = useState("");
   const [autoCategorizePending, setAutoCategorizePending] = useState(false);
@@ -526,17 +527,6 @@ export function CreditCardsContent() {
     }
   };
 
-  const toggleChargeExclusion = async (transactionId: string, excluded: boolean) => {
-    setExclusionSaving(transactionId);
-    setExclusionError("");
-    try {
-      await updateTransaction(transactionId, { exclude_from_monthly: !excluded });
-      await refresh();
-    } catch (error) {
-      setExclusionError(error instanceof Error ? error.message : "Could not update monthly totals. Please try again.");
-    } finally { setExclusionSaving(null); }
-  };
-
   const handleDeleteCharge = async (id: string) => {
     if (!confirm("Delete this charge?")) return;
     await deleteCreditCardCharge(id);
@@ -546,6 +536,7 @@ export function CreditCardsContent() {
   const startEditCharge = (charge: CreditCardCharge) => {
     setEditingChargeId(charge.id);
     const linked = transactions.find(t => t.id === charge.linked_transaction_id || t.linked_charge_id === charge.id);
+    setEditChargeExcluded(linked?.exclude_from_monthly ?? false);
     setEditSharePercent(linked?.personal_share_percent ?? 100);
     setEditSharedWith(linked?.shared_with ?? "");
     setEditChargeDate(charge.date);
@@ -568,7 +559,7 @@ export function CreditCardsContent() {
         notes: editChargeNotes || null,
       });
       const linked = transactions.find(t => t.linked_charge_id === id || t.id === creditCardCharges.find(c => c.id === id)?.linked_transaction_id);
-      if (linked) await updateTransaction(linked.id, { personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null });
+      if (linked) await updateTransaction(linked.id, { exclude_from_monthly: editChargeExcluded, personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null });
       await refresh();
       setEditingChargeId(null);
     } finally {
@@ -941,7 +932,7 @@ export function CreditCardsContent() {
               </button>
             )}
           </div>
-          {exclusionError && <p role="alert" className="mb-3 text-sm text-[var(--status-negative)]">{exclusionError}</p>}
+
           {sortedCharges.length === 0 ? (
             <p className="rounded-2xl border border-border-subtle bg-bg-secondary px-6 py-8 text-center text-sm text-text-secondary">
               No charges match the selected filters.
@@ -1009,7 +1000,8 @@ export function CreditCardsContent() {
                         {isEditing ? (
                           <div className="flex w-[180px] max-w-[180px] flex-col gap-1">
                             <MerchantInput value={editChargeMerchant} onChange={setEditChargeMerchant} records={merchantHistory} />
-                            {linkedTransaction && <ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editChargeAmount)} currency={card?.currency || baseCurrency} excluded={linkedTransaction.exclude_from_monthly} />}
+                            {linkedTransaction && <ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editChargeAmount)} currency={card?.currency || baseCurrency} excluded={editChargeExcluded} />}
+                            {linkedTransaction && <MonthlyExclusion checked={editChargeExcluded} onChange={setEditChargeExcluded} />}
                             <input type="text" value={editChargeNotes} onChange={(e) => setEditChargeNotes(e.target.value)}
                               placeholder="Notes"
                               className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-[10px] text-text-secondary outline-none focus:border-accent-purple" />
@@ -1019,15 +1011,7 @@ export function CreditCardsContent() {
                             <span className="block truncate" title={charge.merchant || undefined}>{charge.merchant || "—"}</span>
                             {charge.notes && <span className="block truncate text-[10px] text-text-secondary/70" title={charge.notes}>{charge.notes}</span>}
                             {linkedTransaction && (linkedTransaction.personal_share_percent ?? 100) < 100 && <span className="mt-1 block whitespace-normal text-xs text-accent-blue">Shared{linkedTransaction.shared_with ? ` with ${linkedTransaction.shared_with}` : ""} · {linkedTransaction.personal_share_percent}% yours</span>}
-                            {linkedTransaction ? (
-                              <button type="button" disabled={exclusionSaving !== null} aria-pressed={linkedTransaction.exclude_from_monthly}
-                                onClick={() => toggleChargeExclusion(linkedTransaction.id, linkedTransaction.exclude_from_monthly)}
-                                title="Changes monthly reports only. Your card balance stays the same."
-                                className={`mt-2 inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${linkedTransaction.exclude_from_monthly ? "border-border-subtle bg-bg-elevated text-text-secondary" : "border-border-subtle text-accent-blue"}`}>
-                                {exclusionSaving === linkedTransaction.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-                                {linkedTransaction.exclude_from_monthly ? "Excluded · Include" : "In monthly totals · Exclude"}
-                              </button>
-                            ) : <span className="mt-1 block text-[11px] text-text-secondary">Not in monthly totals</span>}
+                            {linkedTransaction?.exclude_from_monthly && <span className="inline-flex rounded bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400">Excluded</span>}
 
                           </span>
                         )}
