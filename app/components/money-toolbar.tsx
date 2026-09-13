@@ -43,7 +43,6 @@ export function MoneyToolbar({ routeBase = "", demoMode = false }: { routeBase?:
     <header className="money-toolbar flex items-center justify-between gap-3 py-4">
       <div className="flex items-center gap-2 text-sm font-semibold tracking-tight">
         <span className="md:hidden">Money<span className="text-accent-blue">.</span></span>
-        <span className="hidden text-text-secondary md:inline">Your personal workspace</span>
         {demoMode && <span data-tour="nav-anchor" className="rounded-full bg-bg-elevated px-2.5 py-1 text-[11px] font-medium text-text-secondary">Demo</span>}
       </div>
       <div className="flex items-center gap-1.5">
