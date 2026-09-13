@@ -14,7 +14,7 @@ const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.O
     <DialogPrimitive.Overlay
       ref={ref}
       className={cn(
-        "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
+        "fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
         className
       )}
       {...props}
@@ -35,14 +35,14 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 w-[min(960px,95vw)] max-h-[90vh] translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-[1.75rem] border border-border-subtle bg-[var(--card-bg)] p-7 shadow-card focus:outline-none data-[state=open]:animate-in data-[state=open]:zoom-in-95 data-[state=open]:fade-in-0",
+          "fixed left-1/2 top-1/2 z-[80] w-[min(960px,95vw)] max-h-[90dvh] translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-[1.75rem] border border-border-subtle bg-[var(--card-bg)] p-7 shadow-card focus:outline-none data-[state=open]:animate-in data-[state=open]:zoom-in-95 data-[state=open]:fade-in-0",
           className
         )}
         {...props}
       >
         {children}
         {showCloseButton ? (
-          <DialogPrimitive.Close className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full p-0 text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary focus-visible:outline-none">
+          <DialogPrimitive.Close aria-label="Close dialog" className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full p-0 text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary focus-visible:outline-none">
             <X className="h-4 w-4" />
           </DialogPrimitive.Close>
         ) : null}

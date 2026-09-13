@@ -76,7 +76,7 @@ test("mobile overflow navigation reaches settings", async ({ page }, testInfo) =
   await page.goto("/demo");
 
   await page.getByRole("button", { name: "More navigation" }).click();
-  await expect(page.getByRole("dialog", { name: "More" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Explore Money" })).toBeVisible();
   await page.getByRole("link", { name: "Settings", exact: true }).click();
 
   await expect(page).toHaveURL(/\/demo\/settings$/);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "./ui/dialog";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -36,7 +37,7 @@ import {
 const navSections = [
   {
     label: "Overview",
-    items: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }],
+    items: [{ href: "/", label: "Overview", icon: LayoutDashboard }],
   },
   {
     label: "Everyday money",
@@ -91,14 +92,14 @@ export function MoneySidebar({
   }));
   const mobileNavItems = [
     { href: remapHref("/"), label: "Home", icon: LayoutDashboard },
-    { href: remapHref("/income"), label: "Income", icon: Wallet },
     { href: remapHref("/expenses"), label: "Expenses", icon: ArrowDownUp },
-    { href: remapHref("/credit-cards"), label: "Cards", icon: CreditCard },
     { href: remapHref("/accounts"), label: "Accounts", icon: PiggyBank },
+    { href: remapHref("/stocks"), label: "Invest", icon: TrendingUp },
   ];
 
   const mobileOverflowItems = [
-    { href: remapHref("/stocks"), label: "Stocks", icon: TrendingUp },
+    { href: remapHref("/income"), label: "Income", icon: Wallet },
+    { href: remapHref("/credit-cards"), label: "Credit Cards", icon: CreditCard },
     { href: remapHref("/goals"), label: "Goals", icon: Target },
     { href: remapHref("/subscriptions"), label: "Subscriptions", icon: Receipt },
     { href: remapHref("/reports"), label: "Reports", icon: BarChart3 },
@@ -124,19 +125,26 @@ export function MoneySidebar({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [moreMenuOpen]);
 
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 768px)");
+    const closeOnDesktop = () => { if (desktop.matches) setMoreMenuOpen(false); };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
+
   // If active page is in overflow, check for active state
   const isOverflowActive = mobileOverflowItems.some((item) =>
     pathname.startsWith(item.href)
   );
 
   return (
-    <>
+    <Dialog open={moreMenuOpen} onOpenChange={setMoreMenuOpen}>
       {/* Mobile bottom nav */}
       <nav
         className="fixed inset-x-3 z-50 overflow-hidden rounded-2xl border border-border-subtle bg-[var(--sidebar-bg)] shadow-card backdrop-blur-xl md:hidden"
         style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))" }}
       >
-        <div className="grid grid-cols-6 items-center p-1.5">
+        <div className="grid grid-cols-5 items-center p-1.5">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -147,6 +155,7 @@ export function MoneySidebar({
               <Link
                 key={item.href}
                 href={item.href as any}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[10px] font-medium transition",
                   isActive
@@ -159,12 +168,12 @@ export function MoneySidebar({
               </Link>
             );
           })}
+          <DialogTrigger asChild>
           <button
             type="button"
-            onClick={() => setMoreMenuOpen(!moreMenuOpen)}
             aria-expanded={moreMenuOpen}
-            aria-controls="mobile-more-navigation"
             aria-label="More navigation"
+            aria-haspopup="dialog"
             className={cn(
               "flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[10px] font-medium transition",
               isOverflowActive || moreMenuOpen
@@ -175,29 +184,13 @@ export function MoneySidebar({
             <MoreHorizontal className="h-5 w-5" />
             <span>More</span>
           </button>
+          </DialogTrigger>
         </div>
       </nav>
 
-        {/* Keep the sheet outside the blurred nav. Mobile Safari otherwise
-            treats the nav as the containing block for fixed descendants. */}
-        {moreMenuOpen && (
-          <>
-            <button
-              type="button"
-              aria-label="Close more navigation"
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
-              onClick={() => setMoreMenuOpen(false)}
-            />
-            <section
-              id="mobile-more-navigation"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="mobile-more-navigation-title"
-              className="fixed inset-x-3 z-[60] overflow-y-auto overscroll-contain rounded-[1.75rem] border border-border-subtle bg-[var(--sidebar-bg)] p-4 shadow-card backdrop-blur-xl md:hidden"
-              style={{ bottom: "calc(5.25rem + env(safe-area-inset-bottom, 0px))", maxHeight: "calc(100dvh - 6rem - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px))" }}
-            >
+        <DialogContent showCloseButton={false} aria-describedby={undefined} className="money-more-sheet md:hidden">
               <div className="mb-2 flex items-center justify-between px-1">
-                <span id="mobile-more-navigation-title" className="text-xs font-semibold text-text-primary">More</span>
+                <DialogTitle className="text-lg">Explore Money</DialogTitle>
                 <button
                   type="button"
                   onClick={() => setMoreMenuOpen(false)}
@@ -275,9 +268,7 @@ export function MoneySidebar({
                   </button>
                 )}
               </div>
-            </section>
-          </>
-        )}
+        </DialogContent>
 
       {/* Desktop sidebar */}
       <aside
@@ -334,6 +325,7 @@ export function MoneySidebar({
                   <Link
                     key={item.href}
                     href={item.href as any}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
                       isActive
@@ -421,6 +413,6 @@ export function MoneySidebar({
           )}
         </div>
       </aside>
-    </>
+    </Dialog>
   );
 }

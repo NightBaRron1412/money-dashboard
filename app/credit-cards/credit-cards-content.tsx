@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { ExpenseShare } from "../components/expense-share";
+import { MerchantInput } from "../components/merchant-input";
 import { useMoneyData } from "../hooks/use-money-data";
 import { useMoneyFx } from "../hooks/use-money-fx";
 import {
@@ -37,6 +39,7 @@ import {
   createCreditCardCharge,
   deleteCreditCardCharge,
   updateCreditCardCharge,
+  updateTransaction,
   createCreditCardPayment,
   updateCreditCardPayment,
   deleteCreditCardPayment,
@@ -87,6 +90,7 @@ const normalizeCategories = (raw: string[]) => {
 
 export function CreditCardsContent() {
   const {
+    transactions,
     accounts,
     creditCards,
     creditCardCharges,
@@ -96,6 +100,11 @@ export function CreditCardsContent() {
     loading,
     refresh,
   } = useMoneyData();
+  const merchantHistory = useMemo(() => {
+    const linkedChargeIds = new Set(transactions.map(t => t.linked_charge_id).filter(Boolean));
+    const transactionIds = new Set(transactions.map(t => t.id));
+    return [...transactions.filter(t => t.type === "expense"), ...creditCardCharges.filter(charge => !linkedChargeIds.has(charge.id) && !transactionIds.has(charge.linked_transaction_id || ""))];
+  }, [transactions, creditCardCharges]);
   const { fx, ready: fxReady } = useMoneyFx();
   const { showBalances } = useBalanceVisibility();
   const baseCurrency: CurrencyCode = settings?.base_currency ?? "CAD";
@@ -160,6 +169,13 @@ export function CreditCardsContent() {
   const [chargeAmount, setChargeAmount] = useState("");
   const [chargeMerchant, setChargeMerchant] = useState("");
   const [chargeCategory, setChargeCategory] = useState("Other");
+  const [sharePercent, setSharePercent] = useState(100);
+  const [sharedWith, setSharedWith] = useState("");
+  const [editSharePercent, setEditSharePercent] = useState(100);
+  const [editSharedWith, setEditSharedWith] = useState("");
+  const [chargeExcluded, setChargeExcluded] = useState(false);
+  const [exclusionSaving, setExclusionSaving] = useState<string | null>(null);
+  const [exclusionError, setExclusionError] = useState("");
   const [chargeNotes, setChargeNotes] = useState("");
   const [chargeError, setChargeError] = useState("");
   const [autoCategorizePending, setAutoCategorizePending] = useState(false);
@@ -493,18 +509,32 @@ export function CreditCardsContent() {
           category: chargeCategory,
           notes: chargeNotes || null,
         },
-        { currency: chargeCurrency, cardName: card?.name ?? "Credit Card" }
+        { currency: chargeCurrency, cardName: card?.name ?? "Credit Card", exclude_from_monthly: chargeExcluded, personal_share_percent: sharePercent, shared_with: sharedWith.trim() || null }
       );
       await refresh();
       setShowAddCharge(false);
       setChargeAmount("");
       setChargeMerchant("");
       setChargeNotes("");
+      setChargeExcluded(false);
+      setSharePercent(100);
+      setSharedWith("");
     } catch (err: unknown) {
       setChargeError(err instanceof Error ? err.message : "Failed to add charge");
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleChargeExclusion = async (transactionId: string, excluded: boolean) => {
+    setExclusionSaving(transactionId);
+    setExclusionError("");
+    try {
+      await updateTransaction(transactionId, { exclude_from_monthly: !excluded });
+      await refresh();
+    } catch (error) {
+      setExclusionError(error instanceof Error ? error.message : "Could not update monthly totals. Please try again.");
+    } finally { setExclusionSaving(null); }
   };
 
   const handleDeleteCharge = async (id: string) => {
@@ -515,6 +545,9 @@ export function CreditCardsContent() {
 
   const startEditCharge = (charge: CreditCardCharge) => {
     setEditingChargeId(charge.id);
+    const linked = transactions.find(t => t.id === charge.linked_transaction_id || t.linked_charge_id === charge.id);
+    setEditSharePercent(linked?.personal_share_percent ?? 100);
+    setEditSharedWith(linked?.shared_with ?? "");
     setEditChargeDate(charge.date);
     setEditChargeAmount(charge.amount.toString());
     setEditChargeMerchant(charge.merchant || "");
@@ -534,6 +567,8 @@ export function CreditCardsContent() {
         category: editChargeCategory,
         notes: editChargeNotes || null,
       });
+      const linked = transactions.find(t => t.linked_charge_id === id || t.id === creditCardCharges.find(c => c.id === id)?.linked_transaction_id);
+      if (linked) await updateTransaction(linked.id, { personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null });
       await refresh();
       setEditingChargeId(null);
     } finally {
@@ -906,6 +941,7 @@ export function CreditCardsContent() {
               </button>
             )}
           </div>
+          {exclusionError && <p role="alert" className="mb-3 text-sm text-[var(--status-negative)]">{exclusionError}</p>}
           {sortedCharges.length === 0 ? (
             <p className="rounded-2xl border border-border-subtle bg-bg-secondary px-6 py-8 text-center text-sm text-text-secondary">
               No charges match the selected filters.
@@ -915,6 +951,13 @@ export function CreditCardsContent() {
             <table className="w-full min-w-[500px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
               <thead>
                 <tr className="border-b border-border-subtle bg-bg-secondary">
+                  <th
+                    className="cursor-pointer select-none px-4 py-3 text-left text-xs font-medium text-text-secondary hover:text-text-primary max-w-[180px]"
+                    onClick={() => toggleSort("merchant")}
+                  >
+                    Merchant
+                    <SortIcon col="merchant" />
+                  </th>
                   <th
                     className="cursor-pointer select-none px-4 py-3 text-left text-xs font-medium text-text-secondary hover:text-text-primary"
                     onClick={() => toggleSort("date")}
@@ -929,13 +972,7 @@ export function CreditCardsContent() {
                     Card
                     <SortIcon col="card" />
                   </th>
-                  <th
-                    className="cursor-pointer select-none px-4 py-3 text-left text-xs font-medium text-text-secondary hover:text-text-primary max-w-[180px]"
-                    onClick={() => toggleSort("merchant")}
-                  >
-                    Merchant
-                    <SortIcon col="merchant" />
-                  </th>
+
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">
                     Category
                   </th>
@@ -961,12 +998,40 @@ export function CreditCardsContent() {
                   const card = creditCards.find(
                     (c) => c.id === charge.card_id
                   );
+                  const linkedTransaction = transactions.find(t => t.id === charge.linked_transaction_id || t.linked_charge_id === charge.id);
                   const isEditing = editingChargeId === charge.id;
                   return (
                     <tr
                       key={charge.id}
                       className="border-b border-border-subtle last:border-0 hover:bg-bg-elevated/50"
                     >
+                      <td className="px-4 py-3 text-text-secondary">
+                        {isEditing ? (
+                          <div className="flex w-[180px] max-w-[180px] flex-col gap-1">
+                            <MerchantInput value={editChargeMerchant} onChange={setEditChargeMerchant} records={merchantHistory} />
+                            {linkedTransaction && <ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editChargeAmount)} currency={card?.currency || baseCurrency} excluded={linkedTransaction.exclude_from_monthly} />}
+                            <input type="text" value={editChargeNotes} onChange={(e) => setEditChargeNotes(e.target.value)}
+                              placeholder="Notes"
+                              className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-[10px] text-text-secondary outline-none focus:border-accent-purple" />
+                          </div>
+                        ) : (
+                          <span className="block max-w-[180px]">
+                            <span className="block truncate" title={charge.merchant || undefined}>{charge.merchant || "—"}</span>
+                            {charge.notes && <span className="block truncate text-[10px] text-text-secondary/70" title={charge.notes}>{charge.notes}</span>}
+                            {linkedTransaction && (linkedTransaction.personal_share_percent ?? 100) < 100 && <span className="mt-1 block whitespace-normal text-xs text-accent-blue">Shared{linkedTransaction.shared_with ? ` with ${linkedTransaction.shared_with}` : ""} · {linkedTransaction.personal_share_percent}% yours</span>}
+                            {linkedTransaction ? (
+                              <button type="button" disabled={exclusionSaving !== null} aria-pressed={linkedTransaction.exclude_from_monthly}
+                                onClick={() => toggleChargeExclusion(linkedTransaction.id, linkedTransaction.exclude_from_monthly)}
+                                title="Changes monthly reports only. Your card balance stays the same."
+                                className={`mt-2 inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${linkedTransaction.exclude_from_monthly ? "border-border-subtle bg-bg-elevated text-text-secondary" : "border-border-subtle text-accent-blue"}`}>
+                                {exclusionSaving === linkedTransaction.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                                {linkedTransaction.exclude_from_monthly ? "Excluded · Include" : "In monthly totals · Exclude"}
+                              </button>
+                            ) : <span className="mt-1 block text-[11px] text-text-secondary">Not in monthly totals</span>}
+
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-text-primary">
                         {isEditing ? (
                           <input type="date" value={editChargeDate} onChange={(e) => setEditChargeDate(e.target.value)}
@@ -978,23 +1043,7 @@ export function CreditCardsContent() {
                       <td className="px-4 py-3 text-text-primary">
                         <span className="block max-w-[130px] truncate" title={card?.name || undefined}>{card?.name || "—"}</span>
                       </td>
-                      <td className="px-4 py-3 text-text-secondary">
-                        {isEditing ? (
-                          <div className="flex w-[180px] max-w-[180px] flex-col gap-1">
-                            <input type="text" value={editChargeMerchant} onChange={(e) => setEditChargeMerchant(e.target.value)}
-                              placeholder="Merchant"
-                              className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
-                            <input type="text" value={editChargeNotes} onChange={(e) => setEditChargeNotes(e.target.value)}
-                              placeholder="Notes"
-                              className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-[10px] text-text-secondary outline-none focus:border-accent-purple" />
-                          </div>
-                        ) : (
-                          <span className="block max-w-[180px]">
-                            <span className="block truncate" title={charge.merchant || undefined}>{charge.merchant || "—"}</span>
-                            {charge.notes && <span className="block truncate text-[10px] text-text-secondary/70" title={charge.notes}>{charge.notes}</span>}
-                          </span>
-                        )}
-                      </td>
+
                       <td className="px-4 py-3 text-text-secondary">
                         {isEditing ? (
                           <select value={editChargeCategory} onChange={(e) => setEditChargeCategory(e.target.value)}
@@ -1037,12 +1086,14 @@ export function CreditCardsContent() {
                         ) : (
                           <div className="flex items-center justify-end gap-1">
                             <button
+                              aria-label="Edit charge"
                               onClick={() => startEditCharge(charge)}
                               className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
                             <button
+                              aria-label="Delete charge"
                               onClick={() => handleDeleteCharge(charge.id)}
                               className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"
                             >
@@ -1517,21 +1568,8 @@ export function CreditCardsContent() {
             <label className="mb-1 block text-xs font-medium text-text-secondary">
               Merchant
             </label>
-            <input
-              id="charge-merchant"
-              type="text"
-              value={chargeMerchant}
-              onChange={(e) => setChargeMerchant(e.target.value)}
-              onBlur={(e) => {
-                const notesEl = document.getElementById("charge-notes") as HTMLInputElement | null;
-                autoCategorize(e.target.value, notesEl?.value);
-              }}
-              placeholder="e.g., Amazon"
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
-            />
-            {autoCategorizePending && (
-              <p className="mt-1 text-[10px] text-accent-purple">Suggesting category…</p>
-            )}
+            <MerchantInput id="charge-merchant" value={chargeMerchant} onChange={setChargeMerchant} records={merchantHistory} onSelectCategory={value => { if (categories.includes(value)) setChargeCategory(value); }} onNewMerchant={value => autoCategorize(value, chargeNotes)} />
+            <p aria-live="polite" className="mt-1 min-h-4 text-[11px] text-accent-purple">{autoCategorizePending ? "Suggesting category…" : ""}</p>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-text-secondary">
@@ -1550,6 +1588,11 @@ export function CreditCardsContent() {
               className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
             />
           </div>
+          <ExpenseShare percent={sharePercent} onPercentChange={setSharePercent} sharedWith={sharedWith} onSharedWithChange={setSharedWith} amount={Number(chargeAmount)} currency={creditCards.find(card => card.id === chargeCardId)?.currency || baseCurrency} excluded={chargeExcluded} />
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border-subtle bg-bg-elevated p-4">
+            <input type="checkbox" checked={chargeExcluded} onChange={event => setChargeExcluded(event.target.checked)} className="mt-1 h-4 w-4 accent-[var(--accent-blue)]" />
+            <span><span className="block text-sm font-medium text-text-primary">Exclude from monthly totals</span><span className="mt-1 block text-xs text-text-secondary">Keep this charge in your card balance, but leave it out of spending reports and forecasts.</span></span>
+          </label>
           {chargeError && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">
               {chargeError}

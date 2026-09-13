@@ -4,12 +4,12 @@
 
 :root {
   color-scheme: light;
-  --bg-main: #f5f6f8;
+  --bg-main: #f6f5f2;
   --bg-secondary: #ffffff;
-  --bg-elevated: #eef0f4;
+  --bg-elevated: #eeede9;
 
   --text-primary: #16181d;
-  --text-secondary: #69707d;
+  --text-secondary: #60646c;
   --text-on-accent: #ffffff;
 
   --border-subtle: rgba(22, 24, 29, 0.1);
@@ -33,7 +33,7 @@
   --glow-2: rgba(185, 109, 69, 0.06);
 
   --card-bg: #ffffff;
-  --sidebar-bg: rgba(248, 249, 251, 0.92);
+  --sidebar-bg: rgba(250, 249, 246, 0.94);
   --card-shadow: 0 1px 2px rgba(17, 24, 39, 0.04), 0 18px 48px -36px rgba(17, 24, 39, 0.26);
   --card-shadow-hover: 0 2px 4px rgba(17, 24, 39, 0.05), 0 24px 60px -38px rgba(17, 24, 39, 0.34);
 }
@@ -82,7 +82,7 @@ html,
 body {
   background: var(--bg-main);
   color: var(--text-primary);
-  font-family: var(--font-manrope), "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", var(--font-manrope), "Segoe UI", sans-serif;
   overflow-x: hidden;
   width: 100%;
 }
@@ -634,3 +634,87 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   50%, 65% { transform: translateX(calc(-100% + 150px)); }
   100% { transform: translateX(0); }
 }
+
+
+/* Money workspace: readable data, restrained surfaces, and deliberate interaction. */
+.money-content { animation: money-enter 220ms ease-out; }
+.money-content :is(h1,h2,h3) { text-wrap: balance; }
+.money-content :is(td, .money-stat) { font-variant-numeric: tabular-nums; }
+.money-page-header h1 { font-size: clamp(1.9rem, 3vw, 2.6rem); letter-spacing: -.045em; }
+.money-page-header p { max-width: 42rem; line-height: 1.65; }
+.money-stat > div > div > p:first-child { text-transform: none; letter-spacing: 0; font-size: .8rem; font-weight: 500; }
+.money-stat { box-shadow: 0 1px 3px rgb(0 0 0 / .025); }
+.money-stat:hover { transform: none; }
+.money-toolbar { border-bottom: 1px solid var(--border-subtle); }
+.money-tool-button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border-radius: 50px; color: var(--text-secondary); }
+.money-tool-button:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.money-skip-link { position: fixed; top: -100px; left: 1rem; z-index: 100; border-radius: 12px; padding: 12px 20px; background: var(--text-primary); color: var(--bg-main); }
+.money-skip-link:focus { top: 1rem; }
+.money-command [cmdk-group-heading] { padding: 12px; font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+.money-command [cmdk-item] { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer; }
+.money-command [cmdk-item][data-selected=true] { background: var(--bg-elevated); }
+.money-more-sheet { left: 12px; right: 12px; top: auto; bottom: max(12px, env(safe-area-inset-bottom)); width: auto; max-width: none; max-height: calc(100dvh - 32px - env(safe-area-inset-top)); transform: none; padding: 20px; }
+.money-disclosure { margin: 24px 0; border: 1px solid var(--border-subtle); border-radius: 24px; background: var(--card-bg); padding: 20px; }
+.money-disclosure > summary { display: flex; justify-content: space-between; align-items: center; gap: 16px; cursor: pointer; font-size: 15px; font-weight: 600; list-style: none; min-height: 44px; }
+.money-disclosure > summary::-webkit-details-marker { display: none; }
+.money-disclosure > summary::after { content: '+'; color: var(--text-secondary); font-size: 24px; font-weight: 400; }
+.money-disclosure[open] > summary::after { content: '−'; }
+.money-disclosure[open] > summary { margin-bottom: 24px; }
+.money-filter-search { min-height: 44px; width: min(100%, 340px); border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--card-bg); padding: 10px 14px; font-size: 14px; }
+.money-settings-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.money-settings-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 16px; border: 1px solid var(--border-subtle); background: var(--card-bg); border-radius: 999px; font-size: 13px; }
+.money-settings-nav a:hover { background: var(--bg-elevated); }
+.money-content section[id] { scroll-margin-top: 20px; }
+@keyframes money-enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@media (hover: hover) {
+  button:active:not(:disabled), .money-primary-action:active { transform: scale(.98); }
+}
+@media (max-width: 639px) {
+  .money-content .grid:has(> .money-stat) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .money-content .grid:has(> .money-stat) > .money-stat:first-child:nth-last-child(3) { grid-column: 1 / -1; }
+  .money-stat { min-height: 100px; padding: 16px; border-radius: 20px; }
+  .money-stat > div > div > p:nth-child(2) { font-size: 1.45rem; margin-top: 10px; }
+  .money-stat > div > div:last-child:not(:first-child) { display: none; }
+  .money-page-header { margin-bottom: 24px; gap: 16px; }
+  .money-content :is(button, select), [role=dialog] :is(button, select) { min-height: 44px; }
+  .money-content button:has(> svg:only-child) { min-width: 44px; }
+  .money-content :is(input, textarea, select), [role=dialog] :is(input, textarea, select) { font-size: 16px; }
+  .money-form-dialog { top: auto; bottom: 0; left: 0; width: 100%; max-width: none; max-height: calc(100dvh - 16px - env(safe-area-inset-top)); transform: none; border-radius: 28px 28px 0 0; padding: 24px 20px max(24px, env(safe-area-inset-bottom)); }
+  .money-command { top: 16px; transform: translateX(-50%); max-height: calc(100dvh - 32px); }
+  .money-disclosure { padding: 16px; border-radius: 20px; }
+  .money-settings-nav { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; }
+  .money-settings-nav a { flex-shrink: 0; }
+  .money-hero { padding: 22px !important; }
+  .money-hero [data-tour=summary-stats] { margin-top: 20px; }
+  .money-hero [data-tour=summary-stats] > div:first-child { min-height: 170px; padding: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+.money-settings-group > summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; cursor: pointer; list-style: none; }
+.money-settings-group > summary::-webkit-details-marker { display: none; }
+.money-settings-group > summary::after { content: '+'; color: var(--text-secondary); font-size: 22px; }
+.money-settings-group[open] > summary { margin-bottom: 20px; }
+.money-settings-group[open] > summary::after { content: '−'; }
+@media (max-width: 639px) {
+ .money-hero-accounts > a { min-width: 0; min-height: 90px; padding: 14px; border-radius: 18px; }
+ .money-hero-accounts > a > span { display: none; }
+ .money-hero-accounts p:first-child { font-size: 11px; letter-spacing: 0; text-transform: none; }
+ .money-hero-accounts p:nth-child(2) { font-size: 18px; overflow-wrap: anywhere; }
+ .money-month-summary > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px; }
+ .money-month-summary > div > div:first-child { font-size: 11px; text-transform: none; letter-spacing: 0; }
+ .money-month-summary p, .money-month-summary > div > div:last-child { font-size: 16px; margin-top: 0; }
+ main .overflow-x-auto:has(> table)::before { content: 'Swipe to see all columns'; display: block; padding: 10px 16px; font-size: 11px; color: var(--text-secondary); }
+}
+
+:is(button, a, input, select, textarea, summary, [role="combobox"]):focus-visible { outline: 2px solid var(--accent-blue) !important; outline-offset: 3px; }
+
+/* Keep large financial values intact even in four-column summaries. */
+.money-stat > div { position: relative; }
+.money-stat > div > div:first-child { width: 100%; }
+.money-stat > div > div:last-child:not(:first-child) { position: absolute; top: 0; right: 0; width: 28px; height: 28px; margin: 0; }
+.money-stat > div > div > p:first-child { padding-right: 32px; min-height: 28px; }
+.money-stat > div > div > p:nth-child(2) { font-size: clamp(1.25rem, 2vw, 1.75rem); overflow-wrap: normal; }
+.dark main .bg-accent-purple.shadow-glow, .dark [role=dialog] .bg-accent-purple.text-white { background: var(--text-primary); color: var(--bg-main); }
+.money-settings-group:not([open]) { padding-top: 12px; padding-bottom: 12px; }

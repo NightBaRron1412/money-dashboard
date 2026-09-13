@@ -7,7 +7,7 @@ import { getServerFxRates, convertToBase, getStockQuotes } from "@/lib/money/ser
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import type { CurrencyCode, RecurrenceFrequency } from "@/lib/money/database.types";
 import { computeNetWorthBase } from "@/lib/money/net-worth";
-import { isIncludedInMonthlyTotals } from "@/lib/money/transaction-filters";
+import { isIncludedInMonthlyTotals, monthlyAmount } from "@/lib/money/transaction-filters";
 import {
   subscriptionMonthlyEquivalent,
   subscriptionYearlyEquivalent,
@@ -67,14 +67,14 @@ export async function GET() {
     const includedCurrentMonthTxs = currentMonthTxs.filter(isIncludedInMonthlyTotals);
     const includedPrevMonthTxs = prevMonthTxs.filter(isIncludedInMonthlyTotals);
 
-    const curIncome = includedCurrentMonthTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const curExpenses = includedCurrentMonthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const prevIncome = includedPrevMonthTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const prevExpenses = includedPrevMonthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
+    const curIncome = includedCurrentMonthTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(monthlyAmount(t), t.currency), 0);
+    const curExpenses = includedCurrentMonthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(monthlyAmount(t), t.currency), 0);
+    const prevIncome = includedPrevMonthTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(monthlyAmount(t), t.currency), 0);
+    const prevExpenses = includedPrevMonthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(monthlyAmount(t), t.currency), 0);
 
     const categoryBreakdown: Record<string, number> = {};
     for (const t of includedCurrentMonthTxs.filter((t) => t.type === "expense" && t.category)) {
-      categoryBreakdown[t.category!] = (categoryBreakdown[t.category!] ?? 0) + toBase(t.amount, t.currency);
+      categoryBreakdown[t.category!] = (categoryBreakdown[t.category!] ?? 0) + toBase(monthlyAmount(t), t.currency);
     }
 
     const savingsRate = curIncome > 0 ? ((curIncome - curExpenses) / curIncome * 100).toFixed(1) : "N/A";

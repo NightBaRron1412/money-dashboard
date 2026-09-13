@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { MerchantInput } from "../components/merchant-input";
 import { useMoneyData } from "../hooks/use-money-data";
 import { useMoneyFx } from "../hooks/use-money-fx";
 import {
@@ -132,6 +133,7 @@ export function IncomeContent() {
   const m = (v: number) => showBalances ? formatMoney(v, baseCurrency) : HIDDEN_BALANCE;
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
   const [filterBankId, setFilterBankId] = useState("");
 
   // Form state
@@ -174,9 +176,8 @@ export function IncomeContent() {
 
   const incomeTransactions = transactions.filter((t) => t.type === "income");
   const filteredIncomeTransactions = useMemo(() => {
-    if (!filterBankId) return incomeTransactions;
-    return incomeTransactions.filter((t) => t.account_id === filterBankId);
-  }, [incomeTransactions, filterBankId]);
+    return incomeTransactions.filter(t => (!filterBankId || t.account_id === filterBankId) && (!search.trim() || [t.merchant, t.category, t.notes, t.date].some(value => value?.toLowerCase().includes(search.trim().toLowerCase()))));
+  }, [incomeTransactions, filterBankId, search]);
 
   // Group by month for paycheck-only counting
   const monthCounts: Record<string, number> = {};
@@ -531,6 +532,7 @@ export function IncomeContent() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input type="search" aria-label="Search income" placeholder="Search merchant, category or notes…" value={search} onChange={event => setSearch(event.target.value)} className="money-filter-search" />
         <Filter className="h-4 w-4 text-text-secondary" />
         <select
           value={filterBankId}
@@ -544,9 +546,9 @@ export function IncomeContent() {
             </option>
           ))}
         </select>
-        {filterBankId && (
+        {(filterBankId || search) && (
           <button
-            onClick={() => setFilterBankId("")}
+            onClick={() => { setFilterBankId(""); setSearch(""); }}
             className="text-xs text-accent-blue hover:underline"
           >
             Clear filter
@@ -559,8 +561,8 @@ export function IncomeContent() {
           icon={<Wallet className="h-6 w-6" />}
           title="No income recorded"
           description={
-            filterBankId
-              ? "No income entries match this bank filter."
+            filterBankId || search
+              ? "No income entries match. Try another search or clear your filters."
               : "Add your first income entry to start tracking."
           }
           action={
@@ -666,12 +668,7 @@ export function IncomeContent() {
                     <td className="px-4 py-3 text-text-secondary max-w-[180px]">
                       {isEditing ? (
                         <div className="space-y-1.5">
-                          <input
-                            type="text"
-                            value={editMerchant}
-                            onChange={(e) => setEditMerchant(e.target.value)}
-                            className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple"
-                          />
+                          <MerchantInput value={editMerchant} onChange={setEditMerchant} records={transactions} />
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
@@ -878,13 +875,7 @@ export function IncomeContent() {
             <label className="mb-1 block text-xs font-medium text-text-secondary">
               Merchant / Description
             </label>
-            <input
-              type="text"
-              value={merchant}
-              onChange={(e) => setMerchant(e.target.value)}
-              placeholder="e.g., Employer, Robinhood, etc."
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
-            />
+            <MerchantInput value={merchant} onChange={setMerchant} records={transactions} />
           </div>
 
           {/* Recurring toggle */}

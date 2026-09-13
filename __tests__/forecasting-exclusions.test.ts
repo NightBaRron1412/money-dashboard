@@ -46,6 +46,14 @@ describe("forecastCashFlow exclusions", () => {
     vi.useRealTimers();
   });
 
+  it("uses the personal share once when forecasting shared expenses", () => {
+    const income = transaction("income", "income", 3000);
+    const shared = { ...transaction("shared", "expense", 100), personal_share_percent: 60 };
+    const expected = forecastCashFlow([income, transaction("personal", "expense", 60)], [], settings, 5000);
+    expect(forecastCashFlow([income, shared], [], settings, 5000)).toEqual(expected);
+    expect(shared.amount).toBe(100);
+  });
+
   it("produces the same totals as if excluded income and expenses were absent", () => {
     const included = [
       transaction("income-included", "income", 3_000),

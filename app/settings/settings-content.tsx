@@ -216,12 +216,10 @@ export function SettingsContent() {
         }
       />
 
+      <nav aria-label="Settings sections" className="money-settings-nav"><a href="#settings-currency" onClick={() => { const target = document.getElementById("settings-currency"); if (target instanceof HTMLDetailsElement) target.open = true; }}>Currency</a><a href="#settings-personalization" onClick={() => { const target = document.getElementById("settings-personalization"); if (target instanceof HTMLDetailsElement) target.open = true; }}>AI Greeting Preferences</a><a href="#settings-expense-categories" onClick={() => { const target = document.getElementById("settings-expense-categories"); if (target instanceof HTMLDetailsElement) target.open = true; }}>Expense Categories</a><a href="#settings-reminders" onClick={() => { const target = document.getElementById("settings-reminders"); if (target instanceof HTMLDetailsElement) target.open = true; }}>Reminder Timing</a><a href="#settings-budget" onClick={() => { const target = document.getElementById("settings-budget"); if (target instanceof HTMLDetailsElement) target.open = true; }}>Budget & Paycheck</a></nav>
       <div className="space-y-8">
         {/* Currency */}
-        <section className="rounded-2xl border border-border-subtle bg-bg-secondary p-6">
-          <h2 className="mb-4 text-base font-semibold text-text-primary">
-            Currency
-          </h2>
+        <details id="settings-currency" className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6" open><summary><h2 className="text-base font-semibold text-text-primary">Currency</h2></summary>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-text-secondary">
@@ -241,13 +239,10 @@ export function SettingsContent() {
               </p>
             </div>
           </div>
-        </section>
+        </details>
 
         {/* Greeting Preferences */}
-        <section className="rounded-2xl border border-border-subtle bg-bg-secondary p-6">
-          <h2 className="mb-4 text-base font-semibold text-text-primary">
-            AI Greeting Preferences
-          </h2>
+        <details id="settings-personalization" className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">AI Greeting Preferences</h2></summary>
           <div className="space-y-4">
             <div>
               <label className="mb-1 block text-xs font-medium text-text-secondary">
@@ -300,13 +295,10 @@ export function SettingsContent() {
               />
             </div>
           </div>
-        </section>
+        </details>
 
         {/* Expense Categories */}
-        <section className="rounded-2xl border border-border-subtle bg-bg-secondary p-6">
-          <h2 className="mb-4 text-base font-semibold text-text-primary">
-            Expense Categories
-          </h2>
+        <details id="settings-expense-categories" className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">Expense Categories</h2></summary>
           <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
               {expenseCategories.map((categoryName) => (
@@ -357,13 +349,10 @@ export function SettingsContent() {
               These categories appear in Expenses filters and forms.
             </p>
           </div>
-        </section>
+        </details>
 
         {/* Subscription Categories */}
-        <section className="rounded-2xl border border-border-subtle bg-bg-secondary p-6">
-          <h2 className="mb-4 text-base font-semibold text-text-primary">
-            Subscription Categories
-          </h2>
+        <details className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">Subscription Categories</h2></summary>
           <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
               {subscriptionCategories.map((categoryName) => (
@@ -414,15 +403,12 @@ export function SettingsContent() {
               These categories appear in the Subscriptions form.
             </p>
           </div>
-        </section>
+        </details>
 
         <BackgroundNotificationSettings />
 
         {/* Reminder Timing */}
-        <section className="rounded-2xl border border-border-subtle bg-bg-secondary p-6">
-          <h2 className="mb-4 text-base font-semibold text-text-primary">
-            Reminder Timing
-          </h2>
+        <details id="settings-reminders" className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">Reminder Timing</h2></summary>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-text-secondary">
@@ -457,13 +443,10 @@ export function SettingsContent() {
               </p>
             </div>
           </div>
-        </section>
+        </details>
 
         {/* Rent Settings */}
-        <section className="rounded-2xl border border-border-subtle bg-bg-secondary p-6">
-          <h2 className="mb-4 text-base font-semibold text-text-primary">
-            Rent Settings
-          </h2>
+        <details className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">Rent Settings</h2></summary>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-text-secondary">
@@ -490,13 +473,10 @@ export function SettingsContent() {
               />
             </div>
           </div>
-        </section>
+        </details>
 
         {/* Budget Settings */}
-        <section className="rounded-2xl border border-border-subtle bg-bg-secondary p-6">
-          <h2 className="mb-4 text-base font-semibold text-text-primary">
-            Budget & Paycheck
-          </h2>
+        <details id="settings-budget" className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">Budget & Paycheck</h2></summary>
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-text-secondary">
@@ -537,13 +517,10 @@ export function SettingsContent() {
               </select>
             </div>
           </div>
-        </section>
+        </details>
 
         {/* Dismissed Recurring Charges */}
-        <section className="rounded-2xl border border-border-subtle bg-bg-secondary p-6">
-          <h2 className="mb-1 text-base font-semibold text-text-primary">
-            Dismissed Recurring Charges
-          </h2>
+        <details className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">Dismissed Recurring Charges</h2></summary>
           <p className="mb-4 text-[11px] text-text-secondary">
             Merchants you dismiss from detected subscriptions won&apos;t appear again. Restore them here to re-enable detection.
           </p>
@@ -579,7 +556,7 @@ export function SettingsContent() {
               No dismissed merchants yet. Dismiss a detected recurring charge on the Subscriptions page and it will appear here.
             </p>
           )}
-        </section>
+        </details>
 
         {/* Allocation Plans — CRUD */}
         <section className="rounded-2xl border border-border-subtle bg-bg-secondary p-6">
@@ -908,10 +885,7 @@ export function SettingsContent() {
         <ChangePinSection />
 
         {/* Danger Zone */}
-        <section className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
-          <h2 className="mb-2 text-base font-semibold text-red-400">
-            Danger Zone
-          </h2>
+        <details className="money-settings-group rounded-2xl border border-red-500/20 bg-red-500/5 p-6"><summary><h2 className="text-base font-semibold text-text-primary">Danger Zone</h2></summary>
           <p className="mb-4 text-xs text-text-secondary">
             Reset all dashboard data. This will delete all accounts,
             transactions, goals, and settings. Seed data will be recreated on
@@ -944,7 +918,7 @@ export function SettingsContent() {
           >
             <RotateCcw className="h-4 w-4" /> Reset All Data
           </button>
-        </section>
+        </details>
       </div>
     </>
   );

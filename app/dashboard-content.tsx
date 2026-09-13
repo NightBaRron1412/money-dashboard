@@ -20,6 +20,7 @@ import {
   Wallet,
   AlertTriangle,
   Plus,
+  ArrowDownUp,
   Loader2,
   BarChart3,
   Target,
@@ -41,7 +42,7 @@ import {
 import { useBalanceVisibility } from "./balance-visibility-provider";
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import { detectSpendingAnomalies, forecastCashFlow, type CashFlowForecast } from "@/lib/money/forecasting";
-import { isIncludedInMonthlyTotals } from "@/lib/money/transaction-filters";
+import { isIncludedInMonthlyTotals, monthlyAmount } from "@/lib/money/transaction-filters";
 import { TakeTourButton } from "./tour/take-tour-button";
 import { computeNetWorthBase } from "@/lib/money/net-worth";
 
@@ -457,10 +458,10 @@ export function DashboardContent({
   );
   const monthIncomeBase = monthTxs
     .filter((t) => t.type === "income")
-    .reduce((s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx), 0);
+    .reduce((s, t) => s + convertCurrency(monthlyAmount(t), t.currency, baseCurrency, fx), 0);
   const monthExpensesBase = monthTxs
     .filter((t) => t.type === "expense")
-    .reduce((s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx), 0);
+    .reduce((s, t) => s + convertCurrency(monthlyAmount(t), t.currency, baseCurrency, fx), 0);
   const monthSavingsBase = monthIncomeBase - monthExpensesBase;
   const monthSavingsRate = savingsRate(monthIncomeBase, monthExpensesBase);
   const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
@@ -468,17 +469,17 @@ export function DashboardContent({
   const previousMonthTxs = monthlyTransactions.filter((t) => t.date >= previousFrom && t.date <= previousTo);
   const previousMonthIncomeBase = previousMonthTxs
     .filter((t) => t.type === "income")
-    .reduce((s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx), 0);
+    .reduce((s, t) => s + convertCurrency(monthlyAmount(t), t.currency, baseCurrency, fx), 0);
   const previousMonthExpensesBase = previousMonthTxs
     .filter((t) => t.type === "expense")
-    .reduce((s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx), 0);
+    .reduce((s, t) => s + convertCurrency(monthlyAmount(t), t.currency, baseCurrency, fx), 0);
   const previousMonthSavingsRate = savingsRate(previousMonthIncomeBase, previousMonthExpensesBase);
   const savingsRateDelta =
     monthSavingsRate !== null && previousMonthSavingsRate !== null
       ? monthSavingsRate - previousMonthSavingsRate
       : null;
 
-  const displayName = settings?.display_name?.trim() || "Amir";
+  const displayName = settings?.display_name?.trim() || "there";
 
   const currentHour = today.getHours();
   const greeting = currentHour < 12 ? "Good morning" : currentHour < 18 ? "Good afternoon" : "Good evening";
@@ -522,7 +523,7 @@ export function DashboardContent({
   // Separate rent from budget tracking so the bar reflects day-to-day spending
   const monthRentBase = monthTxs
     .filter((t) => t.type === "expense" && t.category?.toLowerCase() === "rent")
-    .reduce((s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx), 0);
+    .reduce((s, t) => s + convertCurrency(monthlyAmount(t), t.currency, baseCurrency, fx), 0);
   const monthExpensesExRent = monthExpensesBase - monthRentBase;
   const budgetExRent = Math.max(0, budgetAmount - rentAmount);
   const isOverBudget = budgetExRent > 0 && monthExpensesExRent > budgetExRent;
@@ -617,14 +618,9 @@ export function DashboardContent({
         <EmptyState
           icon={<Wallet className="h-6 w-6" />}
           title="Welcome to your Finance Dashboard"
-          description="It looks like your data hasn't been set up yet. This usually means the seed data is still loading. Try refreshing the page."
+          description="Add your first account to start tracking balances, spending, and the things you’re saving for."
           action={
-            <button
-              onClick={() => window.location.reload()}
-              className="rounded-xl bg-accent-purple px-4 py-2 text-sm font-medium text-white hover:-translate-y-0.5 transition shadow-glow"
-            >
-              Refresh
-            </button>
+            <Link href={`${appBase}/accounts` as any} className="money-primary-action inline-flex rounded-full px-5 py-3 text-sm font-semibold">Set up an account</Link>
           }
         />
       </>
@@ -643,13 +639,13 @@ export function DashboardContent({
               href={`${appBase}/income` as any}
               className="money-primary-action inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition"
             >
-              <Plus className="h-4 w-4" /> Add Income
+              <Wallet className="h-4 w-4" /> Income
             </Link>
             <Link
               href={`${appBase}/expenses` as any}
               className="money-secondary-action inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition"
             >
-              <Plus className="h-4 w-4" /> Add Expense
+              <ArrowDownUp className="h-4 w-4" /> Expenses
             </Link>
           </div>
         }
@@ -657,7 +653,7 @@ export function DashboardContent({
 
       <section data-tour="greeting" className={`relative mb-7 overflow-hidden rounded-[2rem] border ${greetingTheme.card}`}>
         <div className={`pointer-events-none absolute inset-0 ${greetingTheme.wash}`} />
-        <div className="relative p-6 sm:p-8 lg:p-10">
+        <div className="money-hero relative p-6 sm:p-8 lg:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -704,7 +700,7 @@ export function DashboardContent({
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="money-hero-accounts grid grid-cols-2 gap-3 lg:grid-cols-1">
               <Link href={`${appBase}/accounts` as any} className="money-interactive-surface flex min-h-[116px] items-center justify-between rounded-[1.5rem] bg-bg-elevated p-5">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.1em] text-text-secondary">Available cash</p>
@@ -722,7 +718,7 @@ export function DashboardContent({
             </div>
           </div>
 
-          <div className="mt-4 grid overflow-hidden rounded-[1.5rem] border border-border-subtle bg-[var(--card-bg)] sm:grid-cols-3">
+          <div className="money-month-summary mt-4 grid overflow-hidden rounded-[1.5rem] border border-border-subtle bg-[var(--card-bg)] sm:grid-cols-3">
             <div className="p-5 sm:border-r sm:border-border-subtle">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-text-secondary">
                 <span className="h-2 w-2 rounded-full bg-[var(--status-positive)]" /> Income this month
@@ -858,7 +854,7 @@ export function DashboardContent({
         const catMap: Record<string, number> = {};
         for (const tx of monthTxs.filter((t) => t.type === "expense" && t.category?.toLowerCase() !== "rent")) {
           const cat = tx.category || "Other";
-          catMap[cat] = (catMap[cat] || 0) + convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
+          catMap[cat] = (catMap[cat] || 0) + convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx);
         }
         const catBreakdown = Object.entries(catMap)
           .sort(([, a], [, b]) => b - a)
@@ -927,7 +923,8 @@ export function DashboardContent({
 
       {/* Recurring Transactions */}
       {recurringItems.length > 0 && (
-        <div className="money-surface mt-10 p-6">
+        <details className="money-disclosure">
+          <summary>Recurring transactions<span className="ml-auto text-xs font-normal text-text-secondary">{recurringItems.length} regular payments</span></summary>
           <div className="money-section-heading">
             <div className="flex items-center gap-2">
               <Repeat className="h-4 w-4 text-accent-purple" />
@@ -975,7 +972,7 @@ export function DashboardContent({
                           if (charge && card) {
                             await createLinkedCreditCardCharge(
                               { card_id: card.id, date: todayEST(), amount: charge.amount, merchant: charge.merchant, category: charge.category, notes: charge.notes },
-                              { currency: card.currency, cardName: card.name, is_recurring: true, recurrence: item.recurrence }
+                              { currency: card.currency, cardName: card.name, personal_share_percent: item.personal_share_percent ?? 100, shared_with: item.shared_with ?? null, exclude_from_monthly: item.exclude_from_monthly, is_recurring: true, recurrence: item.recurrence }
                             );
                           }
                         } else {
@@ -988,6 +985,7 @@ export function DashboardContent({
                             account_id: item.account_id,
                             merchant: item.merchant,
                             notes: null,
+                            personal_share_percent: item.personal_share_percent ?? 100, shared_with: item.shared_with ?? null, exclude_from_monthly: item.exclude_from_monthly,
                             is_recurring: true,
                             recurrence: item.recurrence as RecurrenceFrequency | null,
                             from_account_id: null,
@@ -1031,7 +1029,7 @@ export function DashboardContent({
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
 
 
@@ -1233,8 +1231,10 @@ export function DashboardContent({
         </div>
       )}
 
+      <details className="money-disclosure" data-tour="charts">
+        <summary>Explore charts &amp; trends<span className="ml-auto text-xs font-normal text-text-secondary">Your money over time</span></summary>
       {/* Charts */}
-      <div data-tour="charts" className="money-section-heading mt-10">
+      <div className="money-section-heading mt-10">
         <h2 className="flex items-center gap-2 text-text-primary"><BarChart3 className="h-4 w-4 text-accent-purple" /> Charts &amp; Trends</h2>
         <Link href={`${appBase}/reports` as any} className="text-xs font-semibold text-text-secondary transition hover:text-text-primary">Open reports →</Link>
       </div>
@@ -1251,6 +1251,7 @@ export function DashboardContent({
           baseCurrency={baseCurrency}
         />
       </div>
+      </details>
 
       
     </>

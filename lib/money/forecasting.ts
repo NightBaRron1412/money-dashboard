@@ -8,7 +8,7 @@ import type {
   CurrencyCode,
 } from "./database.types";
 import { convertCurrency, type FxRates } from "./fx";
-import { isIncludedInMonthlyTotals } from "./transaction-filters";
+import { isIncludedInMonthlyTotals, monthlyAmount } from "./transaction-filters";
 import { subscriptionMonthlyEquivalent } from "./subscription-costs";
 
 /* ------------------------------------------------------------------ */
@@ -57,7 +57,7 @@ export function forecastCashFlow(
   let totalIncome = 0;
   let totalExpenses = 0;
   for (const t of recent) {
-    const amt = toBase(t.amount, t.currency);
+    const amt = toBase(monthlyAmount(t), t.currency);
     if (t.type === "income") totalIncome += amt;
     else if (t.type === "expense") totalExpenses += amt;
   }
@@ -152,7 +152,7 @@ export function predictGoalCompletion(
   let totalIncome = 0;
   let totalExpenses = 0;
   for (const t of recent) {
-    const amt = toBase(t.amount, t.currency);
+    const amt = toBase(monthlyAmount(t), t.currency);
     if (t.type === "income") totalIncome += amt;
     else if (t.type === "expense") totalExpenses += amt;
   }
@@ -237,7 +237,7 @@ export function detectSpendingAnomalies(
   const currentByCategory: Record<string, number> = {};
   for (const t of currentMonthExpenses) {
     currentByCategory[t.category!] =
-      (currentByCategory[t.category!] ?? 0) + convert(t.amount, t.currency);
+      (currentByCategory[t.category!] ?? 0) + convert(monthlyAmount(t), t.currency);
   }
 
   // Pin to day-1 before subtracting months — otherwise dates like May 29
@@ -259,7 +259,7 @@ export function detectSpendingAnomalies(
   const monthsWithCategory: Record<string, Set<string>> = {};
   for (const t of prevExpenses) {
     const cat = t.category!;
-    prevByCategory[cat] = (prevByCategory[cat] ?? 0) + convert(t.amount, t.currency);
+    prevByCategory[cat] = (prevByCategory[cat] ?? 0) + convert(monthlyAmount(t), t.currency);
     if (!monthsWithCategory[cat]) monthsWithCategory[cat] = new Set();
     monthsWithCategory[cat].add(t.date.slice(0, 7));
   }

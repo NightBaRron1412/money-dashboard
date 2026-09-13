@@ -51,6 +51,8 @@ create table if not exists money_transactions (
   notes           text,
   is_recurring    boolean not null default false,
   exclude_from_monthly boolean not null default false,
+  personal_share_percent numeric(5,2) not null default 100 check (personal_share_percent >= 0 and personal_share_percent <= 100),
+  shared_with text check (shared_with is null or char_length(shared_with) <= 100),
   goal_id         uuid,  -- FK added after money_goals table
   recurrence      text check (recurrence in ('weekly','bi-weekly','monthly','yearly')),
   linked_charge_id uuid,  -- FK added after cc_charges table

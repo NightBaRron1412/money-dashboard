@@ -14,7 +14,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f6f8" },
+    { media: "(prefers-color-scheme: light)", color: "#f6f5f2" },
     { media: "(prefers-color-scheme: dark)", color: "#0e1014" },
   ],
 };
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${manrope.className} ${manrope.variable} antialiased text-sm sm:text-base`} suppressHydrationWarning>
+      <body className={`${manrope.variable} antialiased text-sm sm:text-base`} suppressHydrationWarning>
         <Providers>{children}</Providers>
         <SwRegister />
         {isAnalyticsEnabled ? <Analytics /> : null}

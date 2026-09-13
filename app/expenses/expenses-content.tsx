@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { monthlyAmount } from "@/lib/money/transaction-filters";
+import { ExpenseShare } from "../components/expense-share";
+import { MerchantInput } from "../components/merchant-input";
 import { useMoneyData } from "../hooks/use-money-data";
 import { useMoneyFx } from "../hooks/use-money-fx";
 import {
@@ -66,14 +69,24 @@ const createdAtMs = (value: string) => {
 
 export function ExpensesContent() {
   const { accounts, creditCards, creditCardCharges, transactions, settings, goals, loading, refresh } = useMoneyData();
+  const merchantHistory = useMemo(() => {
+    const linkedChargeIds = new Set(transactions.map(t => t.linked_charge_id).filter(Boolean));
+    const transactionIds = new Set(transactions.map(t => t.id));
+    return [...transactions.filter(t => t.type === "expense"), ...creditCardCharges.filter(charge => !linkedChargeIds.has(charge.id) && !transactionIds.has(charge.linked_transaction_id || ""))];
+  }, [transactions, creditCardCharges]);
   const { fx, ready: fxReady } = useMoneyFx();
   const { showBalances } = useBalanceVisibility();
   const baseCurrency: CurrencyCode = settings?.base_currency ?? "CAD";
   const m = (v: number) => showBalances ? formatMoney(v, baseCurrency) : HIDDEN_BALANCE;
+  const [sharePercent, setSharePercent] = useState(100);
+  const [sharedWith, setSharedWith] = useState("");
+  const [editSharePercent, setEditSharePercent] = useState(100);
+  const [editSharedWith, setEditSharedWith] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("");
   const [filterMonth, setFilterMonth] = useState<string>("");
+  const [search, setSearch] = useState("");
   const [filterBankId, setFilterBankId] = useState<string>("");
 
   // Inline edit state
@@ -146,8 +159,9 @@ export function ExpensesContent() {
     }
     if (filterCategory) txs = txs.filter((t) => t.category === filterCategory);
     if (filterMonth) txs = txs.filter((t) => t.date.startsWith(filterMonth));
+    if (search.trim()) txs = txs.filter(t => [t.merchant, t.category, t.notes, t.date].some(value => value?.toLowerCase().includes(search.trim().toLowerCase())));
     return txs;
-  }, [transactions, creditCardCharges, filterBankId, filterCategory, filterMonth]);
+  }, [transactions, creditCardCharges, filterBankId, filterCategory, filterMonth, search]);
 
   const categories = useMemo(() => {
     const loaded = normalizeCategories(settings?.expense_categories ?? []);
@@ -224,7 +238,7 @@ export function ExpensesContent() {
     const map: Record<string, number> = {};
     for (const tx of expenseTransactions) {
       const cat = tx.category || "Other";
-      map[cat] = (map[cat] || 0) + convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
+      map[cat] = (map[cat] || 0) + convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx);
     }
     return Object.entries(map)
       .sort(([, a], [, b]) => b - a)
@@ -274,7 +288,7 @@ export function ExpensesContent() {
             category,
             notes: txCurrency !== cardCurrency ? `${expenseNotes ? expenseNotes + " — " : ""}${amt} ${txCurrency} converted` : (expenseNotes || null),
           },
-          { currency: cardCurrency, cardName: card?.name ?? "Credit Card", is_recurring: isRecurring, recurrence: isRecurring ? recurrence : null }
+          { currency: cardCurrency, cardName: card?.name ?? "Credit Card", exclude_from_monthly: excludeFromMonthly, personal_share_percent: sharePercent, shared_with: sharedWith.trim() || null, is_recurring: isRecurring, recurrence: isRecurring ? recurrence : null }
         );
       } else {
         const acct = accounts.find((a) => a.id === accountId);
@@ -292,12 +306,14 @@ export function ExpensesContent() {
           notes: expenseNotes || null,
           is_recurring: isRecurring,
           recurrence: isRecurring ? recurrence : null,
-          exclude_from_monthly: excludeFromMonthly,
+          exclude_from_monthly: excludeFromMonthly, personal_share_percent: sharePercent, shared_with: sharedWith.trim() || null,
           goal_id: goalId || null,
         });
       }
       await refresh();
       setShowAdd(false);
+      setSharePercent(100);
+      setSharedWith("");
       setAmount("");
       setMerchant("");
       setExpenseNotes("");
@@ -318,7 +334,7 @@ export function ExpensesContent() {
     await refresh();
   };
 
-  const handleDuplicate = async (tx: { date: string; amount: number; currency: CurrencyCode; category: string | null; account_id: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; linked_charge_id: string | null; exclude_from_monthly: boolean; goal_id: string | null }) => {
+  const handleDuplicate = async (tx: { date: string; amount: number; currency: CurrencyCode; category: string | null; account_id: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; linked_charge_id: string | null; exclude_from_monthly: boolean; personal_share_percent?: number; shared_with?: string | null; goal_id: string | null }) => {
     setSaving(true);
     try {
       const isCC = !!tx.linked_charge_id;
@@ -339,6 +355,7 @@ export function ExpensesContent() {
             {
               currency: card.currency,
               cardName: card.name,
+              exclude_from_monthly: tx.exclude_from_monthly, personal_share_percent: tx.personal_share_percent ?? 100, shared_with: tx.shared_with ?? null,
               is_recurring: tx.is_recurring,
               recurrence: tx.recurrence,
             }
@@ -358,7 +375,7 @@ export function ExpensesContent() {
           notes: null,
           is_recurring: tx.is_recurring,
           recurrence: tx.recurrence,
-          exclude_from_monthly: tx.exclude_from_monthly,
+          exclude_from_monthly: tx.exclude_from_monthly, personal_share_percent: tx.personal_share_percent ?? 100, shared_with: tx.shared_with ?? null,
           goal_id: tx.goal_id,
         });
       }
@@ -368,7 +385,7 @@ export function ExpensesContent() {
     }
   };
 
-  const startEdit = (tx: { id: string; date: string; amount: number; category: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; account_id: string | null; exclude_from_monthly: boolean; goal_id: string | null; linked_charge_id: string | null }) => {
+  const startEdit = (tx: { id: string; date: string; amount: number; category: string | null; merchant: string | null; is_recurring: boolean; recurrence: RecurrenceFrequency | null; account_id: string | null; exclude_from_monthly: boolean; personal_share_percent?: number; shared_with?: string | null; goal_id: string | null; linked_charge_id: string | null }) => {
     setEditingId(tx.id);
     setEditDate(tx.date);
     setEditAmount(tx.amount.toString());
@@ -377,6 +394,8 @@ export function ExpensesContent() {
     setEditIsRecurring(tx.is_recurring);
     setEditRecurrence(tx.recurrence || "monthly");
     setEditExcludeFromMonthly(tx.exclude_from_monthly);
+    setEditSharePercent(tx.personal_share_percent ?? 100);
+    setEditSharedWith(tx.shared_with ?? "");
     setEditGoalId(tx.goal_id || "");
     // Pre-select the source: real account or `cc:<cardId>` if it's a linked CC charge
     if (tx.linked_charge_id) {
@@ -424,6 +443,7 @@ export function ExpensesContent() {
             {
               currency: cardCurrency,
               cardName: card?.name ?? "Credit Card",
+              exclude_from_monthly: editExcludeFromMonthly, personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null,
               is_recurring: editIsRecurring,
               recurrence: editIsRecurring ? editRecurrence : null,
             }
@@ -444,7 +464,7 @@ export function ExpensesContent() {
             notes: null,
             is_recurring: editIsRecurring,
             recurrence: editIsRecurring ? editRecurrence : null,
-            exclude_from_monthly: editExcludeFromMonthly,
+            exclude_from_monthly: editExcludeFromMonthly, personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null,
             goal_id: editGoalId || null,
           });
         }
@@ -457,7 +477,7 @@ export function ExpensesContent() {
           merchant: editMerchant || null,
           is_recurring: editIsRecurring,
           recurrence: editIsRecurring ? editRecurrence : null,
-          exclude_from_monthly: editExcludeFromMonthly,
+          exclude_from_monthly: editExcludeFromMonthly, personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null,
           goal_id: editGoalId || null,
         };
         if (!tx.linked_charge_id) {
@@ -503,7 +523,7 @@ export function ExpensesContent() {
       {/* Stats */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard
-          title="Total Expenses"
+          title="Total paid"
           value={m(totalExpensesBase)}
           subtitle={filterMonth || filterCategory || filterBankId ? "Filtered" : "All time"}
           icon={<ArrowDownUp className="h-5 w-5" />}
@@ -524,11 +544,15 @@ export function ExpensesContent() {
         />
       </div>
 
+      <div className="mb-6 rounded-2xl border border-border-subtle bg-[var(--card-bg)] px-5 py-4 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm text-text-secondary">Your spending <span className="block text-xs">After shared and excluded amounts</span></span>
+        <strong data-testid="personal-spending" className="text-xl font-semibold tracking-tight">{m(expenseTransactions.reduce((sum, tx) => sum + convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx), 0))}</strong>
+      </div>
       {/* Category breakdown */}
       {categoryBreakdown.length > 0 && (
         <div data-tour="category-breakdown" className="mb-6">
           <h3 className="mb-3 text-sm font-semibold text-text-primary">
-            Category Breakdown
+            Your spending by category
           </h3>
           <div className="flex flex-wrap gap-2">
             {categoryBreakdown.map(({ name, amount }) => (
@@ -551,6 +575,7 @@ export function ExpensesContent() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input type="search" aria-label="Search expenses" placeholder="Search merchant, category or notes…" value={search} onChange={event => setSearch(event.target.value)} className="money-filter-search" />
         <Filter className="h-4 w-4 text-text-secondary" />
         <select
           value={filterBankId}
@@ -597,9 +622,10 @@ export function ExpensesContent() {
             </option>
           ))}
         </select>
-        {(filterCategory || filterMonth || filterBankId) && (
+        {(filterCategory || filterMonth || filterBankId || search) && (
           <button
             onClick={() => {
+              setSearch("");
               setFilterBankId("");
               setFilterCategory("");
               setFilterMonth("");
@@ -617,12 +643,12 @@ export function ExpensesContent() {
           icon={<ArrowDownUp className="h-6 w-6" />}
           title="No expenses found"
           description={
-            filterCategory || filterMonth || filterBankId
+            filterCategory || filterMonth || filterBankId || search
               ? "Try adjusting your filters."
               : "Add your first expense to start tracking spending."
           }
           action={
-            !filterCategory && !filterMonth && !filterBankId ? (
+            !filterCategory && !filterMonth && !filterBankId && !search ? (
               <button
                 onClick={() => setShowAdd(true)}
                 className="rounded-xl bg-accent-purple px-4 py-2 text-sm font-medium text-white shadow-glow transition hover:-translate-y-0.5"
@@ -724,8 +750,7 @@ export function ExpensesContent() {
                     <td className="px-4 py-3 text-text-secondary max-w-[180px]">
                       {isEditing ? (
                         <div className="space-y-1.5">
-                          <input type="text" value={editMerchant} onChange={(e) => setEditMerchant(e.target.value)}
-                            className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
+                          <MerchantInput value={editMerchant} onChange={setEditMerchant} records={merchantHistory} />
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
@@ -748,6 +773,7 @@ export function ExpensesContent() {
                               <option value="yearly">Yearly</option>
                             </select>
                           )}
+                          <ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editAmount)} currency={tx.currency} excluded={editExcludeFromMonthly} />
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
@@ -783,6 +809,7 @@ export function ExpensesContent() {
                               <Repeat className="h-2.5 w-2.5" /> {tx.recurrence}
                             </span>
                           )}
+                          {(tx.personal_share_percent ?? 100) < 100 && <span className="mt-1 block whitespace-normal text-xs text-accent-blue">Shared{tx.shared_with ? ` with ${tx.shared_with}` : ""} · {tx.personal_share_percent}% yours</span>}
                           {tx.exclude_from_monthly && (
                             <span className="mt-0.5 inline-flex items-center gap-0.5 rounded bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400" title="Excluded from monthly totals">
                               Excluded
@@ -979,21 +1006,8 @@ export function ExpensesContent() {
             <label className="mb-1 block text-xs font-medium text-text-secondary">
               Merchant
             </label>
-            <input
-              id="expense-merchant"
-              type="text"
-              value={merchant}
-              onChange={(e) => setMerchant(e.target.value)}
-              onBlur={(e) => {
-                const notesEl = document.getElementById("expense-notes") as HTMLInputElement | null;
-                autoCategorize(e.target.value, notesEl?.value);
-              }}
-              placeholder="e.g., Trader Joe's"
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
-            />
-            {autoCategorizePending && (
-              <p className="mt-1 text-[10px] text-accent-purple">Suggesting category…</p>
-            )}
+            <MerchantInput id="expense-merchant" value={merchant} onChange={setMerchant} records={merchantHistory} onSelectCategory={value => { if (categories.includes(value)) setCategory(value); }} onNewMerchant={value => autoCategorize(value, expenseNotes)} />
+            <p aria-live="polite" className="mt-1 min-h-4 text-[11px] text-accent-purple">{autoCategorizePending ? "Suggesting category…" : ""}</p>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-text-secondary">
@@ -1013,16 +1027,10 @@ export function ExpensesContent() {
             />
           </div>
           {/* Recurring toggle */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsRecurring(!isRecurring)}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition ${isRecurring ? "bg-accent-purple" : "bg-bg-elevated"}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${isRecurring ? "translate-x-5" : ""}`} />
-            </button>
-            <span className="text-sm text-text-primary">Recurring expense</span>
-          </div>
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-text-primary">
+            <input type="checkbox" checked={isRecurring} onChange={event => setIsRecurring(event.target.checked)} className="h-4 w-4 accent-[var(--accent-blue)]" />
+            Recurring expense
+          </label>
           {isRecurring && (
             <div>
               <label className="mb-1 block text-xs font-medium text-text-secondary">Frequency</label>
@@ -1035,16 +1043,11 @@ export function ExpensesContent() {
               </select>
             </div>
           )}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setExcludeFromMonthly(!excludeFromMonthly)}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition ${excludeFromMonthly ? "bg-accent-purple" : "bg-bg-elevated"}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${excludeFromMonthly ? "translate-x-5" : ""}`} />
-            </button>
-            <span className="text-sm text-text-primary">Exclude from monthly totals</span>
-          </div>
+          <ExpenseShare percent={sharePercent} onPercentChange={setSharePercent} sharedWith={sharedWith} onSharedWithChange={setSharedWith} amount={Number(amount)} currency={expenseCurrency || (accountId.startsWith("cc:") ? creditCards.find((c) => c.id === accountId.slice(3))?.currency : accounts.find((a) => a.id === accountId)?.currency) || baseCurrency} excluded={excludeFromMonthly} />
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-text-primary">
+            <input type="checkbox" checked={excludeFromMonthly} onChange={event => setExcludeFromMonthly(event.target.checked)} className="h-4 w-4 accent-[var(--accent-blue)]" />
+            Exclude from monthly totals
+          </label>
           {goals.length > 0 && (
             <div>
               <label className="mb-1 block text-xs font-medium text-text-secondary">Link to goal (optional)</label>

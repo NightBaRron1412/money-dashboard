@@ -2,7 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import type { CurrencyCode } from "@/lib/money/database.types";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { X } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -21,7 +22,7 @@ export function StatCard({ title, value, subtitle, icon, trend, className }: Sta
   return (
     <div
       className={cn(
-        "money-surface money-interactive-surface min-h-[138px] p-6",
+        "money-surface money-stat min-h-[124px] p-5 sm:p-6",
         className
       )}
     >
@@ -74,7 +75,7 @@ export function ProgressBar({
   color = "bg-accent-purple",
   className,
 }: ProgressBarProps) {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  const pct = max > 0 ? Math.max(0, Math.min((value / max) * 100, 100)) : 0;
   return (
     <div className={cn("space-y-1", className)}>
       {(label || showPercentage) && (
@@ -85,7 +86,7 @@ export function ProgressBar({
           )}
         </div>
       )}
-      <div className="h-2 overflow-hidden rounded-full bg-bg-elevated">
+      <div role="progressbar" aria-label={label || "Progress"} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} className="h-2 overflow-hidden rounded-full bg-bg-elevated">
         <div
           className={cn("h-full rounded-full transition-all duration-500", color)}
           style={{ width: `${pct}%` }}
@@ -106,7 +107,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, action }: PageHeaderProps) {
   return (
-    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between lg:mb-10">
+    <div className="money-page-header mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between lg:mb-8">
       <div>
         <h1 className="text-3xl font-semibold tracking-[-0.045em] text-text-primary sm:text-4xl">{title}</h1>
         {description && (
@@ -155,51 +156,24 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
-  const [visible, setVisible] = useState(false);
-
+  const returnFocus = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (open) {
-      requestAnimationFrame(() => setVisible(true));
-    } else {
-      setVisible(false);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    if (open) return;
+    // Safari does not focus buttons on touch. Remember the opener explicitly.
+    const rememberOpener = (event: PointerEvent) => {
+      const target = event.target instanceof Element ? event.target.closest<HTMLElement>("button, a, [role=button]") : null;
+      if (target) returnFocus.current = target;
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
-  if (!open) return null;
+    document.addEventListener("pointerdown", rememberOpener, true);
+    return () => document.removeEventListener("pointerdown", rememberOpener, true);
+  }, [open]);
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
-      <div
-        className={cn("absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200", visible ? "opacity-100" : "opacity-0")}
-        onClick={onClose}
-      />
-      <div
-        className={cn(
-          "relative z-10 mx-4 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-[1.75rem] border border-border-subtle bg-[var(--card-bg)] p-7 shadow-card transition-all duration-200",
-          visible ? "scale-100 opacity-100" : "scale-95 opacity-0",
-          className
-        )}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold tracking-tight text-text-primary">{title}</h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+      <DialogContent aria-describedby={undefined} onOpenAutoFocus={() => { if (!returnFocus.current && document.activeElement instanceof HTMLElement && document.activeElement !== document.body) returnFocus.current = document.activeElement; }} onCloseAutoFocus={event => { if (returnFocus.current?.isConnected) { event.preventDefault(); returnFocus.current.focus(); } }} className={cn("money-form-dialog max-w-lg", className)}>
+        <DialogTitle className="mb-6 pr-10 text-xl">{title}</DialogTitle>
         {children}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

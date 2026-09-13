@@ -7,7 +7,7 @@ import { getServerFxRates, convertToBase, getStockQuotes } from "@/lib/money/ser
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import type { CurrencyCode } from "@/lib/money/database.types";
 import { computeNetWorthBase } from "@/lib/money/net-worth";
-import { isIncludedInMonthlyTotals } from "@/lib/money/transaction-filters";
+import { isIncludedInMonthlyTotals, monthlyAmount } from "@/lib/money/transaction-filters";
 
 export const maxDuration = 30;
 
@@ -62,10 +62,10 @@ export async function GET() {
     const includedCurTxs = curTxs.filter(isIncludedInMonthlyTotals);
     const includedPrevTxs = prevTxs.filter(isIncludedInMonthlyTotals);
 
-    const curIncome = includedCurTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const curExpenses = includedCurTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const prevIncome = includedPrevTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
-    const prevExpenses = includedPrevTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.currency), 0);
+    const curIncome = includedCurTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(monthlyAmount(t), t.currency), 0);
+    const curExpenses = includedCurTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(monthlyAmount(t), t.currency), 0);
+    const prevIncome = includedPrevTxs.filter((t) => t.type === "income").reduce((s, t) => s + toBase(monthlyAmount(t), t.currency), 0);
+    const prevExpenses = includedPrevTxs.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(monthlyAmount(t), t.currency), 0);
 
     const savingsRate = curIncome > 0 ? ((curIncome - curExpenses) / curIncome * 100) : null;
     const prevSavingsRate = prevIncome > 0 ? ((prevIncome - prevExpenses) / prevIncome * 100) : null;
@@ -74,7 +74,7 @@ export async function GET() {
     for (const t of includedCurTxs.filter(
       (t) => t.type === "expense" && t.category
     )) {
-      categoryBreakdown[t.category!] = (categoryBreakdown[t.category!] ?? 0) + toBase(t.amount, t.currency);
+      categoryBreakdown[t.category!] = (categoryBreakdown[t.category!] ?? 0) + toBase(monthlyAmount(t), t.currency);
     }
     const topCategories = Object.entries(categoryBreakdown)
       .sort((a, b) => b[1] - a[1])

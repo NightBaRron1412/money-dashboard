@@ -14,7 +14,7 @@ export function Providers({ children }: ProvidersProps) {
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
       <MotionProvider>{children}</MotionProvider>
       <Toaster
-        position="bottom-right"
+        position="top-right"
         toastOptions={{
           style: {
             background: "var(--bg-secondary)",

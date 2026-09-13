@@ -20,7 +20,7 @@ import type { Transaction, CurrencyCode, NetWorthSnapshot } from "@/lib/money/da
 import type { FxRates } from "@/lib/money/fx";
 import { getCategoryColorHex } from "./money-ui";
 import { convertCurrency } from "@/lib/money/fx";
-import { isIncludedInMonthlyTotals } from "@/lib/money/transaction-filters";
+import { isIncludedInMonthlyTotals, monthlyAmount } from "@/lib/money/transaction-filters";
 import { format, parseISO } from "date-fns";
 import { formatMoney, formatMoneyCompact } from "./money-ui";
 import { useBalanceVisibility } from "../balance-visibility-provider";
@@ -135,7 +135,7 @@ export function ExpensesByCategoryChart({
       (t) => t.type === "expense" && isIncludedInMonthlyTotals(t)
     )) {
       const cat = tx.category || "Other";
-      map[cat] = (map[cat] || 0) + convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
+      map[cat] = (map[cat] || 0) + convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx);
     }
     return Object.entries(map)
       .map(([name, value]) => ({ name, value: Math.round(value) }))
@@ -211,7 +211,7 @@ export function IncomeVsExpensesChart({
       if (tx.type === "transfer" || !isIncludedInMonthlyTotals(tx)) continue;
       const key = tx.date.slice(0, 7);
       if (!map[key]) map[key] = { income: 0, expenses: 0 };
-      const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
+      const amt = convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx);
       if (tx.type === "income") map[key].income += amt;
       if (tx.type === "expense") map[key].expenses += amt;
     }

@@ -35,7 +35,7 @@ import {
 } from "recharts";
 import type { CurrencyCode } from "@/lib/money/database.types";
 import { convertCurrency } from "@/lib/money/fx";
-import { isIncludedInMonthlyTotals } from "@/lib/money/transaction-filters";
+import { isIncludedInMonthlyTotals, monthlyAmount } from "@/lib/money/transaction-filters";
 
 const CHART_TOOLTIP_STYLE = {
   background: "var(--bg-secondary)",
@@ -113,7 +113,7 @@ export function ReportsContent() {
       for (const tx of filteredTxs) {
         const day = tx.date.slice(8, 10); // DD
         if (!map[day]) map[day] = { income: 0, expenses: 0 };
-        const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
+        const amt = convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx);
         if (tx.type === "income") map[day].income += amt;
         if (tx.type === "expense") map[day].expenses += amt;
       }
@@ -126,7 +126,7 @@ export function ReportsContent() {
       for (const tx of filteredTxs) {
         const monthIdx = String(parseInt(tx.date.slice(5, 7), 10) - 1).padStart(2, "0");
         if (!map[monthIdx]) map[monthIdx] = { income: 0, expenses: 0 };
-        const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
+        const amt = convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx);
         if (tx.type === "income") map[monthIdx].income += amt;
         if (tx.type === "expense") map[monthIdx].expenses += amt;
       }
@@ -135,7 +135,7 @@ export function ReportsContent() {
       for (const tx of filteredTxs) {
         const yr = tx.date.slice(0, 4);
         if (!map[yr]) map[yr] = { income: 0, expenses: 0 };
-        const amt = convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
+        const amt = convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx);
         if (tx.type === "income") map[yr].income += amt;
         if (tx.type === "expense") map[yr].expenses += amt;
       }
@@ -167,7 +167,7 @@ export function ReportsContent() {
     for (const tx of filteredTxs) {
       if (tx.type !== "expense") continue;
       const cat = tx.category || "Other";
-      map[cat] = (map[cat] || 0) + convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
+      map[cat] = (map[cat] || 0) + convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx);
     }
     return Object.entries(map)
       .sort(([, a], [, b]) => b - a)

@@ -7,7 +7,7 @@ import { computeAccountBalance } from "@/lib/money/queries";
 import { computeGoalProgress } from "@/lib/money/goal-allocation";
 import type { CurrencyCode, RecurrenceFrequency } from "@/lib/money/database.types";
 import { computeNetWorthBase } from "@/lib/money/net-worth";
-import { isIncludedInMonthlyTotals } from "@/lib/money/transaction-filters";
+import { isIncludedInMonthlyTotals, monthlyAmount } from "@/lib/money/transaction-filters";
 import {
   subscriptionMonthlyEquivalent,
   subscriptionYearlyEquivalent,
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     for (const t of txs.filter(isIncludedInMonthlyTotals)) {
       const month = t.date.slice(0, 7);
       if (!monthlySummaries[month]) monthlySummaries[month] = { income: 0, expenses: 0, byCategory: {} };
-      const amt = toBase(t.amount, t.currency);
+      const amt = toBase(monthlyAmount(t), t.currency);
       if (t.type === "income") monthlySummaries[month].income += amt;
       else if (t.type === "expense") {
         monthlySummaries[month].expenses += amt;
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
 
     const topMerchants: Record<string, number> = {};
     for (const t of txs.filter(t => t.type === "expense" && t.merchant && isIncludedInMonthlyTotals(t))) {
-      topMerchants[t.merchant!] = (topMerchants[t.merchant!] ?? 0) + toBase(t.amount, t.currency);
+      topMerchants[t.merchant!] = (topMerchants[t.merchant!] ?? 0) + toBase(monthlyAmount(t), t.currency);
     }
 
     const context = `
