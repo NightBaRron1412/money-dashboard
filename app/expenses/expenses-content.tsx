@@ -525,40 +525,16 @@ export function ExpensesContent() {
       />
       </div>
 
-      {/* Stats */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <StatCard
-          title="Total paid"
-          value={m(totalExpensesBase)}
-          subtitle={filterMonth || filterCategory || filterBankId ? "Filtered" : "All time"}
-          icon={<ArrowDownUp className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Transactions"
-          value={expenseTransactions.length.toString()}
-          icon={<ShoppingCart className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Avg per Transaction"
-          value={m(
-            expenseTransactions.length > 0
-              ? totalExpensesBase / expenseTransactions.length
-              : 0
-          )}
-          icon={<ArrowDownUp className="h-5 w-5" />}
-        />
-      </div>
-
-      <div className="mb-6 rounded-2xl border border-border-subtle bg-[var(--card-bg)] px-5 py-4 flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm text-text-secondary">Your spending <span className="block text-xs">After shared and excluded amounts</span></span>
-        <strong data-testid="personal-spending" className="text-xl font-semibold tracking-tight">{m(expenseTransactions.reduce((sum, tx) => sum + convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx), 0))}</strong>
+      <div className="mb-5 grid gap-3 sm:grid-cols-2">
+        <StatCard title="Total paid" value={m(totalExpensesBase)} subtitle={`${expenseTransactions.length} transactions`} />
+        <div className="money-stat rounded-2xl border border-border-subtle bg-[var(--card-bg)] px-5 py-4"><p className="text-sm text-text-secondary">Your spending</p><strong data-testid="personal-spending" className="mt-3 block text-2xl font-semibold tracking-tight">{m(expenseTransactions.reduce((sum, tx) => sum + convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx), 0))}</strong><p className="mt-2 text-xs text-text-secondary">After shared and excluded amounts</p></div>
       </div>
       {/* Category breakdown */}
       {categoryBreakdown.length > 0 && (
-        <div data-tour="category-breakdown" className="mb-6">
-          <h3 className="mb-3 text-sm font-semibold text-text-primary">
+        <details data-tour="category-breakdown" className="money-disclosure !my-0 mb-5">
+          <summary>
             Your spending by category
-          </h3>
+          </summary>
           <div className="flex flex-wrap gap-2">
             {categoryBreakdown.map(({ name, amount }) => (
               <div
@@ -575,12 +551,12 @@ export function ExpensesContent() {
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <input type="search" aria-label="Search expenses" placeholder="Search merchant, category or notes…" value={search} onChange={event => setSearch(event.target.value)} className="money-filter-search" />
+        <input type="search" aria-label="Search expenses" placeholder="Search merchant, category or notes…" value={search} onChange={event => setSearch(event.target.value)} className="money-filter-search" /><select aria-label="Sort transactions" className="rounded-xl border border-border-subtle bg-bg-elevated px-3 py-2 text-xs sm:hidden" value={`${sortKey}:${sortDir}`} onChange={event=>{const [key,dir]=event.target.value.split(":");setSortKey(key as typeof sortKey);setSortDir(dir as "asc"|"desc");}}><option value="date:desc">Newest first</option><option value="date:asc">Oldest first</option><option value="amount:desc">Largest first</option><option value="amount:asc">Smallest first</option></select>
         <Filter className="h-4 w-4 text-text-secondary" />
         <select
           value={filterBankId}
@@ -665,7 +641,7 @@ export function ExpensesContent() {
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-border-subtle">
-          <table className="w-full min-w-[600px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
+          <table className="money-ledger-list w-full min-w-[600px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
             <thead>
               <tr className="border-b border-border-subtle bg-bg-secondary">
                 <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary cursor-pointer select-none hover:text-text-primary" onClick={() => toggleSort("date")}>
@@ -710,12 +686,12 @@ export function ExpensesContent() {
                     key={tx.id}
                     className="border-b border-border-subtle last:border-0 hover:bg-bg-elevated/50"
                   >
-                    <td className="px-4 py-3 text-text-primary">
+                    <td className="px-4 py-3 text-text-primary" data-field="date">
                       {(
                         format(new Date(tx.date + "T00:00:00"), "MMM d, yyyy")
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-red-400">
+                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-red-400" data-field="amount">
                       {showBalances ? (
                         <span>
                           -{formatMoney(tx.amount, tx.currency)}
@@ -730,7 +706,7 @@ export function ExpensesContent() {
                         </span>
                       ) : HIDDEN_BALANCE}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" data-field="category">
                       {(
                         <span className="inline-flex items-center gap-1.5">
                           <span className={`h-2 w-2 rounded-full ${getCategoryColorTw(tx.category || "Other")}`} />
@@ -738,7 +714,7 @@ export function ExpensesContent() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-text-secondary max-w-[180px]">
+                    <td className="px-4 py-3 text-text-secondary max-w-[180px]" data-field="merchant">
                       {(
                         <div className="max-w-[200px]">
                           <span className="block truncate text-text-primary" title={tx.merchant || undefined}>{tx.merchant || "—"}</span>
@@ -767,19 +743,19 @@ export function ExpensesContent() {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-text-secondary">
+                    <td className="px-4 py-3 text-text-secondary" data-field="account">
                       {(
                         <span className="block max-w-[140px] truncate" title={accountDisplay}>{accountDisplay}</span>
                       )}
                     </td>
                     {showBalance && (
-                      <td className="px-4 py-3 text-right font-semibold text-text-primary">
+                      <td className="px-4 py-3 text-right font-semibold text-text-primary" data-field="balance">
                         {showBalances && runningBalances[tx.id] != null
                           ? formatMoney(runningBalances[tx.id], tx.currency)
                           : showBalances ? "—" : HIDDEN_BALANCE}
                       </td>
                     )}
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right" data-field="actions">
                       {(
                         <div className="flex items-center justify-end gap-1">
                           {tx.is_recurring && (
@@ -794,7 +770,7 @@ export function ExpensesContent() {
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button onClick={() => handleDelete(tx.id)}
-                            className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400">
+                            className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400" aria-label="Delete" title="Delete">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
@@ -819,14 +795,14 @@ export function ExpensesContent() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="expenses-field-1">
                 Date
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full max-w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple [&::-webkit-datetime-edit]:min-w-0"
+                className="w-full max-w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple [&::-webkit-datetime-edit]:min-w-0" id="expenses-field-1"
               />
             </div>
             <div>
@@ -871,13 +847,13 @@ export function ExpensesContent() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="expenses-field-2">
                 Category
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="expenses-field-2"
               >
                 {categories.map((c) => (
                   <option key={c} value={c}>
@@ -954,9 +930,9 @@ export function ExpensesContent() {
           </label>
           {isRecurring && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">Frequency</label>
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="expenses-field-3">Frequency</label>
               <select value={recurrence} onChange={(e) => setRecurrence(e.target.value as RecurrenceFrequency)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple">
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="expenses-field-3">
                 <option value="weekly">Weekly</option>
                 <option value="bi-weekly">Bi-weekly</option>
                 <option value="monthly">Monthly</option>
@@ -971,11 +947,11 @@ export function ExpensesContent() {
           </label>
           {goals.length > 0 && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">Link to goal (optional)</label>
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="expenses-field-4">Link to goal (optional)</label>
               <select
                 value={goalId}
                 onChange={(e) => setGoalId(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="expenses-field-4"
               >
                 <option value="">None</option>
                 {goals.map((g) => (

@@ -279,6 +279,7 @@ export function DashboardContent({
     }
   }, [loading, error, settings?.rent_day, settings?.rent_reminder_days, settings?.bill_reminder_days, subscriptions]);
 
+  const portfolioPricesMissing = holdings.some(h => !["CASH", "CASHCAD"].includes(h.symbol.toUpperCase()) && !(stockQuotes[h.symbol.toUpperCase()]?.price > 0));
   const portfolioMarketValueBase = holdings.reduce((sum, h) => {
     const sym = h.symbol.toUpperCase();
     const quote = stockQuotes[sym];
@@ -1134,14 +1135,14 @@ export function DashboardContent({
           <div className="mb-5 grid gap-5 sm:grid-cols-3">
             <StatCard
               title="Portfolio Value"
-              value={m(portfolioMarketValueBase)}
+              value={portfolioPricesMissing ? "Unavailable" : m(portfolioMarketValueBase)}
               icon={<BarChart3 className="h-5 w-5" />}
             />
             <StatCard
               title="Total Gain/Loss"
-              value={showBalances ? `${portfolioGainBase >= 0 ? "+" : ""}${formatMoney(portfolioGainBase, baseCurrency)}` : HIDDEN_BALANCE}
+              value={portfolioPricesMissing ? "Unavailable" : showBalances ? `${portfolioGainBase >= 0 ? "+" : ""}${formatMoney(portfolioGainBase, baseCurrency)}` : HIDDEN_BALANCE}
               subtitle={
-                showBalances && portfolioCostBase > 0
+                !portfolioPricesMissing && showBalances && portfolioCostBase > 0
                   ? `${portfolioGainBase >= 0 ? "+" : ""}${((portfolioGainBase / portfolioCostBase) * 100).toFixed(1)}%`
                   : undefined
               }
@@ -1149,7 +1150,7 @@ export function DashboardContent({
             />
             <StatCard
               title="Today's Change"
-              value={showBalances ? `${portfolioDayChangeBase >= 0 ? "+" : ""}${formatMoney(portfolioDayChangeBase, baseCurrency)}` : HIDDEN_BALANCE}
+              value={portfolioPricesMissing ? "Unavailable" : showBalances ? `${portfolioDayChangeBase >= 0 ? "+" : ""}${formatMoney(portfolioDayChangeBase, baseCurrency)}` : HIDDEN_BALANCE}
               icon={<DollarSign className="h-5 w-5" />}
             />
           </div>
@@ -1166,7 +1167,7 @@ export function DashboardContent({
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-text-primary">
-                    {m(h.value)}
+                    {!["CASH", "CASHCAD"].includes(h.sym) && !(h.quote?.price && h.quote.price > 0) ? "Awaiting price" : m(h.value)}
                   </p>
                   {showBalances && h.quote && (
                     <p

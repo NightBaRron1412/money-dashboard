@@ -792,13 +792,13 @@ export function CreditCardsContent() {
                     <button
                       onClick={() => openEditCard(card)}
                       className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"
-                    >
+                     aria-label="Edit" title="Edit">
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteCard(card.id, card.name)}
                       className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"
-                    >
+                     aria-label="Delete" title="Delete">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -940,7 +940,7 @@ export function CreditCardsContent() {
             </p>
           ) : (
           <div className="overflow-x-auto rounded-2xl border border-border-subtle">
-            <table className="w-full min-w-[500px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
+            <table className="money-ledger-list w-full min-w-[500px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
               <thead>
                 <tr className="border-b border-border-subtle bg-bg-secondary">
                   <th
@@ -997,7 +997,7 @@ export function CreditCardsContent() {
                       key={charge.id}
                       className="border-b border-border-subtle last:border-0 hover:bg-bg-elevated/50"
                     >
-                      <td className="px-4 py-3 text-text-secondary">
+                      <td className="px-4 py-3 text-text-secondary" data-field="merchant">
                         {(
                           <span className="block max-w-[180px]">
                             <span className="block truncate" title={charge.merchant || undefined}>{charge.merchant || "—"}</span>
@@ -1008,21 +1008,21 @@ export function CreditCardsContent() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-text-primary">
+                      <td className="px-4 py-3 text-text-primary" data-field="date">
                         {(
                           format(new Date(charge.date + "T00:00:00"), "MMM d, yyyy")
                         )}
                       </td>
-                      <td className="px-4 py-3 text-text-primary">
+                      <td className="px-4 py-3 text-text-primary" data-field="account">
                         <span className="block max-w-[130px] truncate" title={card?.name || undefined}>{card?.name || "—"}</span>
                       </td>
 
-                      <td className="px-4 py-3 text-text-secondary">
+                      <td className="px-4 py-3 text-text-secondary" data-field="category">
                         {(
                           charge.category || "—"
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-red-400">
+                      <td className="px-4 py-3 text-right font-semibold text-red-400" data-field="amount">
                         {(
                           showBalances
                             ? formatMoney(charge.amount, card?.currency ?? baseCurrency)
@@ -1030,13 +1030,13 @@ export function CreditCardsContent() {
                         )}
                       </td>
                       {showCCBalance && (
-                        <td className="px-4 py-3 text-right font-semibold text-text-primary">
+                        <td className="px-4 py-3 text-right font-semibold text-text-primary" data-field="balance">
                           {showBalances && ccRunningBalances[charge.id] != null
                             ? formatMoney(ccRunningBalances[charge.id], card?.currency ?? baseCurrency)
                             : showBalances ? "—" : HIDDEN_BALANCE}
                         </td>
                       )}
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right" data-field="actions">
                         {(
                           <div className="flex items-center justify-end gap-1">
                             <button
@@ -1124,7 +1124,7 @@ export function CreditCardsContent() {
             </p>
           ) : (
           <div className="overflow-x-auto rounded-2xl border border-border-subtle">
-            <table className="w-full min-w-[500px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
+            <table className="money-ledger-list w-full min-w-[500px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
               <thead>
                 <tr className="border-b border-border-subtle bg-bg-secondary">
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">
@@ -1158,29 +1158,20 @@ export function CreditCardsContent() {
                     (a) => a.id === payment.account_id
                   );
                   const paymentSource = getCreditCardPaymentSource(payment);
-                  const isEditingPay = editingPayId === payment.id;
+
                   return (
                     <tr
                       key={payment.id}
                       className="border-b border-border-subtle last:border-0 hover:bg-bg-elevated/50"
                     >
-                      <td className="px-4 py-3 text-text-primary">
-                        {isEditingPay ? (
-                          <input type="date" value={editPayDate} onChange={(e) => setEditPayDate(e.target.value)}
-                            className="w-full max-w-[140px] rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
-                        ) : format(new Date(payment.date + "T00:00:00"), "MMM d, yyyy")}
+                      <td className="px-4 py-3 text-text-primary" data-field="date">
+                        {format(new Date(payment.date + "T00:00:00"), "MMM d, yyyy")}
                       </td>
-                      <td className="px-4 py-3 text-text-primary">
+                      <td className="px-4 py-3 text-text-primary" data-field="merchant">
                         <span className="block max-w-[130px] truncate" title={card?.name || undefined}>{card?.name || "—"}</span>
                       </td>
-                      <td className="px-4 py-3 text-text-secondary">
-                        {isEditingPay ? (
-                          <select value={editPayAccountId} onChange={(e) => setEditPayAccountId(e.target.value)}
-                            className="rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple">
-                            <option value="">No account</option>
-                            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                          </select>
-                        ) : payment.account_id ? (
+                      <td className="px-4 py-3 text-text-secondary" data-field="account">
+                        {payment.account_id ? (
                           <span className="block max-w-[130px] truncate" title={acct?.name || undefined}>{acct?.name || "—"}</span>
                         ) : paymentSource === "credit" ? (
                           <span className="inline-flex rounded-lg bg-accent-blue/10 px-2 py-0.5 text-[11px] font-medium text-accent-blue">Credit / Refund</span>
@@ -1192,35 +1183,25 @@ export function CreditCardsContent() {
                           <span className="inline-flex rounded-lg bg-bg-elevated px-2 py-0.5 text-[11px] font-medium text-text-secondary">Other adjustment</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-emerald-400">
-                        {isEditingPay ? (
-                          <input type="number" step="0.01" value={editPayAmount} onChange={(e) => setEditPayAmount(e.target.value)}
-                            className="w-20 rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-right text-xs text-text-primary outline-none focus:border-accent-purple" />
-                        ) : showBalances
+                      <td className="px-4 py-3 text-right font-semibold text-emerald-400" data-field="amount">
+                        {showBalances
                           ? formatMoney(payment.amount, card?.currency ?? baseCurrency)
                           : HIDDEN_BALANCE}
                       </td>
                       {showPayBalance && (
-                        <td className="px-4 py-3 text-right font-semibold text-text-primary">
+                        <td className="px-4 py-3 text-right font-semibold text-text-primary" data-field="balance">
                           {showBalances && payRunningBalances[payment.id] != null
                             ? formatMoney(payRunningBalances[payment.id], card?.currency ?? baseCurrency)
                             : showBalances ? "—" : HIDDEN_BALANCE}
                         </td>
                       )}
-                      <td className="px-4 py-3 text-right">
-                        {isEditingPay ? (
+                      <td className="px-4 py-3 text-right" data-field="actions">
+                        {(
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => handleSavePaymentEdit(payment.id)} disabled={saving}
-                              className="rounded-lg p-1 text-emerald-400 hover:bg-emerald-500/10" title="Save"><Check className="h-4 w-4" /></button>
-                            <button onClick={() => setEditingPayId(null)}
-                              className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400" title="Cancel"><X className="h-4 w-4" /></button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => startEditPayment(payment)}
+                            <button aria-label="Edit payment" onClick={() => startEditPayment(payment)}
                               className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"><Pencil className="h-4 w-4" /></button>
                             <button onClick={() => handleDeletePayment(payment.id)}
-                              className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+                              className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400" aria-label="Delete" title="Delete"><Trash2 className="h-4 w-4" /></button>
                           </div>
                         )}
                       </td>
@@ -1241,14 +1222,20 @@ export function CreditCardsContent() {
         <EditField label="Notes"><textarea aria-label="Notes" rows={2} placeholder="Add a note…" value={editChargeNotes} onChange={event => setEditChargeNotes(event.target.value)} /></EditField>
         {transactions.some(tx => tx.linked_charge_id === editingChargeId || tx.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.linked_transaction_id) && <section className="transaction-editor-options"><h3 className="text-sm font-semibold text-text-primary">Spending preferences</h3><ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editChargeAmount)} currency={creditCards.find(card => card.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.card_id)?.currency || baseCurrency} excluded={editChargeExcluded} /><MonthlyExclusion checked={editChargeExcluded} onChange={setEditChargeExcluded} /></section>}
       </TransactionEditDialog>
-            <Modal
+      <TransactionEditDialog open={!!editingPayId} title="Edit Payment" saving={saving} onClose={()=>setEditingPayId(null)} onSave={async()=>{if(editingPayId) await handleSavePaymentEdit(editingPayId);}}>
+<div className="grid gap-5 sm:grid-cols-2">
+<EditField label="Date"><input aria-label="Date" required type="date" value={editPayDate} onChange={event=>setEditPayDate(event.target.value)} /></EditField>
+<EditField label="Amount"><input aria-label="Amount" required type="number" min="0.01" step="0.01" value={editPayAmount} onChange={event=>setEditPayAmount(event.target.value)} /></EditField>
+</div><EditField label="Paid from"><select aria-label="Paid from" value={editPayAccountId} onChange={event=>setEditPayAccountId(event.target.value)}><option value="">Credit / refund</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}</select></EditField>
+</TransactionEditDialog>
+      <Modal
         open={showAddCard}
         onClose={() => setShowAddCard(false)}
         title="Add Credit Card"
       >
         <form onSubmit={handleAddCard} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-1">
               Card Name
             </label>
             <input
@@ -1256,12 +1243,12 @@ export function CreditCardsContent() {
               value={cardName}
               onChange={(e) => setCardName(e.target.value)}
               placeholder="e.g., Visa Gold"
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-1"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-2">
                 Currency
               </label>
               <select
@@ -1269,7 +1256,7 @@ export function CreditCardsContent() {
                 onChange={(e) =>
                   setCardCurrency(e.target.value as CurrencyCode)
                 }
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-2"
               >
                 <option value="CAD">CAD</option>
                 <option value="USD">USD</option>
@@ -1277,7 +1264,7 @@ export function CreditCardsContent() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-3">
                 Credit Limit
               </label>
               <input
@@ -1286,18 +1273,18 @@ export function CreditCardsContent() {
                 value={cardLimit}
                 onChange={(e) => setCardLimit(e.target.value)}
                 placeholder="0.00"
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-3"
               />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-4">
               Linked Account (payments come from here)
             </label>
             <select
               value={cardLinkedAccount}
               onChange={(e) => setCardLinkedAccount(e.target.value)}
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-4"
             >
               <option value="">None</option>
               {accounts.map((a) => (
@@ -1340,19 +1327,19 @@ export function CreditCardsContent() {
       >
         <form onSubmit={handleEditCard} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-5">
               Card Name
             </label>
             <input
               type="text"
               value={editCardName}
               onChange={(e) => setEditCardName(e.target.value)}
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-5"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-6">
                 Currency
               </label>
               <select
@@ -1360,7 +1347,7 @@ export function CreditCardsContent() {
                 onChange={(e) =>
                   setEditCardCurrency(e.target.value as CurrencyCode)
                 }
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-6"
               >
                 <option value="CAD">CAD</option>
                 <option value="USD">USD</option>
@@ -1368,7 +1355,7 @@ export function CreditCardsContent() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-7">
                 Credit Limit
               </label>
               <input
@@ -1376,18 +1363,18 @@ export function CreditCardsContent() {
                 step="0.01"
                 value={editCardLimit}
                 onChange={(e) => setEditCardLimit(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-7"
               />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-8">
               Linked Account
             </label>
             <select
               value={editCardLinkedAccount}
               onChange={(e) => setEditCardLinkedAccount(e.target.value)}
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-8"
             >
               <option value="">None</option>
               {accounts.map((a) => (
@@ -1422,13 +1409,7 @@ export function CreditCardsContent() {
             </div>
           </div>
           <label className="flex items-center gap-3 cursor-pointer">
-            <button
-              type="button"
-              onClick={() => setEditCardArchived(!editCardArchived)}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition ${editCardArchived ? "bg-accent-purple" : "bg-bg-elevated"}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${editCardArchived ? "translate-x-5" : ""}`} />
-            </button>
+            <label className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center"><input type="checkbox" aria-label="Archived" checked={editCardArchived} onChange={event => setEditCardArchived(event.target.checked)} className="h-4 w-4 accent-[var(--accent-blue)]" /></label>
             <span className="text-sm text-text-primary">Archive (sort to bottom)</span>
           </label>
           {editCardError && (
@@ -1465,24 +1446,24 @@ export function CreditCardsContent() {
         <form onSubmit={handleAddCharge} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-9">
                 Date
               </label>
               <input
                 type="date"
                 value={chargeDate}
                 onChange={(e) => setChargeDate(e.target.value)}
-                className="w-full max-w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple [&::-webkit-datetime-edit]:min-w-0"
+                className="w-full max-w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple [&::-webkit-datetime-edit]:min-w-0" id="credit-cards-field-9"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-10">
                 Card
               </label>
               <select
                 value={chargeCardId}
                 onChange={(e) => setChargeCardId(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-10"
               >
                 <option value="">Select card…</option>
                 {creditCards.map((c) => (
@@ -1495,7 +1476,7 @@ export function CreditCardsContent() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-11">
                 Amount
               </label>
               <input
@@ -1504,17 +1485,17 @@ export function CreditCardsContent() {
                 value={chargeAmount}
                 onChange={(e) => setChargeAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-11"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-12">
                 Category
               </label>
               <select
                 value={chargeCategory}
                 onChange={(e) => setChargeCategory(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-12"
               >
                 {categories.map((c) => (
                   <option key={c} value={c}>
@@ -1607,14 +1588,14 @@ export function CreditCardsContent() {
                 </div>
 
                 <div className="min-w-0">
-                  <label className="mb-1 block text-xs font-medium text-text-secondary">
+                  <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-13">
                     Date
                   </label>
                   <input
                     type="date"
                     value={payDate}
                     onChange={(e) => setPayDate(e.target.value)}
-                    className="w-full max-w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple [&::-webkit-datetime-edit]:min-w-0"
+                    className="w-full max-w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple [&::-webkit-datetime-edit]:min-w-0" id="credit-cards-field-13"
                   />
                 </div>
 
@@ -1768,9 +1749,9 @@ export function CreditCardsContent() {
                   <p className="mt-1 text-xs text-text-secondary">Current computed balance</p>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-text-secondary">Actual Balance ({card.currency})</label>
+                  <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="credit-cards-field-14">Actual Balance ({card.currency})</label>
                   <input type="number" step="0.01" min="0" value={ccCorrectionAmount} onChange={(e) => setCcCorrectionAmount(e.target.value)} placeholder={current.toFixed(2)}
-                    className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" />
+                    className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="credit-cards-field-14" />
                 </div>
                 {ccCorrectionAmount && !isNaN(target) && diff !== 0 && (
                   <>

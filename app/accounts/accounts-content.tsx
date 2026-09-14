@@ -1,4 +1,5 @@
 "use client";
+import { TransactionEditDialog, EditField } from "../components/transaction-edit-dialog";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useMoneyData } from "../hooks/use-money-data";
@@ -203,12 +204,12 @@ export function AccountsContent() {
   const handleSaveTransfer = async (id: string) => {
     const amt = parseFloat(editTxAmount);
     if (isNaN(amt) || amt <= 0) return;
-    if (!editTxFrom || !editTxTo || editTxFrom === editTxTo) return;
+    if (!editTxFrom || !editTxTo || editTxFrom === editTxTo) throw new Error("Choose two different accounts.");
     const fromA = accounts.find((a) => a.id === editTxFrom);
     const toA = accounts.find((a) => a.id === editTxTo);
     const isCross = fromA && toA && fromA.currency !== toA.currency;
     const recv = isCross ? parseFloat(editTxReceivedAmount) : null;
-    if (isCross && (!recv || recv <= 0)) return;
+    if (isCross && (!recv || recv <= 0)) throw new Error("Enter the amount received in the destination currency.");
     setSaving(true);
     try {
       await updateTransaction(id, {
@@ -221,7 +222,7 @@ export function AccountsContent() {
       });
       await refresh();
       setEditingTransferId(null);
-    } catch { /* ignore */ } finally { setSaving(false); }
+    } finally { setSaving(false); }
   };
 
   const cashTotalBase = accounts
@@ -558,13 +559,13 @@ export function AccountsContent() {
                     <button
                       onClick={() => openEdit(acct)}
                       className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"
-                    >
+                     aria-label="Edit" title="Edit">
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(acct.id, acct.name)}
                       className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"
-                    >
+                     aria-label="Delete" title="Delete">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -663,43 +664,29 @@ export function AccountsContent() {
                 </thead>
                 <tbody>
                   {sortedTransfers.map((tx) => {
-                    const isEditing = editingTransferId === tx.id;
+
                     return (
                     <tr
                       key={tx.id}
                       className="border-b border-border-subtle last:border-0 hover:bg-bg-elevated/50"
                     >
                       <td className="whitespace-nowrap px-3 py-3 text-text-primary sm:px-4">
-                        {isEditing ? (
-                          <input type="date" value={editTxDate} onChange={(e) => setEditTxDate(e.target.value)} className="w-32 rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-sm text-text-primary" />
-                        ) : (
+                        {(
                           format(new Date(tx.date + "T00:00:00"), "MMM d, yyyy")
                         )}
                       </td>
                       <td className="px-3 py-3 text-text-primary sm:px-4">
-                        {isEditing ? (
-                          <select value={editTxFrom} onChange={(e) => setEditTxFrom(e.target.value)} className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-sm text-text-primary">
-                            <option value="">—</option>
-                            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                          </select>
-                        ) : (
+                        {(
                           <span className="block max-w-[130px] truncate" title={accountName(tx.from_account_id)}>{accountName(tx.from_account_id)}</span>
                         )}
                       </td>
                       <td className="px-3 py-3 text-text-primary sm:px-4">
-                        {isEditing ? (
-                          <select value={editTxTo} onChange={(e) => setEditTxTo(e.target.value)} className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-sm text-text-primary">
-                            <option value="">—</option>
-                            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                          </select>
-                        ) : (
+                        {(
                           <span className="block max-w-[130px] truncate" title={accountName(tx.to_account_id)}>{accountName(tx.to_account_id)}</span>
                         )}
                       </td>
                       <td className="whitespace-nowrap px-3 py-3 text-right font-semibold text-accent-blue sm:px-4">
-                        {isEditing ? (
-                          <input type="number" step="0.01" value={editTxAmount} onChange={(e) => setEditTxAmount(e.target.value)} className="w-24 rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-right text-sm text-text-primary" />
-                        ) : showBalances ? (
+                        {showBalances ? (
                           <span>
                             {formatMoney(tx.amount, tx.currency)}
                             {tx.received_amount != null && tx.received_amount !== tx.amount && (() => {
@@ -710,21 +697,14 @@ export function AccountsContent() {
                         ) : HIDDEN_BALANCE}
                       </td>
                       <td className="hidden sm:table-cell px-4 py-3 text-text-secondary">
-                        {isEditing ? (
-                          <input type="text" value={editTxNote} onChange={(e) => setEditTxNote(e.target.value)} className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-sm text-text-primary" />
-                        ) : (
+                        {(
                           <span className="block max-w-[160px] truncate" title={tx.notes || undefined}>{tx.notes || "—"}</span>
                         )}
                       </td>
                       <td className="px-3 py-3 text-right sm:px-4">
-                        {isEditing ? (
+                        {(
                           <span className="inline-flex gap-1">
-                            <button onClick={() => handleSaveTransfer(tx.id)} disabled={saving} className="rounded-lg p-1 text-emerald-400 hover:bg-emerald-500/10"><Check className="h-3.5 w-3.5" /></button>
-                            <button onClick={() => setEditingTransferId(null)} className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"><X className="h-3.5 w-3.5" /></button>
-                          </span>
-                        ) : (
-                          <span className="inline-flex gap-1">
-                            <button onClick={() => startEditTransfer(tx)} className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"><Pencil className="h-3.5 w-3.5" /></button>
+                            <button aria-label="Edit transfer" onClick={() => startEditTransfer(tx)} className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"><Pencil className="h-3.5 w-3.5" /></button>
                             <button
                               onClick={async () => {
                                 if (!confirm("Delete this transfer?")) return;
@@ -732,7 +712,7 @@ export function AccountsContent() {
                                 await refresh();
                               }}
                               className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"
-                            >
+                             aria-label="Delete" title="Delete">
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </span>
@@ -762,7 +742,7 @@ export function AccountsContent() {
               <button
                 onClick={() => { setLedgerAccountId(""); setLedgerTxs([]); }}
                 className="rounded-lg p-1 text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
-              >
+               aria-label="Close" title="Close">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -845,10 +825,20 @@ export function AccountsContent() {
       })()}
 
       {/* Add Account Modal */}
+<TransactionEditDialog open={!!editingTransferId} title="Edit Transfer" saving={saving} onClose={() => setEditingTransferId(null)} onSave={async () => {if(editingTransferId) await handleSaveTransfer(editingTransferId);}}>
+<div className="grid gap-5 sm:grid-cols-2">
+<EditField label="Date"><input aria-label="Date" type="date" required value={editTxDate} onChange={event=>setEditTxDate(event.target.value)} /></EditField>
+<EditField label="Amount sent"><input aria-label="Amount sent" type="number" required min="0.01" step="0.01" value={editTxAmount} onChange={event=>setEditTxAmount(event.target.value)} /></EditField>
+<EditField label="From"><select aria-label="From" required value={editTxFrom} onChange={event=>setEditTxFrom(event.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}</select></EditField>
+<EditField label="To"><select aria-label="To" required value={editTxTo} onChange={event=>setEditTxTo(event.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}</select></EditField>
+</div>
+{accounts.find(a=>a.id===editTxFrom)?.currency !== accounts.find(a=>a.id===editTxTo)?.currency && <EditField label="Amount received"><input aria-label="Amount received" type="number" required min="0.01" step="0.01" value={editTxReceivedAmount} onChange={event=>setEditTxReceivedAmount(event.target.value)} /></EditField>}
+<EditField label="Notes"><textarea aria-label="Notes" rows={2} value={editTxNote} onChange={event=>setEditTxNote(event.target.value)} /></EditField>
+</TransactionEditDialog>
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add Account">
         <form onSubmit={handleAdd} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-1">
               Name
             </label>
             <input
@@ -856,31 +846,31 @@ export function AccountsContent() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Savings"
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-1"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-2">
                 Type
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as AccountType)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-2"
               >
                 <option value="checking">Checking</option>
                 <option value="investing">Investing</option>
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-3">
                 Currency
               </label>
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-3"
               >
                 <option value="CAD">CAD</option>
                 <option value="USD">USD</option>
@@ -888,7 +878,7 @@ export function AccountsContent() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-4">
                 Starting Balance
               </label>
               <input
@@ -897,7 +887,7 @@ export function AccountsContent() {
                 value={startingBalance}
                 onChange={(e) => setStartingBalance(e.target.value)}
                 placeholder="0.00"
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-4"
               />
             </div>
           </div>
@@ -930,38 +920,38 @@ export function AccountsContent() {
       <Modal open={editing !== null} onClose={() => setEditing(null)} title="Edit Account">
         <form onSubmit={handleEdit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-5">
               Name
             </label>
             <input
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-5"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-6">
                 Type
               </label>
               <select
                 value={editType}
                 onChange={(e) => setEditType(e.target.value as AccountType)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-6"
               >
                 <option value="checking">Checking</option>
                 <option value="investing">Investing</option>
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-7">
                 Currency
               </label>
               <select
                 value={editCurrency}
                 onChange={(e) => setEditCurrency(e.target.value as CurrencyCode)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-7"
               >
                 <option value="CAD">CAD</option>
                 <option value="USD">USD</option>
@@ -969,7 +959,7 @@ export function AccountsContent() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-8">
                 Starting Balance
               </label>
               <input
@@ -977,7 +967,7 @@ export function AccountsContent() {
                 step="0.01"
                 value={editStarting}
                 onChange={(e) => setEditStarting(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-8"
               />
             </div>
           </div>
@@ -1006,13 +996,7 @@ export function AccountsContent() {
             </div>
           </div>
           <label className="flex items-center gap-3 cursor-pointer">
-            <button
-              type="button"
-              onClick={() => setEditArchived(!editArchived)}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition ${editArchived ? "bg-accent-purple" : "bg-bg-elevated"}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${editArchived ? "translate-x-5" : ""}`} />
-            </button>
+            <label className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center"><input type="checkbox" aria-label="Archived" checked={editArchived} onChange={event => setEditArchived(event.target.checked)} className="h-4 w-4 accent-[var(--accent-blue)]" /></label>
             <span className="text-sm text-text-primary">Archive (sort to bottom)</span>
           </label>
           {editError && (
@@ -1045,11 +1029,11 @@ export function AccountsContent() {
         <form onSubmit={handleTransfer} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">From</label>
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-9">From</label>
               <select
                 value={transferFrom}
                 onChange={(e) => { setTransferFrom(e.target.value); }}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-9"
               >
                 <option value="">Select account…</option>
                 {accounts.map((a) => (
@@ -1058,11 +1042,11 @@ export function AccountsContent() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">To</label>
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-10">To</label>
               <select
                 value={transferTo}
                 onChange={(e) => { setTransferTo(e.target.value); }}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-10"
               >
                 <option value="">Select account…</option>
                 {accounts.filter((a) => a.id !== transferFrom).map((a) => (
@@ -1073,15 +1057,15 @@ export function AccountsContent() {
           </div>
 
           <div className="min-w-0">
-            <label className="mb-1 block text-xs font-medium text-text-secondary">Date</label>
-            <input type="date" value={transferDate} onChange={(e) => setTransferDate(e.target.value)} className="w-full max-w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple [&::-webkit-datetime-edit]:min-w-0" />
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-11">Date</label>
+            <input type="date" value={transferDate} onChange={(e) => setTransferDate(e.target.value)} className="w-full max-w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple [&::-webkit-datetime-edit]:min-w-0" id="accounts-field-11" />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-12">
               Amount {fromAcct ? `(${fromAcct.currency})` : ""}
             </label>
-            <input type="number" min="0.01" step="0.01" value={transferAmount} onChange={(e) => handleFromAmountChange(e.target.value)} placeholder="0.00" className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" />
+            <input type="number" min="0.01" step="0.01" value={transferAmount} onChange={(e) => handleFromAmountChange(e.target.value)} placeholder="0.00" className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-12" />
           </div>
 
           {isCrossCurrency && (
@@ -1093,17 +1077,17 @@ export function AccountsContent() {
                 <button type="button" onClick={() => { const r = computeDefaultRate(); setTransferRate(r); const a = parseFloat(transferAmount); if (a > 0 && parseFloat(r) > 0) setTransferReceivedAmount((a * parseFloat(r)).toFixed(2)); }} className="ml-auto whitespace-nowrap rounded-lg px-2 py-1 text-[10px] font-medium text-accent-blue hover:bg-accent-blue/10">Use live rate</button>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-text-secondary">
+                <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-13">
                   Received ({toAcct?.currency})
                 </label>
-                <input type="number" min="0.01" step="0.01" value={transferReceivedAmount} onChange={(e) => handleReceivedAmountChange(e.target.value)} placeholder="0.00" className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" />
+                <input type="number" min="0.01" step="0.01" value={transferReceivedAmount} onChange={(e) => handleReceivedAmountChange(e.target.value)} placeholder="0.00" className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-13" />
               </div>
             </>
           )}
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">Note (optional)</label>
-            <input type="text" value={transferNote} onChange={(e) => setTransferNote(e.target.value)} placeholder="e.g., Moving to savings" className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" />
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-14">Note (optional)</label>
+            <input type="text" value={transferNote} onChange={(e) => setTransferNote(e.target.value)} placeholder="e.g., Moving to savings" className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-14" />
           </div>
           {transferError && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">{transferError}</p>
@@ -1135,8 +1119,8 @@ export function AccountsContent() {
                   <p className="mt-1 text-xs text-text-secondary">Current computed balance</p>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-text-secondary">Correct Balance ({acct.currency})</label>
-                  <input type="number" step="0.01" value={correctionAmount} onChange={(e) => setCorrectionAmount(e.target.value)} placeholder={current.toFixed(2)} className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" />
+                  <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="accounts-field-15">Correct Balance ({acct.currency})</label>
+                  <input type="number" step="0.01" value={correctionAmount} onChange={(e) => setCorrectionAmount(e.target.value)} placeholder={current.toFixed(2)} className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="accounts-field-15" />
                 </div>
                 {correctionAmount && !isNaN(parseFloat(correctionAmount)) && parseFloat(correctionAmount) !== current && (
                   <div className={`rounded-xl border px-3 py-2 text-xs ${parseFloat(correctionAmount) > current ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400" : "border-red-500/30 bg-red-500/5 text-red-400"}`}>

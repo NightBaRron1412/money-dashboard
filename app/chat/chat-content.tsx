@@ -38,7 +38,8 @@ export function ChatContent({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scroller = messagesEndRef.current?.parentElement;
+    scroller?.scrollTo({top:scroller.scrollHeight, behavior:"smooth"});
   }, [messages]);
 
   const sendMessage = async () => {
@@ -100,9 +101,9 @@ export function ChatContent({
         description="Ask questions about your money"
       />
 
-      <div data-tour="chat-panel" className="flex flex-col rounded-2xl border border-border-subtle bg-bg-secondary" style={{ height: "calc(100dvh - 200px)", minHeight: 400 }}>
+      <div data-tour="chat-panel" className="money-chat-panel flex flex-col rounded-2xl border border-border-subtle bg-bg-secondary">
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-purple/10 mb-4">
@@ -173,6 +174,7 @@ export function ChatContent({
         <div className="border-t border-border-subtle p-4">
           <div className="flex items-end gap-2">
             <textarea
+              aria-label="Message"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -182,6 +184,7 @@ export function ChatContent({
               style={{ maxHeight: 120 }}
             />
             <button
+              aria-label="Send message"
               onClick={sendMessage}
               disabled={loading || !input.trim()}
               className="flex h-[46px] w-[46px] items-center justify-center rounded-xl bg-accent-purple text-white transition hover:bg-accent-purple/80 disabled:opacity-40"

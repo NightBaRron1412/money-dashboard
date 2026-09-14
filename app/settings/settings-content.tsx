@@ -203,7 +203,7 @@ export function SettingsContent() {
             onClick={handleSave}
             disabled={saving}
             className="inline-flex items-center gap-2 rounded-xl bg-accent-purple px-4 py-2 text-sm font-medium text-white shadow-glow transition hover:-translate-y-0.5 disabled:opacity-60"
-          >
+           aria-label="Save" title="Save">
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : saved ? (
@@ -222,13 +222,13 @@ export function SettingsContent() {
         <details id="settings-currency" className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6" open><summary><h2 className="text-base font-semibold text-text-primary">Currency</h2></summary>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-1">
                 Base Currency
               </label>
               <select
                 value={baseCurrencyInput}
                 onChange={(e) => setBaseCurrencyInput(e.target.value as CurrencyCode)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-1"
               >
                 <option value="CAD">CAD</option>
                 <option value="USD">USD</option>
@@ -245,7 +245,7 @@ export function SettingsContent() {
         <details id="settings-personalization" className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">AI Greeting Preferences</h2></summary>
           <div className="space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-2">
                 Display Name
               </label>
               <input
@@ -253,11 +253,11 @@ export function SettingsContent() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Amir"
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-2"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-3">
                 AI Personality
               </label>
               <p className="mb-2 text-[11px] text-text-secondary">
@@ -291,7 +291,7 @@ export function SettingsContent() {
                 value={greetingTone}
                 onChange={(e) => setGreetingTone(e.target.value as GreetingTone)}
                 placeholder="e.g., friendly and casual, use Egyptian slang"
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-3"
               />
             </div>
           </div>
@@ -411,7 +411,7 @@ export function SettingsContent() {
         <details id="settings-reminders" className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">Reminder Timing</h2></summary>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-4">
                 Rent Reminder Lead Time (days)
               </label>
               <input
@@ -420,14 +420,14 @@ export function SettingsContent() {
                 max={30}
                 value={rentReminderDays}
                 onChange={(e) => setRentReminderDays(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-4"
               />
               <p className="mt-1 text-xs text-text-secondary">
                 Sends rent push reminders this many days before due date.
               </p>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-5">
                 Bill Reminder Lead Time (days)
               </label>
               <input
@@ -436,7 +436,7 @@ export function SettingsContent() {
                 max={30}
                 value={billReminderDays}
                 onChange={(e) => setBillReminderDays(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-5"
               />
               <p className="mt-1 text-xs text-text-secondary">
                 Sends subscription bill push reminders this many days before due date.
@@ -449,18 +449,18 @@ export function SettingsContent() {
         <details className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">Rent Settings</h2></summary>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-6">
                 Rent Amount ({baseCurrencyInput})
               </label>
               <input
                 type="number"
                 value={rentAmount}
                 onChange={(e) => setRentAmount(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-6"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-7">
                 Rent Due Day
               </label>
               <input
@@ -469,7 +469,7 @@ export function SettingsContent() {
                 max={31}
                 value={rentDay}
                 onChange={(e) => setRentDay(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-7"
               />
             </div>
           </div>
@@ -479,29 +479,29 @@ export function SettingsContent() {
         <details id="settings-budget" className="money-settings-group rounded-2xl border border-border-subtle bg-bg-secondary p-6"><summary><h2 className="text-base font-semibold text-text-primary">Budget & Paycheck</h2></summary>
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-8">
                 Monthly Essentials Budget ({baseCurrencyInput})
               </label>
               <input
                 type="number"
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-8"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-9">
                 Paycheck Amount ({baseCurrencyInput})
               </label>
               <input
                 type="number"
                 value={paycheckAmount}
                 onChange={(e) => setPaycheckAmount(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-9"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-10">
                 Paycheck Frequency
               </label>
               <select
@@ -509,7 +509,7 @@ export function SettingsContent() {
                 onChange={(e) =>
                   setPaycheckFreq(e.target.value as PaycheckFrequency)
                 }
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-10"
               >
                 <option value="weekly">Weekly</option>
                 <option value="bi-weekly">Bi-weekly</option>
@@ -715,21 +715,21 @@ export function SettingsContent() {
                 <button
                   onClick={() => setShowPlanModal(false)}
                   className="rounded-lg p-1 text-text-secondary transition hover:bg-bg-elevated hover:text-text-primary"
-                >
+                 aria-label="Close" title="Close">
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-text-secondary">
+                  <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-11">
                     Plan Name
                   </label>
                   <input
                     value={planName}
                     onChange={(e) => setPlanName(e.target.value)}
                     placeholder="e.g. 50/30/20 Split"
-                    className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                    className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-11"
                   />
                 </div>
 
@@ -920,6 +920,7 @@ export function SettingsContent() {
           </button>
         </details>
       </div>
+      <div className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-border-subtle bg-bg-secondary p-4"><p className="text-xs text-text-secondary" aria-live="polite">{saved ? "Your settings are saved." : "Save your changes before leaving Settings."}</p><button onClick={handleSave} disabled={saving} className="shrink-0 rounded-full bg-text-primary px-5 py-3 text-sm font-medium text-bg-main">{saving ? "Saving…" : "Save settings"}</button></div>
     </>
   );
 }
@@ -1011,7 +1012,7 @@ function ChangePinSection() {
               type="button"
               onClick={() => setShowCurrent(!showCurrent)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
-            >
+             aria-label="Show value" title="Show value">
               {showCurrent ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </button>
           </div>
@@ -1034,13 +1035,13 @@ function ChangePinSection() {
               type="button"
               onClick={() => setShowNew(!showNew)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
-            >
+             aria-label="Show value" title="Show value">
               {showNew ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </button>
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-text-secondary">
+          <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="settings-field-12">
             Confirm New PIN
           </label>
           <input
@@ -1050,7 +1051,7 @@ function ChangePinSection() {
             maxLength={PIN_LEN}
             inputMode="numeric"
             placeholder="••••••"
-            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="settings-field-12"
           />
         </div>
       </div>

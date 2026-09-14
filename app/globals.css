@@ -557,7 +557,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .dark input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.75);
+  filter: none;
 }
 
 /* ─── Loading screen ─── */
@@ -732,4 +732,33 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .transaction-editor-field :is(input:not([type=checkbox]), select, textarea) { font-size: 16px; }
   .transaction-editor-actions { bottom: -24px; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
   .transaction-editor-actions button { flex: 1; }
+}
+.money-voice-tool > div:not(:last-child) { position: absolute; top: calc(100% + 12px); right: 0; width: max-content; max-width: min(300px, 80vw); z-index: 60; }
+.money-chat-panel { height: calc(100dvh - 270px); min-height: 300px; }
+@media (max-width: 639px) {
+ .money-chat-panel { height: calc(100dvh - 290px - env(safe-area-inset-bottom)); min-height: 260px; }
+ .money-ledger-list { display: block; min-width: 0 !important; }
+ .money-ledger-list thead { display: none; }
+ .money-ledger-list tbody { display: block; }
+ .money-ledger-list tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; padding: 16px; align-items: center; }
+ .money-ledger-list td { padding: 0; min-width: 0; white-space: normal; }
+ .money-ledger-list [data-field=merchant] { grid-column: 1; grid-row: 1; font-size: 14px; }
+ .money-ledger-list [data-field=amount] { grid-column: 2; grid-row: 1; text-align: right; font-size: 14px; }
+ .money-ledger-list [data-field=date] { grid-column: 1; grid-row: 2; font-size: 11px; color: var(--text-secondary); }
+ .money-ledger-list [data-field=actions] { grid-column: 2; grid-row: 2 / span 3; align-self: center; }
+ .money-ledger-list [data-field=category] { grid-column: 1; grid-row: 3; font-size: 11px; }
+ .money-ledger-list [data-field=account] { grid-column: 1; grid-row: 4; font-size: 11px; }
+ .money-ledger-list [data-field=balance], .money-ledger-list [data-field=note] { grid-column: 1 / -1; font-size: 11px; }
+ .money-ledger-list [data-field=balance]::before { content: 'Balance '; color: var(--text-secondary); }
+ .money-content .overflow-x-auto:has(> .money-ledger-list)::before { display: none; }
+ .money-ledger-list [data-field=merchant] > div, .money-ledger-list [data-field=merchant] > span { max-width: 100%; }
+}
+@media (max-width:639px) {
+ .money-subscription-list [data-field=merchant] { grid-column: 1 / -1; }
+ .money-subscription-list [data-field=merchant] > div { flex-wrap: wrap; }
+ .money-subscription-list [data-field=amount] { grid-row: 2; }
+ .money-subscription-list [data-field=note] { grid-column: 1 / -1; grid-row: 3; text-align: left; }
+ .money-subscription-list [data-field=actions] { grid-column: 1 / -1; grid-row: 4; border-top: 1px solid var(--border-subtle); margin-top: 8px; padding-top: 6px; }
+ .money-subscription-list [data-field=date] { text-align: left; }
+ .money-ledger-list [data-field=merchant] .truncate { white-space: normal; }
 }

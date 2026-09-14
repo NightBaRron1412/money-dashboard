@@ -159,7 +159,7 @@ export function ReconcileContent() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="reconcile-field-1">
                 Account
               </label>
               <select
@@ -170,7 +170,7 @@ export function ReconcileContent() {
                   setDuplicates([]);
                   setSearched(false);
                 }}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="reconcile-field-1"
               >
                 <option value="">Select account...</option>
                 {accounts.map((a) => (
@@ -181,29 +181,29 @@ export function ReconcileContent() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="reconcile-field-2">
                 From
               </label>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="reconcile-field-2"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="reconcile-field-3">
                 To
               </label>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="reconcile-field-3"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="reconcile-field-4">
                 Expected Balance (optional)
               </label>
               <input
@@ -212,7 +212,7 @@ export function ReconcileContent() {
                 value={expectedBalance}
                 onChange={(e) => setExpectedBalance(e.target.value)}
                 placeholder="From bank statement"
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="reconcile-field-4"
               />
             </div>
           </div>

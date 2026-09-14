@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Command } from "cmdk";
@@ -23,7 +23,7 @@ const destinations = [
   { path: "/settings", title: "Settings", detail: "Preferences and categories", icon: Settings },
 ];
 
-export function MoneyToolbar({ routeBase = "", demoMode = false }: { routeBase?: string; demoMode?: boolean }) {
+export function MoneyToolbar({ routeBase = "", demoMode = false, children }: { routeBase?: string; demoMode?: boolean; children?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const { showBalances, toggleBalances } = useBalanceVisibility();
   const { resolvedTheme, setTheme } = useTheme();
@@ -82,6 +82,7 @@ export function MoneyToolbar({ routeBase = "", demoMode = false }: { routeBase?:
             </Command>
           </DialogContent>
         </Dialog>
+        {children}
         <button data-tour="privacy-anchor" onClick={toggleBalances} aria-label={showBalances ? "Hide balances" : "Show balances"} title={showBalances ? "Hide balances" : "Show balances"} className="money-tool-button">
           {showBalances ? <Eye className="h-[18px] w-[18px]" /> : <EyeOff className="h-[18px] w-[18px]" />}
         </button>

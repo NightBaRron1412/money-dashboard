@@ -540,7 +540,7 @@ export function IncomeContent() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <input type="search" aria-label="Search income" placeholder="Search merchant, category or notes…" value={search} onChange={event => setSearch(event.target.value)} className="money-filter-search" />
+        <input type="search" aria-label="Search income" placeholder="Search merchant, category or notes…" value={search} onChange={event => setSearch(event.target.value)} className="money-filter-search" /><select aria-label="Sort transactions" className="rounded-xl border border-border-subtle bg-bg-elevated px-3 py-2 text-xs sm:hidden" value={`${sortKey}:${sortDir}`} onChange={event=>{const [key,dir]=event.target.value.split(":");setSortKey(key as typeof sortKey);setSortDir(dir as "asc"|"desc");}}><option value="date:desc">Newest first</option><option value="date:asc">Oldest first</option><option value="amount:desc">Largest first</option><option value="amount:asc">Smallest first</option></select>
         <Filter className="h-4 w-4 text-text-secondary" />
         <select
           value={filterBankId}
@@ -584,7 +584,7 @@ export function IncomeContent() {
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-border-subtle">
-          <table className="w-full min-w-[700px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
+          <table className="money-ledger-list w-full min-w-[700px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
             <thead>
               <tr className="border-b border-border-subtle bg-bg-secondary">
                 <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary cursor-pointer select-none hover:text-text-primary" onClick={() => toggleSort("date")}>
@@ -625,17 +625,17 @@ export function IncomeContent() {
                     key={tx.id}
                     className="border-b border-border-subtle last:border-0 hover:bg-bg-elevated/50"
                   >
-                    <td className="px-4 py-3 text-text-primary">
+                    <td className="px-4 py-3 text-text-primary" data-field="date">
                       {(
                         format(new Date(tx.date + "T00:00:00"), "MMM d, yyyy")
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-emerald-400">
+                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-emerald-400" data-field="amount">
                       {(
                         <>+{showBalances ? formatMoney(tx.amount, tx.currency) : HIDDEN_BALANCE}</>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" data-field="category">
                       {(
                         <span className="inline-flex items-center gap-1.5">
                           <span className={`h-2 w-2 rounded-full ${SOURCE_COLORS[tx.category || "Other"] || "bg-gray-500"}`} />
@@ -643,14 +643,14 @@ export function IncomeContent() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" data-field="account">
                       {(
                         <span className="block max-w-[130px] truncate text-xs text-text-primary" title={accounts.find((a) => a.id === tx.account_id)?.name || "-"}>
                           {accounts.find((a) => a.id === tx.account_id)?.name || "-"}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-text-secondary max-w-[180px]">
+                    <td className="px-4 py-3 text-text-secondary max-w-[180px]" data-field="merchant">
                       {(
                         <span className="inline-flex max-w-[180px] items-center gap-1.5" title={tx.merchant || tx.notes || undefined}>
                           <span className="truncate">{tx.merchant || tx.notes || "-"}</span>
@@ -667,7 +667,7 @@ export function IncomeContent() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" data-field="note">
                       {isTriplePaycheck ? (
                         <span className="inline-flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-500/12 px-2 py-0.5 text-xs font-medium text-amber-700 dark:border-yellow-400/20 dark:bg-yellow-500/10 dark:text-yellow-300">
                           <Star className="h-3 w-3" /> 3 paychecks
@@ -679,13 +679,13 @@ export function IncomeContent() {
                       )}
                     </td>
                     {showBalance && (
-                      <td className="px-4 py-3 text-right font-semibold text-text-primary">
+                      <td className="px-4 py-3 text-right font-semibold text-text-primary" data-field="balance">
                         {showBalances && runningBalances[tx.id] != null
                           ? formatMoney(runningBalances[tx.id], tx.currency)
                           : showBalances ? "—" : HIDDEN_BALANCE}
                       </td>
                     )}
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right" data-field="actions">
                       {(
                         <div className="flex items-center justify-end gap-1">
                           <button aria-label="Edit income" onClick={() => startEdit(tx)}
@@ -693,7 +693,7 @@ export function IncomeContent() {
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button onClick={() => handleDelete(tx.id)}
-                            className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400">
+                            className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400" aria-label="Delete" title="Delete">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
@@ -718,18 +718,18 @@ export function IncomeContent() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="income-field-1">
                 Date
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="income-field-1"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="income-field-2">
                 Amount ({accounts.find((a) => a.id === accountId)?.currency ?? baseCurrency})
               </label>
               <input
@@ -738,13 +738,13 @@ export function IncomeContent() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
-                placeholder="3400"
+                placeholder="3400" id="income-field-2"
               />
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="income-field-3">
                 Source
               </label>
               <select
@@ -756,7 +756,7 @@ export function IncomeContent() {
                     setRecurrence(defaultPaycheckRecurrence);
                   }
                 }}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="income-field-3"
               >
                 {INCOME_SOURCES.map((s) => (
                   <option key={s} value={s}>
@@ -817,20 +817,14 @@ export function IncomeContent() {
           <label className="block text-xs text-text-secondary">Notes (optional)<textarea aria-label="Notes" value={incomeNotes} onChange={event => setIncomeNotes(event.target.value)} className="mt-1 w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary" /></label>
           {/* Recurring toggle */}
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsRecurring(!isRecurring)}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition ${isRecurring ? "bg-accent-purple" : "bg-bg-elevated"}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${isRecurring ? "translate-x-5" : ""}`} />
-            </button>
+            <label className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center"><input type="checkbox" aria-label="Recurring income" checked={isRecurring} onChange={event => setIsRecurring(event.target.checked)} className="h-4 w-4 accent-[var(--accent-blue)]" /></label>
             <span className="text-sm text-text-primary">Recurring income</span>
           </div>
           {isRecurring && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">Frequency</label>
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="income-field-4">Frequency</label>
               <select value={recurrence} onChange={(e) => setRecurrence(e.target.value as RecurrenceFrequency)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple">
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="income-field-4">
                 <option value="weekly">Weekly</option>
                 <option value="bi-weekly">Bi-weekly</option>
                 <option value="monthly">Monthly</option>
@@ -840,13 +834,7 @@ export function IncomeContent() {
           )}
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setExcludeFromMonthly(!excludeFromMonthly)}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition ${excludeFromMonthly ? "bg-accent-purple" : "bg-bg-elevated"}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${excludeFromMonthly ? "translate-x-5" : ""}`} />
-            </button>
+            <label className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center"><input type="checkbox" aria-label="Exclude from reports and forecasts" checked={excludeFromMonthly} onChange={event => setExcludeFromMonthly(event.target.checked)} className="h-4 w-4 accent-[var(--accent-blue)]" /></label>
             <span className="text-sm text-text-primary">Exclude from reports and forecasts</span>
           </div>
 
@@ -897,19 +885,7 @@ export function IncomeContent() {
           {accounts.length > 1 && accountId && (
             <>
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSplitEnabled(!splitEnabled)}
-                  className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-                    splitEnabled ? "bg-accent-purple" : "bg-bg-elevated"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                      splitEnabled ? "translate-x-5" : ""
-                    }`}
-                  />
-                </button>
+                <label className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center"><input type="checkbox" aria-label="Split income" checked={splitEnabled} onChange={event => setSplitEnabled(event.target.checked)} className="h-4 w-4 accent-[var(--accent-blue)]" /></label>
                 <span className="text-sm text-text-primary">
                   Split across accounts
                 </span>

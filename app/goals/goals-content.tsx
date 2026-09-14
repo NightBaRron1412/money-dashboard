@@ -416,7 +416,7 @@ export function GoalsContent() {
   ) => (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <label className="mb-1 block text-xs font-medium text-text-secondary">
+        <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="goals-field-1">
           Goal Name
         </label>
         <input
@@ -424,12 +424,12 @@ export function GoalsContent() {
           value={goalName}
           onChange={(e) => setGoalName(e.target.value)}
           placeholder="e.g., Emergency Fund"
-          className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+          className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="goals-field-1"
         />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-text-secondary">
+          <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="goals-field-2">
             Target Amount
           </label>
           <input
@@ -438,18 +438,18 @@ export function GoalsContent() {
             value={goalTarget}
             onChange={(e) => setGoalTarget(e.target.value)}
             placeholder="Leave empty for no cap"
-            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="goals-field-2"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-text-secondary">
+          <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="goals-field-3">
             Target Date
           </label>
           <input
             type="date"
             value={goalTargetDate}
             onChange={(e) => setGoalTargetDate(e.target.value)}
-            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="goals-field-3"
           />
         </div>
       </div>
@@ -645,13 +645,13 @@ export function GoalsContent() {
                     <button
                       onClick={() => openEdit(goal)}
                       className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"
-                    >
+                     aria-label="Edit" title="Edit">
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteGoal(goal)}
                       className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"
-                    >
+                     aria-label="Delete" title="Delete">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -807,7 +807,7 @@ export function GoalsContent() {
                   }}
                   disabled={linkedAccountIds.length === 0}
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-border-subtle px-4 py-2 text-sm text-text-primary transition hover:border-accent-blue hover:text-accent-blue"
-                >
+                 aria-label="Add" title="Add">
                   <Plus className="h-4 w-4" />
                   {linkedAccountIds.length === 0 ? "Link accounts first" : "Add Contribution"}
                 </button>
@@ -841,7 +841,7 @@ export function GoalsContent() {
         <div className="space-y-4">
           {contributingGoalAccountIds.length > 1 && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="goals-field-4">
                 Contribute To
               </label>
               <select
@@ -873,7 +873,7 @@ export function GoalsContent() {
                   setContributeSourceAccountId(nextDefaultSource?.id ?? "");
                   setContributeError("");
                 }}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="goals-field-4"
               >
                 {contributingGoalAccountIds.map((accountId) => {
                   const account = accounts.find((a) => a.id === accountId);
@@ -916,7 +916,7 @@ export function GoalsContent() {
             </div>
           )}
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="goals-field-5">
               Amount
             </label>
             <input
@@ -928,7 +928,7 @@ export function GoalsContent() {
                 setContributeError("");
               }}
               placeholder="0.00"
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="goals-field-5"
             />
           </div>
           <div className="space-y-2 rounded-xl border border-border-subtle bg-bg-elevated p-3">

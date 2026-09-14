@@ -361,7 +361,7 @@ export function VoiceTransaction({ accounts, creditCards, settings, refresh, dem
   return (
     <>
       {/* Floating mic button */}
-      <div data-tour="voice-fab" className="fixed z-40 right-4 md:right-6 md:!bottom-6 flex flex-col items-center gap-2" style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
+      <div data-tour="voice-fab" className="money-voice-tool relative z-40 flex items-center gap-2">
         {/* Live waveform + duration when recording */}
         {recorderState === "recording" && (
           <div className="flex items-center gap-2 rounded-2xl bg-accent-purple/90 px-3.5 py-2 shadow-lg backdrop-blur">
@@ -412,12 +412,12 @@ export function VoiceTransaction({ accounts, creditCards, settings, refresh, dem
             aria-label={recorderState === "recording" ? "Stop recording" : "Record a transaction"}
             disabled={sending || recorderState === "requesting" || recorderState === "processing"}
             className={cn(
-              "flex h-14 w-14 items-center justify-center rounded-full border border-border-subtle shadow-card transition-all duration-200",
+              "money-tool-button flex h-11 w-11 items-center justify-center transition-all duration-200",
               recorderState === "recording"
                 ? "scale-110 bg-[#405fcb] text-white hover:opacity-90"
                 : sending || recorderState === "requesting"
                   ? "bg-bg-elevated text-text-secondary cursor-wait"
-                  : "bg-text-primary text-bg-main hover:-translate-y-1 active:scale-95"
+                  : "text-text-secondary hover:bg-bg-elevated"
             )}
             title={recorderState === "recording" ? "Stop recording" : "Record a transaction"}
           >
@@ -426,7 +426,7 @@ export function VoiceTransaction({ accounts, creditCards, settings, refresh, dem
             ) : recorderState === "recording" ? (
               <Square className="h-5 w-5 fill-white" />
             ) : (
-              <Mic className="h-6 w-6" />
+              <Mic className="h-[18px] w-[18px]" />
             )}
           </button>
         </div>

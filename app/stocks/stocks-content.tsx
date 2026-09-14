@@ -1,4 +1,5 @@
 "use client";
+import { TransactionEditDialog, EditField } from "../components/transaction-edit-dialog";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useMoneyData } from "../hooks/use-money-data";
@@ -132,7 +133,7 @@ export function StocksContent() {
       await updateHolding(id, { shares: sh, cost_basis: cb });
       await refresh();
       setInlineHoldingId(null);
-    } catch { /* ignore */ } finally { setSaving(false); }
+    } finally { setSaving(false); }
   };
 
   // Holdings sorting
@@ -159,12 +160,14 @@ export function StocksContent() {
   const [inlineDivId, setInlineDivId] = useState<string | null>(null);
   const [editDivAmount, setEditDivAmount] = useState("");
   const [editDivDate, setEditDivDate] = useState("");
+  const [editDivNotes, setEditDivNotes] = useState("");
   const [editDivReinvested, setEditDivReinvested] = useState(false);
 
   const startInlineDividend = (d: Dividend) => {
     setInlineDivId(d.id);
     setEditDivAmount(d.amount.toString());
     setEditDivDate(d.date);
+    setEditDivNotes(d.notes || "");
     setEditDivReinvested(d.reinvested);
   };
 
@@ -173,10 +176,10 @@ export function StocksContent() {
     if (isNaN(amt) || amt <= 0) return;
     setSaving(true);
     try {
-      await updateDividend(id, { amount: amt, date: editDivDate, reinvested: editDivReinvested });
+      await updateDividend(id, { amount: amt, date: editDivDate, reinvested: editDivReinvested, notes: editDivNotes.trim() || null });
       await refresh();
       setInlineDivId(null);
-    } catch { /* ignore */ } finally { setSaving(false); }
+    } finally { setSaving(false); }
   };
 
   // Dividend modal state
@@ -270,6 +273,7 @@ export function StocksContent() {
         ...h,
         sym,
         quote,
+        hasPrice: isCash || !!(quote && quote.price > 0),
         price,
         costInCurrency,
         marketValue,
@@ -287,6 +291,7 @@ export function StocksContent() {
   const totalCostBasis = holdingsWithPrices.reduce(
     (s, h) => s + h.costInCurrency, 0
   );
+  const missingPrices = holdingsWithPrices.some(h => !h.hasPrice);
   const totalGain = totalMarketValue - totalCostBasis;
   const totalGainPercent =
     totalCostBasis > 0 ? (totalGain / totalCostBasis) * 100 : 0;
@@ -328,7 +333,7 @@ export function StocksContent() {
       ? holdingsWithPrices.filter((h) => h.account_id === perfAccountFilter)
       : holdingsWithPrices;
     return source
-      .filter((h) => h.sym !== "CASH" && h.sym !== "CASHCAD")
+      .filter((h) => h.hasPrice && h.sym !== "CASH" && h.sym !== "CASHCAD")
       .map((h) => ({
         name: h.sym,
         gain: Math.round(h.gainPercent * 100) / 100,
@@ -510,7 +515,7 @@ export function StocksContent() {
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-text-secondary">
+          <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="stocks-field-1">
             Symbol
           </label>
           <input
@@ -518,17 +523,17 @@ export function StocksContent() {
             value={symbol}
             onChange={(e) => setSymbol(e.target.value.toUpperCase())}
             placeholder="AAPL, VOO, GOLD, CASH, CASHCAD..."
-            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple font-mono"
+            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple font-mono" id="stocks-field-1"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-text-secondary">
+          <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="stocks-field-2">
             Account
           </label>
           <select
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
-            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="stocks-field-2"
           >
             <option value="">Select account…</option>
             {investingAccounts.map((a) => (
@@ -541,7 +546,7 @@ export function StocksContent() {
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-text-secondary">
+          <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="stocks-field-3">
             Shares
           </label>
           <input
@@ -550,7 +555,7 @@ export function StocksContent() {
             value={shares}
             onChange={(e) => setShares(e.target.value)}
             placeholder="10"
-            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+            className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="stocks-field-3"
           />
         </div>
         <div>
@@ -665,6 +670,7 @@ export function StocksContent() {
         </div>
       )}
 
+      {missingPrices && <p role="status" className="mb-4 rounded-xl border border-border-subtle bg-bg-elevated px-4 py-3 text-sm text-text-secondary">{quotesLoading ? "Loading market prices…" : "Some market prices are unavailable. Portfolio totals will appear when all prices are available."}</p>}
       {quotesError && (
         <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-xs text-red-400">
           {quotesError}
@@ -675,15 +681,15 @@ export function StocksContent() {
       <div data-tour="stocks-holdings" className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title={`Portfolio Value (${currency})`}
-          value={m(totalMarketValue)}
+          value={missingPrices ? "Unavailable" : m(totalMarketValue)}
           subtitle={currency === "CAD" && fxRate !== 1 ? `1 USD = ${fxRate.toFixed(4)} CAD` : undefined}
           icon={<DollarSign className="h-5 w-5" />}
         />
         <StatCard
           title="Total Gain/Loss"
-          value={showBalances ? `${totalGain >= 0 ? "+" : ""}${formatMoney(totalGain, currency)}` : HIDDEN_BALANCE}
+          value={missingPrices ? "Unavailable" : showBalances ? `${totalGain >= 0 ? "+" : ""}${formatMoney(totalGain, currency)}` : HIDDEN_BALANCE}
           subtitle={
-            showBalances && totalCostBasis > 0
+            !missingPrices && showBalances && totalCostBasis > 0
               ? `${totalGainPercent >= 0 ? "+" : ""}${totalGainPercent.toFixed(2)}%`
               : undefined
           }
@@ -698,7 +704,7 @@ export function StocksContent() {
         <StatCard
           title="Today's Change"
           value={
-            showBalances
+            missingPrices ? "Unavailable" : showBalances
               ? `${totalDayChange >= 0 ? "+" : ""}${formatMoney(totalDayChange, currency)}`
               : HIDDEN_BALANCE
           }
@@ -928,7 +934,7 @@ export function StocksContent() {
                     </thead>
                     <tbody>
                       {sortedHoldings.map((h) => {
-                        const isHEditing = inlineHoldingId === h.id;
+
                         return (
                         <tr
                           key={h.id}
@@ -947,9 +953,7 @@ export function StocksContent() {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-right text-text-primary">
-                            {isHEditing ? (
-                              <input type="number" step="0.0001" value={editHShares} onChange={(e) => setEditHShares(e.target.value)} className="w-20 rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-right text-sm text-text-primary" />
-                            ) : (
+                            {(
                               showBalances
                                 ? h.shares % 1 === 0
                                   ? h.shares.toString()
@@ -958,11 +962,9 @@ export function StocksContent() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-right text-text-secondary">
-                            {isHEditing ? (
-                              <input type="number" step="0.01" value={editHCostBasis} onChange={(e) => setEditHCostBasis(e.target.value)} className="w-24 rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-right text-sm text-text-primary" />
-                            ) : (
+                            {(
                               showBalances
-                                ? `${currencySymbol}${h.price.toLocaleString(undefined, {
+                                ? !h.hasPrice ? "—" : `${currencySymbol}${h.price.toLocaleString(undefined, {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                   })}`
@@ -970,7 +972,7 @@ export function StocksContent() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-right font-semibold text-text-primary">
-                            {m(h.marketValue)}
+                            {h.hasPrice ? m(h.marketValue) : "—"}
                           </td>
                           <td className="hidden md:table-cell px-4 py-3 text-right">
                             {showBalances ? (
@@ -993,7 +995,7 @@ export function StocksContent() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            {showBalances ? (
+                            {!h.hasPrice ? <span className="text-xs text-text-secondary">Awaiting price</span> : showBalances ? (
                               <span
                                 className={
                                   h.gain >= 0
@@ -1013,23 +1015,18 @@ export function StocksContent() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            {isHEditing ? (
-                              <span className="inline-flex gap-1">
-                                <button onClick={() => handleInlineHoldingSave(h.id)} disabled={saving} className="rounded-lg p-1 text-emerald-400 hover:bg-emerald-500/10"><Check className="h-4 w-4" /></button>
-                                <button onClick={() => setInlineHoldingId(null)} className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"><X className="h-4 w-4" /></button>
-                              </span>
-                            ) : (
+                            {(
                               <div className="flex items-center justify-end gap-1">
                                 <button
-                                  onClick={() => startInlineHolding(h)}
+                                  onClick={() => openEdit(h)}
                                   className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"
-                                >
+                                 aria-label="Edit" title="Edit">
                                   <Pencil className="h-4 w-4" />
                                 </button>
                                 <button
                                   onClick={() => handleDelete(h)}
                                   className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"
-                                >
+                                 aria-label="Delete" title="Delete">
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                               </div>
@@ -1048,6 +1045,10 @@ export function StocksContent() {
       )}
 
       {/* Add Modal */}
+<TransactionEditDialog open={!!inlineDivId} title="Edit Dividend" saving={saving} onClose={()=>setInlineDivId(null)} onSave={async()=>{if(inlineDivId) await handleInlineDividendSave(inlineDivId);}}>
+<div className="grid gap-5 sm:grid-cols-2"><EditField label="Date"><input aria-label="Date" type="date" required value={editDivDate} onChange={event=>setEditDivDate(event.target.value)} /></EditField><EditField label="Amount"><input aria-label="Amount" type="number" min="0.01" step="0.01" required value={editDivAmount} onChange={event=>setEditDivAmount(event.target.value)} /></EditField></div>
+<label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={editDivReinvested} onChange={event=>setEditDivReinvested(event.target.checked)} />Reinvested</label>
+<EditField label="Notes"><textarea aria-label="Notes" value={editDivNotes} onChange={event=>setEditDivNotes(event.target.value)} /></EditField></TransactionEditDialog>
       <Modal
         open={showAdd}
         onClose={() => {
@@ -1103,7 +1104,7 @@ export function StocksContent() {
           <div className="rounded-2xl border border-border-subtle bg-bg-secondary p-4">
             <p className="text-xs text-text-secondary">Yield on Cost</p>
             <p className="mt-1 text-lg font-bold text-text-primary">
-              {showBalances && totalCostBasis > 0
+              {!missingPrices && showBalances && totalCostBasis > 0
                 ? `${((ytdDividends / totalCostBasis) * 100).toFixed(2)}%`
                 : showBalances
                   ? "—"
@@ -1169,17 +1170,14 @@ export function StocksContent() {
                   }
                   return dSortDir === "asc" ? cmp : -cmp;
                 }).slice(0, 20).map((d) => {
-                  const isDEditing = inlineDivId === d.id;
+
                   return (
                   <tr
                     key={d.id}
                     className="border-b border-border-subtle last:border-0 hover:bg-bg-elevated/50"
                   >
                     <td className="px-4 py-3 text-text-secondary">
-                      {isDEditing ? (
-                        <input type="date" value={editDivDate} onChange={(e) => setEditDivDate(e.target.value)}
-                          className="w-full max-w-[140px] rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-xs text-text-primary outline-none focus:border-accent-purple" />
-                      ) : (
+                      {(
                         new Date(d.date + "T00:00:00").toLocaleDateString(
                           "en-US",
                           { month: "short", day: "numeric", year: "numeric" }
@@ -1188,13 +1186,7 @@ export function StocksContent() {
                     </td>
                     <td className="px-4 py-3 font-mono font-semibold text-text-primary">
                       {d.symbol}
-                      {isDEditing ? (
-                        <label className="ml-2 inline-flex items-center gap-1 text-[10px] font-normal text-text-secondary">
-                          <input type="checkbox" checked={editDivReinvested} onChange={(e) => setEditDivReinvested(e.target.checked)}
-                            className="h-3.5 w-3.5 rounded border-border-subtle accent-accent-purple" />
-                          DRIP
-                        </label>
-                      ) : d.reinvested ? (
+                      {d.reinvested ? (
                         <span className="ml-1.5 rounded bg-accent-purple/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent-purple brightness-125">
                           DRIP
                         </span>
@@ -1206,10 +1198,7 @@ export function StocksContent() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-emerald-400">
-                      {isDEditing ? (
-                        <input type="number" step="0.01" value={editDivAmount} onChange={(e) => setEditDivAmount(e.target.value)}
-                          className="w-20 rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-right text-xs text-text-primary outline-none focus:border-accent-purple" />
-                      ) : (
+                      {(
                         showBalances ? `+${formatMoney(d.amount, d.currency)}` : HIDDEN_BALANCE
                       )}
                     </td>
@@ -1217,23 +1206,18 @@ export function StocksContent() {
                       {d.notes || "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {isDEditing ? (
-                        <span className="inline-flex gap-1">
-                          <button onClick={() => handleInlineDividendSave(d.id)} disabled={saving} className="rounded-lg p-1 text-emerald-400 hover:bg-emerald-500/10"><Check className="h-4 w-4" /></button>
-                          <button onClick={() => setInlineDivId(null)} className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"><X className="h-4 w-4" /></button>
-                        </span>
-                      ) : (
+                      {(
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => startInlineDividend(d)}
                             className="rounded-lg p-1 text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue"
-                          >
+                           aria-label="Edit" title="Edit">
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteDividend(d)}
                             className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"
-                          >
+                           aria-label="Delete" title="Delete">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
@@ -1260,7 +1244,7 @@ export function StocksContent() {
       >
         <form onSubmit={handleAddDividend} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="stocks-field-4">
               Holding
             </label>
             <select
@@ -1270,7 +1254,7 @@ export function StocksContent() {
                 const h = holdings.find((h) => h.id === e.target.value);
                 if (h) setDivSymbol(h.symbol.toUpperCase());
               }}
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="stocks-field-4"
             >
               <option value="">Select holding…</option>
               {holdings
@@ -1284,7 +1268,7 @@ export function StocksContent() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="stocks-field-5">
                 Amount ({(() => { const h = holdings.find((h) => h.id === divHoldingId); return h?.cost_currency ?? "USD"; })()})
               </label>
               <input
@@ -1293,23 +1277,23 @@ export function StocksContent() {
                 value={divAmount}
                 onChange={(e) => setDivAmount(e.target.value)}
                 placeholder="25.00"
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="stocks-field-5"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="stocks-field-6">
                 Date
               </label>
               <input
                 type="date"
                 value={divDate}
                 onChange={(e) => setDivDate(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="stocks-field-6"
               />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="stocks-field-7">
               Notes (optional)
             </label>
             <input
@@ -1317,7 +1301,7 @@ export function StocksContent() {
               value={divNotes}
               onChange={(e) => setDivNotes(e.target.value)}
               placeholder="Q2 dividend, special dividend…"
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="stocks-field-7"
             />
           </div>
           <label className="flex items-center gap-2 text-sm text-text-primary">

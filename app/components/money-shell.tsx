@@ -84,13 +84,12 @@ function AuthGateInner({
       <main className={cn("min-h-screen transition-all duration-200", sidebarCollapsed ? "md:ml-20" : "md:ml-64")}>
         <a href="#main-content" className="money-skip-link">Skip to content</a>
         <div className="mx-auto max-w-[1400px] px-4 sm:px-8 lg:px-10 xl:px-12">
-          <MoneyToolbar routeBase={routeBase} demoMode={demoMode} />
+          <MoneyToolbar routeBase={routeBase} demoMode={demoMode}><VoiceTransactionOverlay demoMode={demoMode} /></MoneyToolbar>
         </div>
         <div id="main-content" tabIndex={-1} className="money-content mx-auto max-w-[1400px] px-4 pt-5 pb-28 sm:px-8 lg:px-10 lg:pt-7 xl:px-12 md:pb-10">
           {children}
         </div>
       </main>
-      <VoiceTransactionOverlay demoMode={demoMode} />
     </div>
   );
 }

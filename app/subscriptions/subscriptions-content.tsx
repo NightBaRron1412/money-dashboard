@@ -481,7 +481,7 @@ export function SubscriptionsContent() {
     const days = daysUntil(sub.next_billing);
     const isOverdue = days < 0;
     const isSoon = days >= 0 && days <= 7;
-    const isInlineEditing = inlineEditId === sub.id;
+
     return (
       <tr
         key={sub.id}
@@ -489,10 +489,8 @@ export function SubscriptionsContent() {
           !sub.is_active ? "opacity-50" : ""
         }`}
       >
-        <td className="px-4 py-3">
-          {isInlineEditing ? (
-            <input type="text" value={editSubName} onChange={(e) => setEditSubName(e.target.value)} className="w-full rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-sm text-text-primary" />
-          ) : (
+        <td className="px-4 py-3" data-field="merchant">
+          {(
             <div className="flex max-w-[200px] items-center gap-1.5">
               <span className="truncate font-medium text-text-primary" title={sub.name}>{sub.name}</span>
               {sub.category && (
@@ -503,23 +501,8 @@ export function SubscriptionsContent() {
             </div>
           )}
         </td>
-        <td className="px-4 py-3 text-right text-text-primary font-semibold">
-          {isInlineEditing ? (
-            <div className="flex items-center justify-end gap-1">
-              <input type="number" step="0.01" value={editSubAmount} onChange={(e) => setEditSubAmount(e.target.value)} className="w-20 rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-right text-sm text-text-primary" />
-              <select value={editSubCurrency} onChange={(e) => setEditSubCurrency(e.target.value as CurrencyCode)} className="rounded-lg border border-border-subtle bg-bg-elevated px-1 py-1 text-xs text-text-primary" title="Currency">
-                <option value="CAD">CAD</option>
-                <option value="USD">USD</option>
-                <option value="EGP">EGP</option>
-              </select>
-              <select value={editSubFrequency} onChange={(e) => setEditSubFrequency(e.target.value as RecurrenceFrequency)} className="rounded-lg border border-border-subtle bg-bg-elevated px-1 py-1 text-xs text-text-primary">
-                <option value="weekly">wk</option>
-                <option value="bi-weekly">2wk</option>
-                <option value="monthly">mo</option>
-                <option value="yearly">yr</option>
-              </select>
-            </div>
-          ) : (
+        <td className="px-4 py-3 text-right text-text-primary font-semibold" data-field="amount">
+          {(
             <>
               {showBalances ? formatMoney(sub.amount, sub.currency ?? baseCurrency) : HIDDEN_BALANCE}
               <span className="ml-1 text-[10px] font-normal text-text-secondary">
@@ -528,12 +511,8 @@ export function SubscriptionsContent() {
             </>
           )}
         </td>
-        <td className="px-4 py-3 text-right text-text-secondary">
-          {isInlineEditing ? (
-            <span className="text-xs text-text-secondary">
-              {formatMoney(convertCurrency(subscriptionMonthlyEquivalent(parseFloat(editSubAmount) || 0, editSubFrequency), editSubCurrency, baseCurrency, fx), baseCurrency)}/mo
-            </span>
-          ) : (
+        <td className="px-4 py-3 text-right text-text-secondary" data-field="note">
+          {(
             <>
               {showBalances
                 ? formatMoney(convertCurrency(subscriptionMonthlyEquivalent(sub.amount, sub.frequency), sub.currency ?? baseCurrency, baseCurrency, fx), baseCurrency)
@@ -542,10 +521,8 @@ export function SubscriptionsContent() {
             </>
           )}
         </td>
-        <td className="px-4 py-3 text-right">
-          {isInlineEditing ? (
-            <input type="date" value={editSubNextBilling} onChange={(e) => setEditSubNextBilling(e.target.value)} className="w-32 rounded-lg border border-border-subtle bg-bg-elevated px-2 py-1 text-sm text-text-primary" />
-          ) : (
+        <td className="px-4 py-3 text-right" data-field="date">
+          {(
             <span
               className={
                 isOverdue
@@ -570,13 +547,8 @@ export function SubscriptionsContent() {
             </span>
           )}
         </td>
-        <td className="px-4 py-3 text-right">
-          {isInlineEditing ? (
-            <span className="inline-flex gap-1">
-              <button onClick={() => handleInlineSave(sub.id)} disabled={saving} className="rounded-lg p-1 text-emerald-400 hover:bg-emerald-500/10"><Check className="h-4 w-4" /></button>
-              <button onClick={() => setInlineEditId(null)} className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"><X className="h-4 w-4" /></button>
-            </span>
-          ) : (
+        <td className="px-4 py-3 text-right" data-field="actions">
+          {(
             <div className="flex items-center justify-end gap-1">
               {sub.is_active && (
                 <button
@@ -611,7 +583,7 @@ export function SubscriptionsContent() {
               <button
                 onClick={() => handleDelete(sub)}
                 className="rounded-lg p-1 text-text-secondary hover:bg-red-500/10 hover:text-red-400"
-              >
+               aria-label="Delete" title="Delete">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
@@ -767,7 +739,7 @@ export function SubscriptionsContent() {
                 Active ({activeSubs.length})
               </h2>
               <div className="overflow-x-auto rounded-2xl border border-border-subtle">
-                <table className="w-full min-w-[500px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
+                <table className="money-ledger-list money-subscription-list w-full min-w-[500px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-border-subtle bg-bg-secondary">
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary cursor-pointer select-none hover:text-text-primary" onClick={() => toggleSort("name")}>
@@ -800,7 +772,7 @@ export function SubscriptionsContent() {
                 Paused ({inactiveSubs.length})
               </h2>
               <div className="overflow-x-auto rounded-2xl border border-border-subtle">
-                <table className="w-full min-w-[500px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
+                <table className="money-ledger-list money-subscription-list w-full min-w-[500px] text-sm [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-border-subtle bg-bg-secondary">
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary cursor-pointer select-none hover:text-text-primary" onClick={() => toggleSort("name")}>
@@ -841,7 +813,7 @@ export function SubscriptionsContent() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="subscriptions-field-1">
                 Name
               </label>
               <input
@@ -849,17 +821,17 @@ export function SubscriptionsContent() {
                 aria-label="Name" value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Netflix, Spotify…"
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="subscriptions-field-1"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="subscriptions-field-2">
                 Category
               </label>
               <select
                 aria-label="Category" value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="subscriptions-field-2"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -871,7 +843,7 @@ export function SubscriptionsContent() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="subscriptions-field-3">
                 Amount ({currency})
               </label>
               <input
@@ -880,17 +852,17 @@ export function SubscriptionsContent() {
                 aria-label="Amount" value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="9.99"
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="subscriptions-field-3"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="subscriptions-field-4">
                 Currency
               </label>
               <select
                 aria-label="Currency" value={currency}
                 onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="subscriptions-field-4"
               >
                 <option value="CAD">CAD</option>
                 <option value="USD">USD</option>
@@ -900,7 +872,7 @@ export function SubscriptionsContent() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="subscriptions-field-5">
                 Frequency
               </label>
               <select
@@ -908,7 +880,7 @@ export function SubscriptionsContent() {
                 onChange={(e) =>
                   setFrequency(e.target.value as RecurrenceFrequency)
                 }
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="subscriptions-field-5"
               >
                 <option value="weekly">Weekly</option>
                 <option value="bi-weekly">Bi-weekly</option>
@@ -919,14 +891,14 @@ export function SubscriptionsContent() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-secondary">
+              <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="subscriptions-field-6">
                 Next Billing Date
               </label>
               <input
                 type="date"
                 aria-label="Next billing date" value={nextBilling}
                 onChange={(e) => setNextBilling(e.target.value)}
-                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+                className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="subscriptions-field-6"
               />
             </div>
             <div className="flex items-end">
@@ -942,7 +914,7 @@ export function SubscriptionsContent() {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="subscriptions-field-7">
               Notes (optional)
             </label>
             <input
@@ -950,11 +922,11 @@ export function SubscriptionsContent() {
               aria-label="Notes" value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Shared with family, annual plan…"
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="subscriptions-field-7"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary" htmlFor="subscriptions-field-8">
               Default pay from (account or card)
             </label>
             <p className="mb-2 text-[11px] text-text-secondary">
@@ -963,7 +935,7 @@ export function SubscriptionsContent() {
             <select
               aria-label="Default pay from" value={defaultPaymentAccountId}
               onChange={(e) => setDefaultPaymentAccountId(e.target.value)}
-              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
+              className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple" id="subscriptions-field-8"
             >
               <option value="">None — choose each time</option>
               {accounts.length > 0 && (
