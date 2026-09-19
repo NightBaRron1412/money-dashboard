@@ -186,7 +186,7 @@ export function formatMoney(amount: number, currency: CurrencyCode = "USD"): str
     currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(Math.abs(amount) < 0.005 ? 0 : amount);
 }
 
 export const HIDDEN_BALANCE = "••••••";
@@ -197,7 +197,7 @@ export function formatMoneyExact(amount: number, currency: CurrencyCode = "USD")
     currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(Math.abs(amount) < 0.005 ? 0 : amount);
 }
 
 export function formatMoneyCompact(amount: number, currency: CurrencyCode = "USD"): string {
@@ -207,7 +207,7 @@ export function formatMoneyCompact(amount: number, currency: CurrencyCode = "USD
     notation: "compact",
     compactDisplay: "short",
     maximumFractionDigits: 1,
-  }).format(amount);
+  }).format(Math.abs(amount) < 0.005 ? 0 : amount);
 }
 
 /* ------------------------------------------------------------------ */

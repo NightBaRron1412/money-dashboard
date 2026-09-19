@@ -1,6 +1,6 @@
 // Bump this version whenever the caching strategy changes — the activate
 // handler deletes every cache whose name != CACHE_NAME, purging stale ones.
-const CACHE_NAME = "finance-v2";
+const CACHE_NAME = "finance-v3";
 
 // Only cache genuinely-static, stable icon assets. Do NOT cache Next.js build
 // output (/_next/*) or HTML: those change every deploy and content-hashed

@@ -26,11 +26,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   icons: {
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "32x32" },
-      { url: "/favicon.png", type: "image/png", sizes: "192x192" },
+      { url: "/favicon.svg?v=20260918", type: "image/svg+xml" },
+      { url: "/favicon.ico?v=20260918", sizes: "32x32" },
+      { url: "/favicon.png?v=20260918", type: "image/png", sizes: "192x192" },
     ],
-    apple: "/apple-touch-icon.png",
+    apple: "/apple-touch-icon.png?v=20260918",
   },
   openGraph: {
     title: "Money | Personal Finance",

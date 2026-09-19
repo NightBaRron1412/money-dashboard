@@ -10,7 +10,7 @@ import { VoiceTransaction } from "./voice-transaction";
 import { useMoneyData } from "../hooks/use-money-data";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 function NotConfigured() {
@@ -55,7 +55,14 @@ function AuthGateInner({
   routeBase?: string;
 }) {
   const { authenticated, loading, configured } = useAuth();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, updateSidebarCollapsed] = useState(false);
+  useEffect(() => {
+    try { updateSidebarCollapsed(localStorage.getItem("money-sidebar-collapsed") === "true"); } catch {}
+  }, []);
+  const setSidebarCollapsed = (value: boolean) => {
+    updateSidebarCollapsed(value);
+    try { localStorage.setItem("money-sidebar-collapsed", String(value)); } catch {}
+  };
 
   if (!demoMode && !configured) {
     return <NotConfigured />;

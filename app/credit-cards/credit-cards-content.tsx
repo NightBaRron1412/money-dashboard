@@ -93,6 +93,7 @@ const normalizeCategories = (raw: string[]) => {
 export function CreditCardsContent() {
   const {
     transactions,
+    goals,
     accounts,
     creditCards,
     creditCardCharges,
@@ -176,6 +177,8 @@ export function CreditCardsContent() {
   const [editSharePercent, setEditSharePercent] = useState(100);
   const [editSharedWith, setEditSharedWith] = useState("");
   const [chargeExcluded, setChargeExcluded] = useState(false);
+  const [chargeGoalId, setChargeGoalId] = useState("");
+  const [editChargeGoalId, setEditChargeGoalId] = useState("");
   const [editChargeExcluded, setEditChargeExcluded] = useState(false);
 
   const [chargeNotes, setChargeNotes] = useState("");
@@ -347,7 +350,7 @@ export function CreditCardsContent() {
       let cmp = 0;
       switch (sortKey) {
         case "date":
-          cmp = a.date.localeCompare(b.date);
+          cmp = a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
           break;
         case "amount":
           cmp = a.amount - b.amount;
@@ -511,11 +514,12 @@ export function CreditCardsContent() {
           category: chargeCategory,
           notes: chargeNotes || null,
         },
-        { currency: chargeCurrency, cardName: card?.name ?? "Credit Card", exclude_from_monthly: chargeExcluded, personal_share_percent: sharePercent, shared_with: sharedWith.trim() || null }
+        { currency: chargeCurrency, cardName: card?.name ?? "Credit Card", goal_id: chargeGoalId || null, exclude_from_monthly: chargeExcluded, personal_share_percent: sharePercent, shared_with: sharedWith.trim() || null }
       );
       await refresh();
       setShowAddCharge(false);
       setChargeAmount("");
+      setChargeGoalId("");
       setChargeMerchant("");
       setChargeNotes("");
       setChargeExcluded(false);
@@ -538,6 +542,7 @@ export function CreditCardsContent() {
     setEditingChargeId(charge.id);
     const linked = transactions.find(t => t.id === charge.linked_transaction_id || t.linked_charge_id === charge.id);
     setEditChargeExcluded(linked?.exclude_from_monthly ?? false);
+    setEditChargeGoalId(linked?.goal_id || "");
     setEditSharePercent(linked?.personal_share_percent ?? 100);
     setEditSharedWith(linked?.shared_with ?? "");
     setEditChargeDate(charge.date);
@@ -560,7 +565,7 @@ export function CreditCardsContent() {
         notes: editChargeNotes || null,
       });
       const linked = transactions.find(t => t.linked_charge_id === id || t.id === creditCardCharges.find(c => c.id === id)?.linked_transaction_id);
-      if (linked) await updateTransaction(linked.id, { exclude_from_monthly: editChargeExcluded, personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null });
+      if (linked) await updateTransaction(linked.id, { goal_id: editChargeGoalId || null, exclude_from_monthly: editChargeExcluded, personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null });
       await refresh();
       setEditingChargeId(null);
     } finally {
@@ -1220,7 +1225,7 @@ export function CreditCardsContent() {
         <div className="grid gap-5 sm:grid-cols-2"><EditField label="Date"><input aria-label="Date" type="date" required value={editChargeDate} onChange={event => setEditChargeDate(event.target.value)} /></EditField><EditField label={`Amount (${creditCards.find(card => card.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.card_id)?.currency || baseCurrency})`}><input aria-label="Amount" type="number" required min="0.01" step="0.01" value={editChargeAmount} onChange={event => setEditChargeAmount(event.target.value)} /></EditField><EditField label="Category"><select aria-label="Category" value={editChargeCategory} onChange={event => setEditChargeCategory(event.target.value)}>{!chargeCategories.includes(editChargeCategory) && <option value={editChargeCategory}>{editChargeCategory}</option>}{chargeCategories.map(value => <option key={value} value={value}>{value}</option>)}</select></EditField><EditField label="Card"><div className="rounded-xl bg-bg-elevated px-3 py-3 text-sm text-text-primary">{creditCards.find(card => card.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.card_id)?.name || "Credit card"}</div></EditField></div>
         <EditField label="Merchant"><MerchantInput value={editChargeMerchant} onChange={setEditChargeMerchant} records={merchantHistory} /></EditField>
         <EditField label="Notes"><textarea aria-label="Notes" rows={2} placeholder="Add a note…" value={editChargeNotes} onChange={event => setEditChargeNotes(event.target.value)} /></EditField>
-        {transactions.some(tx => tx.linked_charge_id === editingChargeId || tx.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.linked_transaction_id) && <section className="transaction-editor-options"><h3 className="text-sm font-semibold text-text-primary">Spending preferences</h3><ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editChargeAmount)} currency={creditCards.find(card => card.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.card_id)?.currency || baseCurrency} excluded={editChargeExcluded} /><MonthlyExclusion checked={editChargeExcluded} onChange={setEditChargeExcluded} /></section>}
+        {transactions.some(tx => tx.linked_charge_id === editingChargeId || tx.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.linked_transaction_id) && <section className="transaction-editor-options"><h3 className="text-sm font-semibold text-text-primary">Spending preferences</h3><ExpenseShare percent={editSharePercent} onPercentChange={setEditSharePercent} sharedWith={editSharedWith} onSharedWithChange={setEditSharedWith} amount={Number(editChargeAmount)} currency={creditCards.find(card => card.id === creditCardCharges.find(charge => charge.id === editingChargeId)?.card_id)?.currency || baseCurrency} excluded={editChargeExcluded} /><MonthlyExclusion checked={editChargeExcluded} onChange={setEditChargeExcluded} /><EditField label="Link to goal"><select aria-label="Link to goal" value={editChargeGoalId} onChange={event => setEditChargeGoalId(event.target.value)}><option value="">No goal</option>{goals.map(goal => <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select></EditField></section>}
       </TransactionEditDialog>
       <TransactionEditDialog open={!!editingPayId} title="Edit Payment" saving={saving} onClose={()=>setEditingPayId(null)} onSave={async()=>{if(editingPayId) await handleSavePaymentEdit(editingPayId);}}>
 <div className="grid gap-5 sm:grid-cols-2">
@@ -1518,6 +1523,7 @@ export function CreditCardsContent() {
             </label>
             <input
               id="charge-notes"
+              aria-label="Notes"
               type="text"
               value={chargeNotes}
               onChange={(e) => setChargeNotes(e.target.value)}
@@ -1529,6 +1535,7 @@ export function CreditCardsContent() {
               className="w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-purple"
             />
           </div>
+          <label className="block text-xs font-medium text-text-secondary">Link to goal (optional)<select aria-label="Link to goal" value={chargeGoalId} onChange={event => setChargeGoalId(event.target.value)} className="mt-2 w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary"><option value="">No goal</option>{goals.map(goal => <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select></label>
           <ExpenseShare percent={sharePercent} onPercentChange={setSharePercent} sharedWith={sharedWith} onSharedWithChange={setSharedWith} amount={Number(chargeAmount)} currency={creditCards.find(card => card.id === chargeCardId)?.currency || baseCurrency} excluded={chargeExcluded} />
           <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border-subtle bg-bg-elevated p-4">
             <input type="checkbox" checked={chargeExcluded} onChange={event => setChargeExcluded(event.target.checked)} className="mt-1 h-4 w-4 accent-[var(--accent-blue)]" />

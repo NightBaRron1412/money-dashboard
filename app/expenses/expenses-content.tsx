@@ -291,7 +291,7 @@ export function ExpensesContent() {
             category,
             notes: txCurrency !== cardCurrency ? `${expenseNotes ? expenseNotes + " — " : ""}${amt} ${txCurrency} converted` : (expenseNotes || null),
           },
-          { currency: cardCurrency, cardName: card?.name ?? "Credit Card", exclude_from_monthly: excludeFromMonthly, personal_share_percent: sharePercent, shared_with: sharedWith.trim() || null, is_recurring: isRecurring, recurrence: isRecurring ? recurrence : null }
+          { currency: cardCurrency, cardName: card?.name ?? "Credit Card", goal_id: goalId || null, exclude_from_monthly: excludeFromMonthly, personal_share_percent: sharePercent, shared_with: sharedWith.trim() || null, is_recurring: isRecurring, recurrence: isRecurring ? recurrence : null }
         );
       } else {
         const acct = accounts.find((a) => a.id === accountId);
@@ -358,7 +358,7 @@ export function ExpensesContent() {
             {
               currency: card.currency,
               cardName: card.name,
-              exclude_from_monthly: tx.exclude_from_monthly, personal_share_percent: tx.personal_share_percent ?? 100, shared_with: tx.shared_with ?? null,
+              goal_id: tx.goal_id, exclude_from_monthly: tx.exclude_from_monthly, personal_share_percent: tx.personal_share_percent ?? 100, shared_with: tx.shared_with ?? null,
               is_recurring: tx.is_recurring,
               recurrence: tx.recurrence,
             }
@@ -447,7 +447,7 @@ export function ExpensesContent() {
             {
               currency: cardCurrency,
               cardName: card?.name ?? "Credit Card",
-              exclude_from_monthly: editExcludeFromMonthly, personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null,
+              goal_id: editGoalId || null, exclude_from_monthly: editExcludeFromMonthly, personal_share_percent: editSharePercent, shared_with: editSharedWith.trim() || null,
               is_recurring: editIsRecurring,
               recurrence: editIsRecurring ? editRecurrence : null,
             }

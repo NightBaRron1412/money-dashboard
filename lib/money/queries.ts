@@ -1027,6 +1027,7 @@ export async function createLinkedCreditCardCharge(
     exclude_from_monthly?: boolean;
     personal_share_percent?: number;
     shared_with?: string | null;
+    goal_id?: string | null;
     is_recurring?: boolean;
     recurrence?: string | null;
   }
@@ -1037,6 +1038,7 @@ export async function createLinkedCreditCardCharge(
       exclude_from_monthly: txOverrides.exclude_from_monthly ?? false,
       personal_share_percent: txOverrides.personal_share_percent ?? 100,
       shared_with: txOverrides.shared_with ?? null,
+      goal_id: txOverrides.goal_id ?? null,
       type: "expense",
       date: charge.date,
       amount: charge.amount,
@@ -1060,6 +1062,7 @@ export async function createLinkedCreditCardCharge(
     exclude_from_monthly: txOverrides.exclude_from_monthly ?? false,
       personal_share_percent: txOverrides.personal_share_percent ?? 100,
       shared_with: txOverrides.shared_with ?? null,
+      goal_id: txOverrides.goal_id ?? null,
     type: "expense",
     date: charge.date,
     amount: charge.amount,

@@ -20,3 +20,24 @@ describe("credit card monthly exclusions", () => {
     expect(computeCreditCardBalance(card.id,store.creditCardCharges,store.creditCardPayments)).toBeCloseTo(before+25);
   });
 });
+
+
+describe("credit card goal links", () => {
+  it("creates, changes and clears a goal without changing card debt", async () => {
+    vi.stubGlobal("window", { location: { pathname: "/demo/credit-cards" } });
+    const store = getDemoStore();
+    const card = store.creditCards[0];
+    const before = computeCreditCardBalance(card.id, store.creditCardCharges, store.creditCardPayments);
+    const charge = await createLinkedCreditCardCharge(
+      { card_id: card.id, date: "2026-09-17", amount: 42, merchant: "Goal test", category: "Food", notes: null },
+      { currency: card.currency, cardName: card.name, goal_id: store.goals[0].id }
+    );
+    const linked = () => store.transactions.find(tx => tx.id === charge.linked_transaction_id)!;
+    expect(linked().goal_id).toBe(store.goals[0].id);
+    await updateTransaction(linked().id, { goal_id: store.goals[1].id });
+    expect(linked().goal_id).toBe(store.goals[1].id);
+    await updateTransaction(linked().id, { goal_id: null });
+    expect(linked().goal_id).toBeNull();
+    expect(computeCreditCardBalance(card.id, store.creditCardCharges, store.creditCardPayments)).toBeCloseTo(before + 42);
+  });
+});
