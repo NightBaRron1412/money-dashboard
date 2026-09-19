@@ -52,6 +52,14 @@ test("excluded credit card charge updates its linked expense", async ({page}) =>
   const dialog=page.getByRole("dialog",{name:"Add Charge"});
   await dialog.locator('select').first().selectOption({index:1});
   await dialog.locator('input[type=number]').fill("12.34");
+  const merchant = dialog.getByRole("combobox", {name:"Merchant", exact:true});
+  await merchant.focus();
+  await merchant.press("ArrowDown");
+  await expect(dialog.getByRole("listbox", {name:"Merchant suggestions"})).toBeVisible();
+  await merchant.press("Tab");
+  await expect(dialog.getByRole("textbox", {name:"Notes", exact:true})).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(merchant).toBeFocused();
   await dialog.getByRole("combobox",{name:"Merchant",exact:true}).fill("UX exclusion check");
   await dialog.getByRole("checkbox",{name:/Exclude from monthly totals/}).check();
   await dialog.getByRole("button",{name:"Add Charge",exact:true}).click();

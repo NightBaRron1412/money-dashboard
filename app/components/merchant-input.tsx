@@ -33,7 +33,13 @@ export function MerchantInput({ value, onChange, records, onSelectCategory, onNe
           else if (value.trim()) onNewMerchant?.(value);
         }}
         onKeyDown={event => {
-          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          // Close while the input still owns focus. Removing the suggestions on
+          // blur can race the dialog focus trap and send Tab to the dialog root.
+          // Leave Tab's default action intact so the browser chooses the next field.
+          if (event.key === "Tab") {
+            setOpen(false);
+            setActive(-1);
+          } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
             event.preventDefault(); setOpen(true);
             setActive(previous => suggestions.length ? (previous + (event.key === "ArrowDown" ? 1 : suggestions.length - 1) + suggestions.length) % suggestions.length : -1);
           } else if (event.key === "Enter" && open && active >= 0 && suggestions[active]) {
