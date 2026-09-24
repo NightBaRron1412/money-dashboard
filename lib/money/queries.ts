@@ -1,3 +1,4 @@
+import { validateRefund } from "./refunds";
 import { supabase } from "@/lib/supabase";
 import type {
   Account,
@@ -1179,7 +1180,11 @@ export async function updateCreditCardPayment(id: string, updates: Partial<Omit<
   if (isDemoModeRoute()) {
     const s = (await import("./demo-store")).getDemoStore();
     const idx = s.creditCardPayments.findIndex((p) => p.id === id);
-    if (idx >= 0) Object.assign(s.creditCardPayments[idx], updates);
+    if (idx >= 0) {
+      validateRefund({...s.creditCardPayments[idx], ...updates}, s.transactions, s.creditCardPayments, s.creditCardCharges);
+      Object.assign(s.creditCardPayments[idx], updates);
+      (await import("./demo-store")).refreshDemoRefunds();
+    }
     return;
   }
   const { error } = await supabase.from("money_credit_card_payments").update(updates).eq("id", id);

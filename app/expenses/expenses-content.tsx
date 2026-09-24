@@ -527,7 +527,7 @@ export function ExpensesContent() {
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2">
         <StatCard title="Total paid" value={m(totalExpensesBase)} subtitle={`${expenseTransactions.length} transactions`} />
-        <div className="money-stat rounded-2xl border border-border-subtle bg-[var(--card-bg)] px-5 py-4"><p className="text-sm text-text-secondary">Your spending</p><strong data-testid="personal-spending" className="mt-3 block text-2xl font-semibold tracking-tight">{m(expenseTransactions.reduce((sum, tx) => sum + convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx), 0))}</strong><p className="mt-2 text-xs text-text-secondary">After shared and excluded amounts</p></div>
+        <div className="money-stat rounded-2xl border border-border-subtle bg-[var(--card-bg)] px-5 py-4"><p className="text-sm text-text-secondary">Your spending</p><strong data-testid="personal-spending" className="mt-3 block text-2xl font-semibold tracking-tight">{m(expenseTransactions.reduce((sum, tx) => sum + convertCurrency(monthlyAmount(tx), tx.currency, baseCurrency, fx), 0))}</strong><p className="mt-2 text-xs text-text-secondary">After refunds, shared and excluded amounts</p></div>
       </div>
       {/* Category breakdown */}
       {categoryBreakdown.length > 0 && (
@@ -726,6 +726,7 @@ export function ExpensesContent() {
                               <Repeat className="h-2.5 w-2.5" /> {tx.recurrence}
                             </span>
                           )}
+                          {(tx.refunded_amount ?? 0) > 0 && <span className="mt-1 block text-xs text-accent-blue">Refunded {formatMoney(tx.refunded_amount!, tx.currency)} · Net {formatMoney(tx.amount - tx.refunded_amount!, tx.currency)}</span>}
                           {(tx.personal_share_percent ?? 100) < 100 && <span className="mt-1 block whitespace-normal text-xs text-accent-blue">Shared{tx.shared_with ? ` with ${tx.shared_with}` : ""} · {tx.personal_share_percent}% yours</span>}
                           {tx.exclude_from_monthly && (
                             <span className="mt-0.5 inline-flex items-center gap-0.5 rounded bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400" title="Excluded from monthly totals">

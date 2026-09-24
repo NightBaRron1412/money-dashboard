@@ -11,9 +11,9 @@ export function isIncludedInMonthlyTotals(
 }
 
 /** Full ledger value remains intact. Round the personal share in the source currency. */
-export function monthlyAmount(transaction: { amount: number; type?: string; exclude_from_monthly?: boolean; personal_share_percent?: number }): number {
-  if (transaction.exclude_from_monthly) return 0;
+export function monthlyAmount(transaction: { amount: number; type?: string; exclude_from_monthly?: boolean; personal_share_percent?: number; refunded_amount?: number; refund_of_transaction_id?: string | null }): number {
+  if (transaction.exclude_from_monthly || transaction.refund_of_transaction_id) return 0;
   const rawShare = transaction.personal_share_percent ?? 100;
   const share = transaction.type === "expense" && Number.isFinite(rawShare) ? Math.max(0, Math.min(100, rawShare)) : 100;
-  return Math.round((transaction.amount * share / 100 + Number.EPSILON) * 100) / 100;
+  return Math.round(((transaction.type === "expense" ? Math.max(0, transaction.amount - (transaction.refunded_amount ?? 0)) : transaction.amount) * share / 100 + Number.EPSILON) * 100) / 100;
 }

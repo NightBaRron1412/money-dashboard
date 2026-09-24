@@ -2,7 +2,7 @@ import {test, expect} from '@playwright/test';
 test.beforeEach(async({page})=>{await page.addInitScript(()=>localStorage.setItem('demo-tour-completed','true'));});
 for(const kind of ['expenses','income']) test(`${kind} can edit notes recurrence and exclusion after creation`,async({page})=>{
  await page.goto(`/demo/${kind}`);
- const edit=page.getByRole('button',{name:kind==='expenses'?'Edit expense':'Edit income',exact:true}).first();
+ const edit=kind==='income' ? page.getByRole('row').filter({has:page.getByText('Paycheck',{exact:true})}).getByRole('button',{name:'Edit income',exact:true}).first() : page.getByRole('button',{name:'Edit expense',exact:true}).first();
  await edit.click();
  await expect(page.getByRole("dialog", {name:kind === "expenses" ? "Edit Expense" : "Edit Income"})).toBeVisible();
  await expect(page.locator("tbody input, tbody textarea, tbody select")).toHaveCount(0);

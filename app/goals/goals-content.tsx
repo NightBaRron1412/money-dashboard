@@ -73,7 +73,7 @@ export function GoalsContent() {
   const spentByGoal: Record<string, number> = {};
   for (const tx of transactions) {
     if (tx.type === "expense" && tx.goal_id) {
-      spentByGoal[tx.goal_id] = (spentByGoal[tx.goal_id] || 0) + convertCurrency(tx.amount, tx.currency, baseCurrency, fx);
+      spentByGoal[tx.goal_id] = (spentByGoal[tx.goal_id] || 0) + convertCurrency(Math.max(0, tx.amount - (tx.refunded_amount ?? 0)), tx.currency, baseCurrency, fx);
     }
   }
 

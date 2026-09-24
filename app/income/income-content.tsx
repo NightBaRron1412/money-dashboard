@@ -1,5 +1,8 @@
 "use client";
 import { TransactionEditDialog, EditField } from "../components/transaction-edit-dialog";
+import { validateRefund } from "@/lib/money/refunds";
+import { RefundExpensePicker } from "../components/refund-expense-picker";
+import { monthlyAmount } from "@/lib/money/transaction-filters";
 import { MonthlyExclusion } from "../components/monthly-exclusion";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
@@ -125,7 +128,7 @@ const normalizePlanAllocations = (
 };
 
 export function IncomeContent() {
-  const { accounts, transactions, plans, settings, loading, refresh } =
+  const { accounts, transactions, creditCardPayments, plans, settings, loading, refresh } =
     useMoneyData();
   const { fx, ready: fxReady } = useMoneyFx();
   const { showBalances } = useBalanceVisibility();
@@ -141,6 +144,8 @@ export function IncomeContent() {
   // Form state
   const [date, setDate] = useState(todayEST());
   const [amount, setAmount] = useState(settings?.paycheck_amount?.toString() || "");
+  const [refundId, setRefundId] = useState("");
+  const [editRefundId, setEditRefundId] = useState("");
   const [source, setSource] = useState<IncomeSource>("Paycheck");
   const [merchant, setMerchant] = useState("");
   const [accountId, setAccountId] = useState("");
@@ -333,7 +338,7 @@ export function IncomeContent() {
         return;
       }
 
-      if (splitEnabled && remaining < -0.01) {
+      if (source !== "Refund" && splitEnabled && remaining < -0.01) {
         setFormError("Split amounts exceed the income total");
         setSaving(false);
         return;
@@ -342,7 +347,7 @@ export function IncomeContent() {
       const depositAcct = accounts.find((a) => a.id === accountId);
       const txCurrency: CurrencyCode = depositAcct?.currency ?? baseCurrency;
 
-      if (splitEnabled) {
+      if (splitEnabled && source !== "Refund") {
         for (const [targetId, splitAmt] of Object.entries(splits)) {
           const parsed = parseFloat(splitAmt);
           if (!parsed || parsed <= 0 || targetId === accountId) continue;
@@ -357,12 +362,14 @@ export function IncomeContent() {
 
       // Create income transaction on selected account
       const splitNote =
-        splitEnabled && selectedPlanId
+        source !== "Refund" && splitEnabled && selectedPlanId
           ? `Plan split: ${plans.find((plan) => plan.id === selectedPlanId)?.name ?? "allocation"}`
-          : splitEnabled
+          : source !== "Refund" && splitEnabled
             ? "Custom split"
             : null;
 
+      if (source === "Refund" && !refundId) throw new Error("Choose the expense being refunded.");
+      validateRefund({ refund_of_transaction_id: source === "Refund" ? refundId : null, amount: amt, date, currency: txCurrency }, transactions, creditCardPayments);
       await createTransaction({
         type: "income",
         date,
@@ -374,13 +381,14 @@ export function IncomeContent() {
         to_account_id: null,
         merchant: merchant || null,
         notes: [incomeNotes.trim(), splitNote].filter(Boolean).join(" — ") || null,
-        is_recurring: isRecurring,
-        recurrence: isRecurring ? recurrence : null,
-        exclude_from_monthly: excludeFromMonthly,
+        is_recurring: source !== "Refund" && isRecurring,
+        recurrence: source !== "Refund" && isRecurring ? recurrence : null,
+        refund_of_transaction_id: source === "Refund" ? refundId || null : null,
+        exclude_from_monthly: source === "Refund" || excludeFromMonthly,
       });
 
       // If split is enabled, create transfer transactions
-      if (splitEnabled) {
+      if (splitEnabled && source !== "Refund") {
         for (const [targetId, splitAmt] of Object.entries(splits)) {
           const parsed = parseFloat(splitAmt);
           if (!parsed || parsed <= 0 || targetId === accountId) continue;
@@ -406,6 +414,7 @@ export function IncomeContent() {
       setDate(todayEST());
       setAmount(settings?.paycheck_amount?.toString() || "");
       setSource("Paycheck");
+      setRefundId("");
       setMerchant("");
       setAccountId("");
       setSplitEnabled(false);
@@ -439,8 +448,10 @@ export function IncomeContent() {
     is_recurring: boolean;
     recurrence: RecurrenceFrequency | null;
     exclude_from_monthly: boolean;
+    refund_of_transaction_id?: string | null;
   }) => {
     setEditingId(tx.id);
+    setEditRefundId(tx.refund_of_transaction_id || "");
     setEditDate(tx.date);
     setEditAmount(tx.amount.toString());
     setEditSource((tx.category as IncomeSource) || "Paycheck");
@@ -459,6 +470,8 @@ export function IncomeContent() {
       if (isNaN(amt) || amt <= 0) return;
       const editAccount = accounts.find((a) => a.id === editAccountId);
       if (!editAccount) return;
+      if (editSource === "Refund" && !editRefundId) throw new Error("Choose the expense being refunded.");
+      validateRefund({ id, refund_of_transaction_id: editSource === "Refund" ? editRefundId : null, amount: amt, date: editDate, currency: editAccount.currency }, transactions, creditCardPayments);
       await updateTransaction(id, {
         date: editDate,
         amount: amt,
@@ -469,7 +482,8 @@ export function IncomeContent() {
           notes: editNotes.trim() || null,
         is_recurring: editIsRecurring,
         recurrence: editIsRecurring ? editRecurrence : null,
-        exclude_from_monthly: editExcludeFromMonthly,
+        refund_of_transaction_id: editSource === "Refund" ? editRefundId || null : null,
+        exclude_from_monthly: editSource === "Refund" || editExcludeFromMonthly,
       });
       await refresh();
       setEditingId(null);
@@ -486,8 +500,9 @@ export function IncomeContent() {
     );
   }
 
+  const countedIncome = filteredIncomeTransactions.filter(t=>!t.exclude_from_monthly && !t.refund_of_transaction_id);
   const totalIncomeBase = filteredIncomeTransactions.reduce(
-    (s, t) => s + convertCurrency(t.amount, t.currency, baseCurrency, fx),
+    (s, t) => s + convertCurrency(monthlyAmount(t), t.currency, baseCurrency, fx),
     0
   );
 
@@ -531,8 +546,8 @@ export function IncomeContent() {
         <StatCard
           title="Avg Income"
           value={m(
-            filteredIncomeTransactions.length > 0
-              ? totalIncomeBase / filteredIncomeTransactions.length
+            countedIncome.length > 0
+              ? totalIncomeBase / countedIncome.length
               : 0
           )}
           icon={<Zap className="h-5 w-5" />}
@@ -659,7 +674,8 @@ export function IncomeContent() {
                               <Repeat className="h-2.5 w-2.5" /> {tx.recurrence}
                             </span>
                           )}
-                          {tx.exclude_from_monthly && (
+                          {tx.refund_of_transaction_id && <span className="block text-xs text-accent-blue">Refund for {transactions.find(t=>t.id===tx.refund_of_transaction_id)?.merchant || "linked expense"}</span>}
+                          {tx.exclude_from_monthly && !tx.refund_of_transaction_id && (
                             <span className="inline-flex shrink-0 rounded bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400" title="Excluded from reports, summaries, and forecasts">
                               Excluded
                             </span>
@@ -710,9 +726,10 @@ export function IncomeContent() {
       {/* Add Income Modal */}
       <TransactionEditDialog open={!!editingId} title="Edit Income" saving={saving} onClose={() => setEditingId(null)} onSave={async () => {if (editingId) await handleSaveEdit(editingId);}}>
         <div className="grid gap-5 sm:grid-cols-2"><EditField label="Date"><input aria-label="Date" type="date" required value={editDate} onChange={event => setEditDate(event.target.value)} /></EditField><EditField label={`Amount (${accounts.find(account => account.id === editAccountId)?.currency || baseCurrency})`}><input aria-label="Amount" type="number" required min="0.01" step="0.01" value={editAmount} onChange={event => setEditAmount(event.target.value)} /></EditField><EditField label="Category"><select aria-label="Category" value={editSource} onChange={event => setEditSource(event.target.value as IncomeSource)}>{INCOME_SOURCES.map(value => <option key={value} value={value}>{value}</option>)}</select></EditField><EditField label="Deposit to"><select aria-label="Account" required value={editAccountId} onChange={event => setEditAccountId(event.target.value)}><option value="">Select an account</option>{accounts.map(account => <option key={account.id} value={account.id}>{account.name} ({account.currency})</option>)}</select></EditField></div>
+        {editSource === "Refund" && <RefundExpensePicker transactions={transactions} value={editRefundId} onChange={setEditRefundId} currency={accounts.find(a=>a.id===editAccountId)?.currency || baseCurrency} amount={Number(editAmount)} restoredAmount={transactions.find(t=>t.id===editingId)?.refund_of_transaction_id === editRefundId ? transactions.find(t=>t.id===editingId)?.amount : 0} />}
         <EditField label="Merchant"><MerchantInput value={editMerchant} onChange={setEditMerchant} records={transactions} /></EditField>
         <EditField label="Notes"><textarea aria-label="Notes" rows={2} placeholder="Add a note…" value={editNotes} onChange={event => setEditNotes(event.target.value)} /></EditField>
-        <section className="transaction-editor-options"><h3 className="text-sm font-semibold text-text-primary">Income preferences</h3><div className="grid items-center gap-3 sm:grid-cols-2"><label className="flex min-h-11 items-center gap-3 text-sm text-text-primary"><input type="checkbox" checked={editIsRecurring} onChange={event => setEditIsRecurring(event.target.checked)} />Recurring</label>{editIsRecurring && <EditField label="Frequency"><select aria-label="Frequency" value={editRecurrence} onChange={event => setEditRecurrence(event.target.value as RecurrenceFrequency)}><option value="weekly">Weekly</option><option value="bi-weekly">Bi-weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></EditField>}</div><MonthlyExclusion checked={editExcludeFromMonthly} onChange={setEditExcludeFromMonthly} /></section>
+        {editSource !== "Refund" && <section className="transaction-editor-options"><h3 className="text-sm font-semibold text-text-primary">Income preferences</h3><div className="grid items-center gap-3 sm:grid-cols-2"><label className="flex min-h-11 items-center gap-3 text-sm text-text-primary"><input type="checkbox" checked={editIsRecurring} onChange={event => setEditIsRecurring(event.target.checked)} />Recurring</label>{editIsRecurring && <EditField label="Frequency"><select aria-label="Frequency" value={editRecurrence} onChange={event => setEditRecurrence(event.target.value as RecurrenceFrequency)}><option value="weekly">Weekly</option><option value="bi-weekly">Bi-weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></EditField>}</div><MonthlyExclusion checked={editExcludeFromMonthly} onChange={setEditExcludeFromMonthly} /></section>}
       </TransactionEditDialog>
             <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add Income">
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -752,6 +769,7 @@ export function IncomeContent() {
                 onChange={(e) => {
                   const nextSource = e.target.value as IncomeSource;
                   setSource(nextSource);
+                  if (nextSource === "Refund") { setSplitEnabled(false); setIsRecurring(false); }
                   if (nextSource === "Paycheck") {
                     setRecurrence(defaultPaycheckRecurrence);
                   }
@@ -785,7 +803,7 @@ export function IncomeContent() {
                       setSplits({});
                       return;
                     }
-                    if (selectedPlanId) {
+                    if (source !== "Refund" && selectedPlanId) {
                       applyAllocationPlan(selectedPlanId, nextAccountId);
                       return;
                     }
@@ -814,7 +832,9 @@ export function IncomeContent() {
             <MerchantInput value={merchant} onChange={setMerchant} records={transactions} />
           </div>
 
+          {source === "Refund" && <RefundExpensePicker transactions={transactions} value={refundId} onChange={setRefundId} currency={depositCurrency} amount={Number(amount)} />}
           <label className="block text-xs text-text-secondary">Notes (optional)<textarea aria-label="Notes" value={incomeNotes} onChange={event => setIncomeNotes(event.target.value)} className="mt-1 w-full rounded-xl border border-border-subtle bg-bg-elevated px-4 py-2.5 text-sm text-text-primary" /></label>
+          {source !== "Refund" && <>
           {/* Recurring toggle */}
           <div className="flex items-center gap-3">
             <label className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center"><input type="checkbox" aria-label="Recurring income" checked={isRecurring} onChange={event => setIsRecurring(event.target.checked)} className="h-4 w-4 accent-[var(--accent-blue)]" /></label>
@@ -838,8 +858,9 @@ export function IncomeContent() {
             <span className="text-sm text-text-primary">Exclude from reports and forecasts</span>
           </div>
 
+          </>}
           {/* Allocation plan shortcut */}
-          {accountId && plans.length > 0 && (
+          {source !== "Refund" && accountId && plans.length > 0 && (
             <div className="space-y-2 rounded-xl border border-border-subtle bg-bg-elevated/40 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <label className="text-xs font-medium text-text-secondary">
@@ -882,7 +903,7 @@ export function IncomeContent() {
           )}
 
           {/* Custom split allocation */}
-          {accounts.length > 1 && accountId && (
+          {source !== "Refund" && accounts.length > 1 && accountId && (
             <>
               <div className="flex items-center gap-3">
                 <label className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center"><input type="checkbox" aria-label="Split income" checked={splitEnabled} onChange={event => setSplitEnabled(event.target.checked)} className="h-4 w-4 accent-[var(--accent-blue)]" /></label>

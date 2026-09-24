@@ -1,5 +1,7 @@
 "use client";
 import { TransactionEditDialog, EditField } from "../components/transaction-edit-dialog";
+import { validateRefund } from "@/lib/money/refunds";
+import { RefundExpensePicker } from "../components/refund-expense-picker";
 import { MonthlyExclusion } from "../components/monthly-exclusion";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -220,6 +222,8 @@ export function CreditCardsContent() {
   // Pay card modal
   const [showPay, setShowPay] = useState(false);
   const [payCardId, setPayCardId] = useState("");
+  const [payRefundId, setPayRefundId] = useState("");
+  const [editPayRefundId, setEditPayRefundId] = useState("");
   const [paySource, setPaySource] = useState<"account" | "cashback" | "credit">("account");
   const [payAccountId, setPayAccountId] = useState("");
   const [payAmount, setPayAmount] = useState("");
@@ -582,6 +586,7 @@ export function CreditCardsContent() {
     setPayAmount(bal > 0 ? bal.toString() : "");
     setPayMode("full");
     setPayDate(todayEST());
+    setPayRefundId("");
     setPayError("");
     setShowPay(true);
   };
@@ -604,11 +609,13 @@ export function CreditCardsContent() {
     }
     setSaving(true);
     try {
+      validateRefund({ refund_of_transaction_id: paySource === "credit" ? payRefundId : null, amount: amt, date: payDate, card_id: payCardId }, transactions, creditCardPayments, creditCardCharges);
       await createCreditCardPayment({
         card_id: payCardId,
         account_id: paySource === "account" ? payAccountId : null,
         date: payDate,
         amount: amt,
+        refund_of_transaction_id: paySource === "credit" ? payRefundId || null : null,
         notes: paySource === "cashback" ? "Cashback redemption" : paySource === "credit" ? "Credit / Refund" : null,
       });
       await refresh();
@@ -659,6 +666,7 @@ export function CreditCardsContent() {
 
   const startEditPayment = (p: { id: string; date: string; amount: number; account_id: string | null }) => {
     setEditingPayId(p.id);
+    setEditPayRefundId(creditCardPayments.find(payment=>payment.id===p.id)?.refund_of_transaction_id || "");
     setEditPayDate(p.date);
     setEditPayAmount(p.amount.toString());
     setEditPayAccountId(p.account_id || "");
@@ -669,10 +677,12 @@ export function CreditCardsContent() {
     try {
       const amt = parseFloat(editPayAmount);
       if (isNaN(amt) || amt <= 0) return;
+      validateRefund({ id, refund_of_transaction_id: !editPayAccountId ? editPayRefundId : null, amount: amt, date: editPayDate, card_id: creditCardPayments.find(p=>p.id===id)?.card_id }, transactions, creditCardPayments, creditCardCharges);
       await updateCreditCardPayment(id, {
         date: editPayDate,
         amount: amt,
         account_id: editPayAccountId || null,
+        refund_of_transaction_id: !editPayAccountId ? editPayRefundId || null : null,
       });
       await refresh();
       setEditingPayId(null);
@@ -1008,6 +1018,7 @@ export function CreditCardsContent() {
                             <span className="block truncate" title={charge.merchant || undefined}>{charge.merchant || "—"}</span>
                             {charge.notes && <span className="block truncate text-[10px] text-text-secondary/70" title={charge.notes}>{charge.notes}</span>}
                             {linkedTransaction && (linkedTransaction.personal_share_percent ?? 100) < 100 && <span className="mt-1 block whitespace-normal text-xs text-accent-blue">Shared{linkedTransaction.shared_with ? ` with ${linkedTransaction.shared_with}` : ""} · {linkedTransaction.personal_share_percent}% yours</span>}
+                            {(linkedTransaction?.refunded_amount ?? 0) > 0 && <span className="mt-1 block text-xs text-accent-blue">Refunded {formatMoney(linkedTransaction!.refunded_amount!, linkedTransaction!.currency)}</span>}
                             {linkedTransaction?.exclude_from_monthly && <span className="inline-flex rounded bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400">Excluded</span>}
 
                           </span>
@@ -1044,6 +1055,7 @@ export function CreditCardsContent() {
                       <td className="px-4 py-3 text-right" data-field="actions">
                         {(
                           <div className="flex items-center justify-end gap-1">
+                            {linkedTransaction && (linkedTransaction.refunded_amount ?? 0) < linkedTransaction.amount && <button aria-label="Refund charge" onClick={()=>{openPayModal(charge.card_id); setPaySource("credit"); setPayRefundId(linkedTransaction.id); setPayMode("custom"); setPayAmount(String(linkedTransaction.amount - (linkedTransaction.refunded_amount ?? 0)));}} className="rounded-lg px-2 py-1 text-xs font-medium text-accent-blue hover:bg-accent-blue/10">Refund</button>}
                             <button
                               aria-label="Edit charge"
                               onClick={() => startEditCharge(charge)}
@@ -1232,6 +1244,7 @@ export function CreditCardsContent() {
 <EditField label="Date"><input aria-label="Date" required type="date" value={editPayDate} onChange={event=>setEditPayDate(event.target.value)} /></EditField>
 <EditField label="Amount"><input aria-label="Amount" required type="number" min="0.01" step="0.01" value={editPayAmount} onChange={event=>setEditPayAmount(event.target.value)} /></EditField>
 </div><EditField label="Paid from"><select aria-label="Paid from" value={editPayAccountId} onChange={event=>setEditPayAccountId(event.target.value)}><option value="">Credit / refund</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}</select></EditField>
+{!editPayAccountId && <RefundExpensePicker required={false} transactions={transactions.filter(t=>creditCardCharges.some(c=>c.card_id===creditCardPayments.find(p=>p.id===editingPayId)?.card_id && (c.id===t.linked_charge_id || c.linked_transaction_id===t.id)))} value={editPayRefundId} onChange={setEditPayRefundId} currency={creditCards.find(c=>c.id===creditCardPayments.find(p=>p.id===editingPayId)?.card_id)?.currency || baseCurrency} amount={Number(editPayAmount)} restoredAmount={creditCardPayments.find(p=>p.id===editingPayId)?.refund_of_transaction_id === editPayRefundId ? creditCardPayments.find(p=>p.id===editingPayId)?.amount : 0} />}
 </TransactionEditDialog>
       <Modal
         open={showAddCard}
@@ -1645,6 +1658,7 @@ export function CreditCardsContent() {
                       Credit / Refund
                     </button>
                   </div>
+                  {paySource === "credit" && <RefundExpensePicker required={false} transactions={transactions.filter(t=>creditCardCharges.some(c=>c.card_id===payCardId && (c.id===t.linked_charge_id || c.linked_transaction_id===t.id)))} value={payRefundId} onChange={id=>{setPayRefundId(id); if(id) {const tx=transactions.find(t=>t.id===id)!; setPayAmount(String(Math.max(0,tx.amount-(tx.refunded_amount??0)))); setPayMode("custom");}}} currency={creditCards.find(c=>c.id===payCardId)?.currency || baseCurrency} amount={Number(payAmount)} />}
                   {paySource === "account" && (
                     <select
                       value={payAccountId}
@@ -1731,7 +1745,7 @@ export function CreditCardsContent() {
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white shadow-glow transition hover:-translate-y-0.5 disabled:opacity-60"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              Pay
+              {paySource === "credit" ? "Save credit / refund" : "Pay"}
             </button>
           </div>
         </form>

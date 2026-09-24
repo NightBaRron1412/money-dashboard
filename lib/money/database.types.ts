@@ -52,6 +52,8 @@ export interface Transaction {
   recurrence: RecurrenceFrequency | null;
   is_recurring: boolean;
   exclude_from_monthly: boolean;
+  refund_of_transaction_id?: string | null;
+  refunded_amount?: number;
   personal_share_percent?: number;
   shared_with?: string | null;
   goal_id: string | null;
@@ -210,6 +212,7 @@ export interface CreditCardCharge {
 }
 
 export interface CreditCardPayment {
+  refund_of_transaction_id?: string | null;
   id: string;
   user_id: string;
   card_id: string;

@@ -1,3 +1,4 @@
+import { refundTotal, validateRefund } from "./refunds";
 /**
  * In-memory mutable store for demo mode.
  * Initialized from getDemoMoneyData() on first access.
@@ -124,7 +125,10 @@ export function demoCreateTransaction(tx: Partial<Transaction>): Transaction {
     ...tx,
   };
   if (!item.id) item.id = uid();
+  validateRefund(item, s.transactions, s.creditCardPayments, s.creditCardCharges);
+  if (item.refund_of_transaction_id) { item.exclude_from_monthly = true; item.category = "Refund"; item.is_recurring = false; item.recurrence = null; }
   s.transactions.push(item);
+  refreshDemoRefunds();
   return item;
 }
 
@@ -132,17 +136,25 @@ export function demoUpdateTransaction(id: string, updates: Partial<Transaction>)
   const s = ensureStore();
   const idx = s.transactions.findIndex((t) => t.id === id);
   if (idx === -1) throw new Error("Transaction not found");
-  s.transactions[idx] = { ...s.transactions[idx], ...updates };
+  const next = { ...s.transactions[idx], ...updates };
+  validateRefund(next, s.transactions, s.creditCardPayments, s.creditCardCharges);
+  const refunded = refundTotal(id, s.transactions, s.creditCardPayments);
+  if (refunded > 0 && (next.amount < refunded || next.type !== 'expense' || next.currency !== s.transactions[idx].currency)) throw new Error('Remove refunds before changing this purchase.');
+  if (next.refund_of_transaction_id) { next.exclude_from_monthly = true; next.category = 'Refund'; next.is_recurring = false; next.recurrence = null; }
+  s.transactions[idx] = next;
+  refreshDemoRefunds();
   return s.transactions[idx];
 }
 
 export function demoDeleteTransaction(id: string): void {
   const s = ensureStore();
+  if (refundTotal(id, s.transactions, s.creditCardPayments) > 0) throw new Error("Remove linked refunds before deleting the purchase.");
   const tx = s.transactions.find((t) => t.id === id);
   if (tx?.linked_charge_id) {
     s.creditCardCharges = s.creditCardCharges.filter((c) => c.id !== tx.linked_charge_id);
   }
   s.transactions = s.transactions.filter((t) => t.id !== id);
+  refreshDemoRefunds();
 }
 
 // --------------- Goals ---------------
@@ -436,7 +448,10 @@ export function demoUpdateCreditCardCharge(id: string, updates: Partial<CreditCa
   const s = ensureStore();
   const idx = s.creditCardCharges.findIndex((c) => c.id === id);
   if (idx === -1) throw new Error("Charge not found");
-  s.creditCardCharges[idx] = { ...s.creditCardCharges[idx], ...updates };
+  const previous = s.creditCardCharges[idx];
+  const original = s.transactions.find(t=>t.id === previous.linked_transaction_id || t.linked_charge_id === id);
+  if ((original?.refunded_amount ?? 0) > 0 && ((updates.amount ?? previous.amount) < original!.refunded_amount! || (updates.date ?? previous.date) > previous.date || (updates.card_id ?? previous.card_id) !== previous.card_id)) throw new Error('Remove refund links before changing this purchase.');
+  s.creditCardCharges[idx] = { ...previous, ...updates };
   const charge = s.creditCardCharges[idx];
   if (charge.linked_transaction_id) {
     const txIdx = s.transactions.findIndex((t) => t.id === charge.linked_transaction_id);
@@ -457,6 +472,7 @@ export function demoUpdateCreditCardCharge(id: string, updates: Partial<CreditCa
 export function demoDeleteCreditCardCharge(id: string): void {
   const s = ensureStore();
   const charge = s.creditCardCharges.find((c) => c.id === id);
+  if (charge?.linked_transaction_id && refundTotal(charge.linked_transaction_id, s.transactions, s.creditCardPayments) > 0) throw new Error("Remove linked refunds before deleting this purchase.");
   if (charge?.linked_transaction_id) {
     s.transactions = s.transactions.filter((t) => t.id !== charge.linked_transaction_id);
   }
@@ -479,11 +495,19 @@ export function demoCreateCreditCardPayment(payment: Partial<CreditCardPayment>)
     ...payment,
   };
   if (!item.id) item.id = uid();
+  validateRefund(item, s.transactions, s.creditCardPayments, s.creditCardCharges);
   s.creditCardPayments.push(item);
+  refreshDemoRefunds();
   return item;
 }
 
 export function demoDeleteCreditCardPayment(id: string): void {
   const s = ensureStore();
   s.creditCardPayments = s.creditCardPayments.filter((p) => p.id !== id);
+  refreshDemoRefunds();
+}
+
+export function refreshDemoRefunds() {
+  const s = ensureStore();
+  for (const tx of s.transactions) tx.refunded_amount = refundTotal(tx.id, s.transactions, s.creditCardPayments);
 }
