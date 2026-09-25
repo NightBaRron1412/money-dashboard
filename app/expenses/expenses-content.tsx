@@ -531,7 +531,7 @@ export function ExpensesContent() {
       </div>
       {/* Category breakdown */}
       {categoryBreakdown.length > 0 && (
-        <details data-tour="category-breakdown" className="money-disclosure !my-0 mb-5">
+        <details data-tour="category-breakdown" className="money-disclosure !mt-0 !mb-5">
           <summary>
             Your spending by category
           </summary>
